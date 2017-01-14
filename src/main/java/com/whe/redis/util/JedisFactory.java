@@ -7,7 +7,6 @@ import redis.clients.jedis.JedisCluster;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
@@ -33,7 +32,6 @@ public class JedisFactory {
         try {
             loadPro.load(in);
             String redisType = loadPro.getProperty("redis.type");
-
             String ipAndPort = loadPro.getProperty("redis");
             if (ServerConstant.STAND_ALONE.equalsIgnoreCase(redisType)) {
                 ServerConstant.REDIS_TYPE = ServerConstant.STAND_ALONE;
@@ -46,22 +44,27 @@ public class JedisFactory {
                 if (StringUtils.isNotBlank(pass)) {
                     jedis.auth(pass);
                 }
-            } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(redisType)) {
-                ServerConstant.REDIS_TYPE = ServerConstant.REDIS_CLUSTER;
-                String[] split = ipAndPort.split(";");
-                Set<HostAndPort> set = new HashSet<>();
-                 for (String str : split) {
-                    String[] strArr = str.split(":");
-                    if (strArr.length != 2) {
-                        throw new RuntimeException("ip和端口格式不正确");
+            } else {
+                if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(redisType)) {
+                    ServerConstant.REDIS_TYPE = ServerConstant.REDIS_CLUSTER;
+                    String[] split = ipAndPort.split(";");
+                   /* Stream<String[]> stream = Arrays.stream(split).map(":"::split);
+                    Set<HostAndPort> collect = stream.map(str -> new HostAndPort(str[0], Integer.parseInt(str[1]))).collect(Collectors.toSet());
+                    System.out.println(collect);*/
+                    Set<HostAndPort> set = new HashSet<>();
+                    for (String str : split) {
+                        String[] strArr = str.split(":");
+                        if (strArr.length != 2) {
+                            throw new RuntimeException("ip和端口格式不正确");
+                        }
+                        HostAndPort hostAndPort = new HostAndPort(strArr[0], Integer.parseInt(strArr[1]));
+                        set.add(hostAndPort);
                     }
-                    HostAndPort hostAndPort = new HostAndPort(strArr[0], Integer.parseInt(strArr[1]));
-                    set.add(hostAndPort);
-                }
-                jedisCluster = new JedisCluster(set);
-                String pass = loadPro.getProperty("redis.pass");
-                if (StringUtils.isNotBlank(pass)) {
-                    jedisCluster.auth(pass);
+                    jedisCluster = new JedisCluster(set);
+                    String pass = loadPro.getProperty("redis.pass");
+                    if (StringUtils.isNotBlank(pass)) {
+                        jedisCluster.auth(pass);
+                    }
                 }
             }
         } catch (Exception e) {
@@ -74,6 +77,17 @@ public class JedisFactory {
                     e.printStackTrace();
                 }
             }
+        }
+    }
+
+    public static void destroy() {
+        if (jedis != null) jedis.close();
+
+        if (jedisCluster != null) try {
+            jedisCluster.close();
+        } catch (Exception e) {
+            System.out.println("jedisCluster关闭失败");
+            e.printStackTrace();
         }
     }
 

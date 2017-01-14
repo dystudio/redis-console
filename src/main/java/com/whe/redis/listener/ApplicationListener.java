@@ -22,6 +22,6 @@ public class ApplicationListener implements ServletContextListener {
     }
 
     public void contextDestroyed(ServletContextEvent servletContextEvent) {
-
+        JedisFactory.destroy();
     }
 }

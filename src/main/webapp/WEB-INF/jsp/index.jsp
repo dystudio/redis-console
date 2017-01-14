@@ -66,6 +66,9 @@
     <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
     <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
     <![endif]-->
+    <script type="text/javascript">
+        var ctx="${ctx}";
+    </script>
 </head>
 
 <body>
@@ -86,13 +89,14 @@
         </div><!--/.nav-collapse -->
     </div>
 </div>
+
 <div style="height: 60px"></div>
-<div class="navbar-default sidebar" role="navigation" style="width: 115px;height:100%;margin-top: 0px;">
+<div class="navbar-default sidebar" role="navigation" style="width: 9%;height:100%;margin-top: 0px;">
     <div class="sidebar-nav navbar-collapse">
         <ul class="nav" id="side-menu">
-            <li><a href="${ctx}/index"><i
+            <li><a href="${ctx}/index" ><i
                     class="fa fa-fw"></i>全部</a></li>
-            <li><a href="${ctx}/string"><i
+            <li><a href="javascript:void(0);" id="string"><i
                     class="fa fa-fw"></i> string</a></li>
             <li><a href="${ctx}/list"><i
                     class="fa  fa-fw"></i> list</a></li>
@@ -106,9 +110,45 @@
     </div>
     <!-- /.sidebar-collapse -->
 </div>
-<div class="container theme-showcase" style="width: 83%;border: 1px solid #ddd;">
+<!--模态框-->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                <h4 class="modal-title">删除提示</h4>
+            </div>
+            <div class="modal-body">
+                <p>确认全部删除数据吗?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-danger" id="flushAll">确认</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+<div class="modal fade"  tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                <h4 class="modal-title">删除提示</h4>
+            </div>
+            <div class="modal-body">
+                <p>确认全部删除数据吗?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger" >确认</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+<div class="container theme-showcase" style="width: 82%;border: 1px solid #ddd;">
     <!-- /.row -->
-    <div class="panel ">
+    <div class="panel panel-default">
         <div class="panel-body">
             <button type="button" id="backup" class="btn btn-default navbar-btn">备份</button>
             <span class="btn btn-success btn-file"> 恢复
@@ -117,7 +157,7 @@
                     <input type="file" name="file" value="" id="recover"/>
                 </form>
             </span>
-            <a href="javascript:void(0);" class="btn btn-danger btn-xs" id="flushAll">全部删除</a>
+            <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#myModal" >全部删除</button>
             <form class="form-inline" action="${ctx}"
                   method="post" style="display: inline">
                 <div class="form-group">
@@ -142,7 +182,7 @@
         <div class="col-lg-12">
             <!-- string-->
             <c:if test="${fn:length(string)>0}">
-                <div class="panel ">
+                <div class="panel panel-default">
                     <div class="panel-heading">string</div>
                     <!-- /.panel-heading -->
                     <table class="table table-bordered table-striped" style="border-bottom: 1px solid #ddd">
@@ -255,18 +295,20 @@
                         <thead>
                         <tr style=" border-top: 1px solid #ddd;">
                             <th>key</th>
-                            <th>values</th>
+                            <th>score</th>
+                            <th>element</th>
                             <th style="width: 95px">操作</th>
                         </tr>
                         </thead>
                         <tbody>
                         <c:forEach items="${zSet}" var="zSet">
-                            <c:forEach items="${zSet.value}" var="val" varStatus="vs">
+                            <c:forEach items="${zSet.value}" var="tuple" varStatus="vs">
                                 <tr>
                                     <c:if test="${vs.index==0}">
                                         <td rowspan="${fn:length(zSet.value)}">${zSet.key}</td>
                                     </c:if>
-                                    <td>${val}</td>
+                                    <td>${tuple.score}</td>
+                                    <td>${tuple.element}</td>
                                     <td>
                                         <a href="#" class="btn btn-primary btn-xs" data-toggle="modal"
                                            data-target="#customerEditDialog"
@@ -326,7 +368,6 @@
             <div class="col-md-12 text-right">
                 <itcast:page url="${pageContext.request.contextPath }/customer/index.action"/>
             </div>
-            <!-- /.panel-body -->
             <!-- /.panel -->
         </div>
         <!-- /.col-lg-12 -->
@@ -352,42 +393,8 @@
 <script type="text/javascript" src="${ctx}js/sb-admin-2.js"></script>
 
 <script type="text/javascript" src="${ctx}/js/jquery.form.min.js"></script>
-<script type="text/javascript">
 
-    $("#backup").on("click", function () {
-        open("${ctx}/backup");
-    });
-    $("#recover").on("change", function () {
-        var options = {
-            url: "${ctx}/recover",
-            type: "post",
-            dataType: "json",
-            success: function (data) {
-                alert(data)
-            }
-        }
-        $("#fileForm").ajaxSubmit(options);
-        $("#recover").val("");
-    });
-    $("#flushAll").on("click",function(){
-       $.ajax({
-           url:"${ctx}/flushAll",
-           type:"post",
-           dataType:"json",
-           success:function (data) {
-               alert(data)
-           }
-       })
-    });
-    function deleteCustomer(id) {
-        if (confirm('确实要删除该客户吗?')) {
-            $.post("${ctx}customer/delete.action", {"id": id}, function (data) {
-                alert("客户删除更新成功！");
-                window.location.reload();
-            });
-        }
-    }
-</script>
+<script type="text/javascript" src="${ctx}/js/redis/index.js"></script>
 
 </body>
 

@@ -10,6 +10,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
+import redis.clients.jedis.Tuple;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -35,7 +36,7 @@ public class JedisController {
         Map<String, String> allString = jedisService.getAllString();
         Map<String, List<String>> allList = jedisService.getAllList();
         Map<String, Set<String>> allSet = jedisService.getAllSet();
-        Map<String, Set<String>> allZSet = jedisService.getAllZSet();
+        Map<String, Set<Tuple>> allZSet = jedisService.getAllZSet();
         Map<String, Map<String, String>> allHash = jedisService.getAllHash();
 
         model.addAttribute("string", allString);
@@ -73,7 +74,7 @@ public class JedisController {
 
     @RequestMapping(value = {"/zSet"})
     public String zSet(Model model) {
-        Map<String, Set<String>> allZSet = jedisService.getAllZSet();
+        Map<String, Set<Tuple>> allZSet = jedisService.getAllZSet();
         model.addAttribute("zSet", allZSet);
         return "index";
     }
@@ -94,32 +95,39 @@ public class JedisController {
      */
     @RequestMapping("/backup")
     public void backup(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        Map<String, Object> map = new HashMap<String, Object>();
+        Map<String, Object> map = new HashMap<>();
         Map<String, String> stringMap = jedisService.getAllString();
-        List<Object> list = new ArrayList<Object>();
+        List<Object> list = new ArrayList<>();
         if (stringMap.size() > 0) {
             map.put(ServerConstant.REDIS_STRING, stringMap);
             list.add(map);
         }
-        map = new HashMap<String, Object>();
+        map = new HashMap<>();
         Map<String, List<String>> listMap = jedisService.getAllList();
         if (listMap.size() > 0) {
             map.put(ServerConstant.REDIS_LIST, listMap);
             list.add(map);
         }
-        map = new HashMap<String, Object>();
+        map = new HashMap<>();
         Map<String, Set<String>> setMap = jedisService.getAllSet();
         if (setMap.size() > 0) {
             map.put(ServerConstant.REDIS_SET, setMap);
             list.add(map);
         }
-        map = new HashMap<String, Object>();
-        Map<String, Set<String>> zSetMap = jedisService.getAllZSet();
-        if (zSetMap.size() > 0) {
+        map = new HashMap<>();
+        Map<String, Set<Tuple>> tupleMap = jedisService.getAllZSet();
+        if (tupleMap.size() > 0) {
+            Map<String, Map<String, Double>> zSetMap = new HashMap<>();
+            Map<String, Double> stringDoubleMap = new HashMap<>();
+            tupleMap.forEach((key, set) -> {
+                set.forEach(t -> stringDoubleMap.put(t.getElement(), t.getScore()));
+                zSetMap.put(key, new HashMap<>(stringDoubleMap));
+                stringDoubleMap.clear();
+            });
             map.put(ServerConstant.REDIS_ZSET, zSetMap);
             list.add(map);
         }
-        map = new HashMap<String, Object>();
+        map = new HashMap<>();
         Map<String, Map<String, String>> hashMap = jedisService.getAllHash();
         if (hashMap.size() > 0) {
             map.put(ServerConstant.REDIS_HASH, hashMap);
@@ -135,6 +143,7 @@ public class JedisController {
 
     /**
      * 恢复数据
+     *
      * @param file file
      * @return string
      */
@@ -144,28 +153,30 @@ public class JedisController {
         try {
             String data = new String(file.getBytes(), "UTF-8");
             JSONArray jsonArray = JSON.parseArray(data);
-            for (Object obj : jsonArray) {
-                if (obj instanceof Map) {
-                    Map map = (Map) obj;
-                    if (map.containsKey(ServerConstant.REDIS_STRING)) {
-                        Map stringMap = (Map) map.get(ServerConstant.REDIS_STRING);
-                        jedisService.saveAllString(stringMap);
-                    }
-                    if (map.containsKey(ServerConstant.REDIS_LIST)) {
-                        Map listMap = (Map) map.get(ServerConstant.REDIS_LIST);
-                        jedisService.saveAllList(listMap);
-                    }
-                    if (map.containsKey(ServerConstant.REDIS_SET)) {
-                        Map setMap = (Map) map.get(ServerConstant.REDIS_SET);
-                        jedisService.saveAllSet(setMap);
-                    }
-                    if (map.containsKey(ServerConstant.REDIS_HASH)) {
-                        Map hashMap = (Map) map.get(ServerConstant.REDIS_HASH);
-                        jedisService.saveAllHash(hashMap);
-                    }
+            jsonArray.stream().filter(obj -> obj instanceof Map).forEach(obj -> {
+                Map map = (Map) obj;
+                if (map.containsKey(ServerConstant.REDIS_STRING)) {
+                    Map stringMap = (Map) map.get(ServerConstant.REDIS_STRING);
+                    jedisService.saveAllString(stringMap);
                 }
-
-            }
+                if (map.containsKey(ServerConstant.REDIS_LIST)) {
+                    Map listMap = (Map) map.get(ServerConstant.REDIS_LIST);
+                    jedisService.saveAllList(listMap);
+                }
+                if (map.containsKey(ServerConstant.REDIS_SET)) {
+                    Map setMap = (Map) map.get(ServerConstant.REDIS_SET);
+                    jedisService.saveAllSet(setMap);
+                }
+                if (map.containsKey(ServerConstant.REDIS_ZSET)) {
+                    Map zSetMap = (Map) map.get(ServerConstant.REDIS_ZSET);
+                    System.out.println(zSetMap);
+                    jedisService.saveAllZSet(zSetMap);
+                }
+                if (map.containsKey(ServerConstant.REDIS_HASH)) {
+                    Map hashMap = (Map) map.get(ServerConstant.REDIS_HASH);
+                    jedisService.saveAllHash(hashMap);
+                }
+            });
         } catch (Exception e) {
             e.printStackTrace();
             return "0";
@@ -175,10 +186,12 @@ public class JedisController {
 
     /**
      * 删除所有
+     *
      * @return string
      */
     @RequestMapping("/flushAll")
-    public String flushAll(){
+    @ResponseBody
+    public String flushAll() {
         jedisService.flushAll();
         return "1";
     }

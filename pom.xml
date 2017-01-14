@@ -132,12 +132,7 @@
             <artifactId>mybatis-spring</artifactId>
             <version>${org.mybatis-spring-version}</version>
         </dependency>
-        <!-- jdbc driver -->
-        <dependency>
-            <groupId>com.oracle</groupId>
-            <artifactId>ojdbc14</artifactId>
-            <version>${oracle-connector-java-version}</version>
-        </dependency>
+
         <!-- 连接池 -->
         <dependency>
             <groupId>com.alibaba</groupId>
