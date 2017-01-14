@@ -150,7 +150,7 @@
     <!-- /.row -->
     <div class="panel panel-default">
         <div class="panel-body">
-            <button type="button" id="backup" class="btn btn-default navbar-btn">备份</button>
+            <button type="button" id="backup" class="btn btn-primary navbar-btn">备份</button>
             <span class="btn btn-success btn-file"> 恢复
                 <span class="glyphicon" aria-hidden="true"></span>
                 <form id="fileForm" method="post" enctype="multipart/form-data">
