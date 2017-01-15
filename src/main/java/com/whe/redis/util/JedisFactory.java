@@ -13,7 +13,7 @@ import java.util.Set;
 
 /**
  * Created by wang hongen on 2017/1/12.
- * Redis工厂
+ * Jedis工厂
  *
  * @author wanghongen
  */
@@ -22,6 +22,9 @@ public class JedisFactory {
     private static Jedis jedis;
     private static JedisCluster jedisCluster;
 
+    /**
+     * 初始化数据
+     */
     public static void init() {
         System.out.println("初始化数据");
         /*
@@ -31,11 +34,11 @@ public class JedisFactory {
         InputStream in = JedisFactory.class.getResourceAsStream("/redis.properties");
         try {
             loadPro.load(in);
-            String redisType = loadPro.getProperty("redis.type");
-            String ipAndPort = loadPro.getProperty("redis");
-            if (ServerConstant.STAND_ALONE.equalsIgnoreCase(redisType)) {
-                ServerConstant.REDIS_TYPE = ServerConstant.STAND_ALONE;
-                String[] split = ipAndPort.split(":");
+            String redisCluster = loadPro.getProperty("redis.cluster");
+            String single = loadPro.getProperty("redis.single");
+            if (StringUtils.isNotBlank(single)) {
+                ServerConstant.REDIS_TYPE = ServerConstant.SINGLE;
+                String[] split = single.split(":");
                 if (split.length != 2) {
                     throw new RuntimeException("ip和端口格式不正确");
                 }
@@ -44,27 +47,25 @@ public class JedisFactory {
                 if (StringUtils.isNotBlank(pass)) {
                     jedis.auth(pass);
                 }
-            } else {
-                if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(redisType)) {
-                    ServerConstant.REDIS_TYPE = ServerConstant.REDIS_CLUSTER;
-                    String[] split = ipAndPort.split(";");
+            } else if (StringUtils.isNotBlank(redisCluster)) {
+                ServerConstant.REDIS_TYPE = ServerConstant.REDIS_CLUSTER;
+                String[] split = redisCluster.split(";");
                    /* Stream<String[]> stream = Arrays.stream(split).map(":"::split);
                     Set<HostAndPort> collect = stream.map(str -> new HostAndPort(str[0], Integer.parseInt(str[1]))).collect(Collectors.toSet());
                     System.out.println(collect);*/
-                    Set<HostAndPort> set = new HashSet<>();
-                    for (String str : split) {
-                        String[] strArr = str.split(":");
-                        if (strArr.length != 2) {
-                            throw new RuntimeException("ip和端口格式不正确");
-                        }
-                        HostAndPort hostAndPort = new HostAndPort(strArr[0], Integer.parseInt(strArr[1]));
-                        set.add(hostAndPort);
+                Set<HostAndPort> set = new HashSet<>();
+                for (String str : split) {
+                    String[] strArr = str.split(":");
+                    if (strArr.length != 2) {
+                        throw new RuntimeException("ip和端口格式不正确");
                     }
-                    jedisCluster = new JedisCluster(set);
-                    String pass = loadPro.getProperty("redis.pass");
-                    if (StringUtils.isNotBlank(pass)) {
-                        jedisCluster.auth(pass);
-                    }
+                    HostAndPort hostAndPort = new HostAndPort(strArr[0], Integer.parseInt(strArr[1]));
+                    set.add(hostAndPort);
+                }
+                jedisCluster = new JedisCluster(set);
+                String pass = loadPro.getProperty("redis.pass");
+                if (StringUtils.isNotBlank(pass)) {
+                    jedisCluster.auth(pass);
                 }
             }
         } catch (Exception e) {
@@ -80,7 +81,10 @@ public class JedisFactory {
         }
     }
 
-    public static void destroy() {
+    /**
+     * 关闭连接
+     */
+    public static void close() {
         if (jedis != null) jedis.close();
 
         if (jedisCluster != null) try {
@@ -91,10 +95,20 @@ public class JedisFactory {
         }
     }
 
+    /**
+     * 获得jedisCluster
+     *
+     * @return JedisCluster
+     */
     public static JedisCluster getJedisCluster() {
         return jedisCluster;
     }
 
+    /**
+     * 获得jedis
+     *
+     * @return Jedis
+     */
     public static Jedis getJedis() {
         return jedis;
     }

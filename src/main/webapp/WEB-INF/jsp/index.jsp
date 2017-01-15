@@ -75,18 +75,18 @@
 <div class="navbar navbar-default navbar-fixed-top" role="navigation">
     <div class="container">
         <div class="navbar-header">
-            <a class="navbar-brand" href="${ctx}/index">Redis控制台</a>
+            <a class="navbar-brand redisAll" href="javascript:void(0);" >Redis控制台</a>
         </div>
         <div class="navbar-collapse collapse">
             <ul class="nav navbar-nav">
-                <li class="active"><a href="/index">Data</a></li>
-                <li><a href="">Info</a></li>
-                <li><a href="">Config</a></li>
+                <li class="active redisAll"><a href="javascript:void(0);">Data</a></li>
+                <li><a href="javascript:void(0);">Info</a></li>
+                <li><a href="javascript:void(0);">Config</a></li>
                 <li class="dropdown ">
-                    <a href="">Offset</a>
+                    <a href="javascript:void(0);">Offset</a>
                 </li>
             </ul>
-        </div><!--/.nav-collapse -->
+        </div>
     </div>
 </div>
 
@@ -94,17 +94,17 @@
 <div class="navbar-default sidebar" role="navigation" style="width: 9%;margin-top: 0px;">
     <div class="sidebar-nav navbar-collapse">
         <ul class="nav" id="side-menu">
-            <li><a href="${ctx}/index" ><i
+            <li><a href="javascript:void(0);" class="redisAll active" ><i
                     class="fa fa-fw"></i>全部</a></li>
             <li><a href="javascript:void(0);" id="string"><i
                     class="fa fa-fw"></i> string</a></li>
-            <li><a href="${ctx}/list"><i
+            <li><a href="javascript:void(0);" id="list"><i
                     class="fa  fa-fw"></i> list</a></li>
-            <li><a href="${ctx}/set"><i
+            <li><a href="javascript:void(0);" id="set"><i
                     class="fa  fa-fw"></i> set</a></li>
-            <li><a href="${ctx}/zSet"><i
+            <li><a href="javascript:void(0);" id="zSet"><i
                     class="fa  fa-fw"></i> zSet</a></li>
-            <li><a href="${ctx}/hash"><i
+            <li><a href="javascript:void(0);" id="hash"><i
                     class="fa  fa-fw"></i> hash</a></li>
         </ul>
     </div>
@@ -181,7 +181,7 @@
         </div>
     </div>
     <div class="row">
-        <div class="col-lg-12">
+        <div class="col-lg-12" id="redisContent">
             <!-- string-->
             <c:if test="${fn:length(string)>0}">
                 <div class="panel panel-default">

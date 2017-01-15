@@ -17,10 +17,14 @@ import static java.util.stream.Collectors.toMap;
  */
 @Service
 public class JedisService {
-
+    /**
+     * 获得所有string类型数据
+     *
+     * @return Map<String.String>
+     */
     public Map<String, String> getAllString() {
         final Map<String, String> allString = new HashMap<>();
-        if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
+        if (ServerConstant.SINGLE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             return getNodeString(JedisFactory.getJedis());
         } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             JedisFactory.getJedisCluster().getClusterNodes()
@@ -38,9 +42,14 @@ public class JedisService {
         return allString;
     }
 
+    /**
+     * 获得所有list数据
+     *
+     * @return Map<String.List>
+     */
     public Map<String, List<String>> getAllList() {
         final Map<String, List<String>> allList = new HashMap<>();
-        if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
+        if (ServerConstant.SINGLE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             return getNodeList(JedisFactory.getJedis());
         } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             JedisFactory.getJedisCluster().getClusterNodes()
@@ -58,9 +67,14 @@ public class JedisService {
         return allList;
     }
 
+    /**
+     * 获得所有set数据
+     *
+     * @return Map<String.Set>
+     */
     public Map<String, Set<String>> getAllSet() {
         final Map<String, Set<String>> allSet = new HashMap<>();
-        if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
+        if (ServerConstant.SINGLE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             return getNodeSet(JedisFactory.getJedis());
         } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             JedisFactory.getJedisCluster().getClusterNodes()
@@ -78,10 +92,14 @@ public class JedisService {
         return allSet;
     }
 
-
+    /**
+     * 获得所有zSet数据
+     *
+     * @return Map<String.Set>
+     */
     public Map<String, Set<Tuple>> getAllZSet() {
         final Map<String, Set<Tuple>> zSetMap = new HashMap<>();
-        if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
+        if (ServerConstant.SINGLE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             return getNodeZSet(JedisFactory.getJedis());
         } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             JedisFactory.getJedisCluster().getClusterNodes()
@@ -99,9 +117,14 @@ public class JedisService {
         return zSetMap;
     }
 
+    /**
+     * 获得所有hash数据
+     *
+     * @return map
+     */
     public Map<String, Map<String, String>> getAllHash() {
         final Map<String, Map<String, String>> hashMap = new HashMap<>();
-        if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
+        if (ServerConstant.SINGLE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             return getNodeHash(JedisFactory.getJedis());
         } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             JedisFactory.getJedisCluster().getClusterNodes()
@@ -119,8 +142,13 @@ public class JedisService {
         return hashMap;
     }
 
+    /**
+     * 保存所有string数据
+     *
+     * @param stringMap map
+     */
     public void saveAllString(Map<String, String> stringMap) {
-        if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
+        if (ServerConstant.SINGLE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             Jedis jedis = JedisFactory.getJedis();
             stringMap.forEach(jedis::set);
         } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
@@ -129,8 +157,13 @@ public class JedisService {
         }
     }
 
+    /**
+     * 保存所有list数据
+     *
+     * @param listMap map
+     */
     public void saveAllList(Map<String, List<String>> listMap) {
-        if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
+        if (ServerConstant.SINGLE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             Jedis jedis = JedisFactory.getJedis();
             listMap.forEach((key, list) -> list.forEach(val -> jedis.lpush(key, val)));
         } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
@@ -139,8 +172,13 @@ public class JedisService {
         }
     }
 
+    /**
+     * 保存所有set数据
+     *
+     * @param setMap map
+     */
     public void saveAllSet(Map<String, List<String>> setMap) {
-        if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
+        if (ServerConstant.SINGLE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             Jedis jedis = JedisFactory.getJedis();
             setMap.forEach((key, list) -> new HashSet<>(list).forEach(val -> jedis.sadd(key, val)));
         } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
@@ -149,8 +187,13 @@ public class JedisService {
         }
     }
 
+    /**
+     * 保存所有zSet数据
+     *
+     * @param zSetMap map
+     */
     public void saveAllZSet(Map<String, Map<String, Number>> zSetMap) {
-        if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
+        if (ServerConstant.SINGLE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             Jedis jedis = JedisFactory.getJedis();
             zSetMap.forEach((key, map) -> map.forEach((elem, score) -> jedis.zadd(key, score.doubleValue(), elem)));
         } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
@@ -159,8 +202,13 @@ public class JedisService {
         }
     }
 
+    /**
+     * 保存所有hash数据
+     *
+     * @param hashMap map
+     */
     public void saveAllHash(Map<String, Map<String, String>> hashMap) {
-        if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
+        if (ServerConstant.SINGLE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             Jedis jedis = JedisFactory.getJedis();
             hashMap.forEach((key, map) -> map.forEach((field, val) -> jedis.hset(key, field, val)));
         } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
@@ -169,8 +217,11 @@ public class JedisService {
         }
     }
 
+    /**
+     * 删除所有数据
+     */
     public void flushAll() {
-        if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
+        if (ServerConstant.SINGLE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             JedisFactory.getJedis().flushAll();
         } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             JedisFactory.getJedisCluster()
@@ -201,6 +252,12 @@ public class JedisService {
                 .collect(toMap(key -> key, jedis::get));
     }
 
+    /**
+     * 获得当前节点所有list
+     *
+     * @param jedis jedis
+     * @return Map
+     */
     private Map<String, List<String>> getNodeList(Jedis jedis) {
         return jedis.keys("*")
                 .stream()
@@ -208,6 +265,12 @@ public class JedisService {
                 .collect(toMap(key -> key, key -> jedis.lrange(key, 0, -1)));
     }
 
+    /**
+     * 获得当前节点所有set
+     *
+     * @param jedis jedis
+     * @return Map
+     */
     private Map<String, Set<String>> getNodeSet(Jedis jedis) {
         return jedis.keys("*")
                 .stream()
@@ -215,7 +278,12 @@ public class JedisService {
                 .collect(toMap(key -> key, jedis::smembers));
     }
 
-
+    /**
+     * 获得当前节点所有zSet
+     *
+     * @param jedis jedis
+     * @return Map
+     */
     private Map<String, Set<Tuple>> getNodeZSet(Jedis jedis) {
         return jedis.keys("*")
                 .stream()
@@ -223,6 +291,12 @@ public class JedisService {
                 .collect(toMap(key -> key, key -> jedis.zrangeWithScores(key, 0, -1)));
     }
 
+    /**
+     * 获得当前节点所有hash
+     *
+     * @param jedis jedis
+     * @return Map
+     */
     private Map<String, Map<String, String>> getNodeHash(Jedis jedis) {
         return jedis.keys("*")
                 .stream()

@@ -8,7 +8,7 @@ public class ServerConstant {
     public static String REDIS_TYPE;
 
     public final static String REDIS_CLUSTER = "redisCluster";
-    public final static String STAND_ALONE = "standAlone";
+    public final static String SINGLE = "single";
 
     public final static String REDIS_STRING = "string";
     public final static String REDIS_LIST= "list";

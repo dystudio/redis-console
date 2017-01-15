@@ -31,6 +31,12 @@ public class JedisController {
     @Autowired
     private JedisService jedisService;
 
+    /**
+     * 入口 首页
+     *
+     * @param model model
+     * @return index
+     */
     @RequestMapping(value = {"/index", "/"})
     public String index(Model model) {
         Map<String, String> allString = jedisService.getAllString();
@@ -48,43 +54,54 @@ public class JedisController {
         return "index";
     }
 
+    /**
+     * ajax加载string类型数据
+     *
+     * @return map
+     */
     @RequestMapping(value = {"/string"})
     @ResponseBody
-    public Map<String,String> string(Model model) {
-     /*   Map<String, String> allString = jedisService.getAllString();
-
-        model.addAttribute("string", allString);*/
+    public Map<String, String> string() {
         return jedisService.getAllString();
     }
 
+    /**
+     * ajax加载list类型数据
+     *
+     * @return map
+     */
     @RequestMapping(value = {"/list"})
-    public String list(Model model) {
-        Map<String, List<String>> allList = jedisService.getAllList();
-
-        model.addAttribute("list", allList);
-
-        return "index";
+    @ResponseBody
+    public Map<String, List<String>> list() {
+        return jedisService.getAllList();
     }
 
+    /**
+     * ajax加载set类型数据
+     *
+     * @return map
+     */
     @RequestMapping(value = {"/set"})
-    public String set(Model model) {
-        Map<String, Set<String>> allSet = jedisService.getAllSet();
-        model.addAttribute("set", allSet);
-        return "index";
+    @ResponseBody
+    public Map<String, Set<String>> set() {
+        return jedisService.getAllSet();
     }
 
+    /**
+     * ajax加载zSet类型数据
+     *
+     * @return map
+     */
     @RequestMapping(value = {"/zSet"})
-    public String zSet(Model model) {
-        Map<String, Set<Tuple>> allZSet = jedisService.getAllZSet();
-        model.addAttribute("zSet", allZSet);
-        return "index";
+    @ResponseBody
+    public Map<String, Set<Tuple>> zSet() {
+        return jedisService.getAllZSet();
     }
 
     @RequestMapping(value = {"/hash"})
-    public String hash(Model model) {
-        Map<String, Map<String, String>> allHash = jedisService.getAllHash();
-        model.addAttribute("hash", allHash);
-        return "index";
+    @ResponseBody
+    public Map<String, Map<String, String>> hash() {
+        return jedisService.getAllHash();
     }
 
     /**
