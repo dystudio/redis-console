@@ -49,11 +49,12 @@ public class JedisController {
     }
 
     @RequestMapping(value = {"/string"})
-    public String string(Model model) {
-        Map<String, String> allString = jedisService.getAllString();
+    @ResponseBody
+    public Map<String,String> string(Model model) {
+     /*   Map<String, String> allString = jedisService.getAllString();
 
-        model.addAttribute("string", allString);
-        return "index";
+        model.addAttribute("string", allString);*/
+        return jedisService.getAllString();
     }
 
     @RequestMapping(value = {"/list"})

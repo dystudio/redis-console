@@ -91,7 +91,7 @@
 </div>
 
 <div style="height: 60px"></div>
-<div class="navbar-default sidebar" role="navigation" style="width: 9%;height:100%;margin-top: 0px;">
+<div class="navbar-default sidebar" role="navigation" style="width: 9%;margin-top: 0px;">
     <div class="sidebar-nav navbar-collapse">
         <ul class="nav" id="side-menu">
             <li><a href="${ctx}/index" ><i
@@ -111,6 +111,7 @@
     <!-- /.sidebar-collapse -->
 </div>
 <!--模态框-->
+<!--删除提示-->
 <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -129,22 +130,23 @@
     </div><!-- /.modal-dialog -->
 </div><!-- /.modal -->
 
-<div class="modal fade"  tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
+<div class="modal fade" id="prompt" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                <h4 class="modal-title">删除提示</h4>
+                <h4 class="modal-title" id="promptTitle">成功提示</h4>
             </div>
-            <div class="modal-body">
-                <p>确认全部删除数据吗?</p>
+            <div class="modal-body" id="promptContent">
+                <p>删除成功</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-danger" >确认</button>
+                <button type="button" id="promptBtn" class="btn btn-success" data-dismiss="modal">确认</button>
             </div>
         </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
 </div><!-- /.modal -->
+
 
 <div class="container theme-showcase" style="width: 82%;border: 1px solid #ddd;">
     <!-- /.row -->
@@ -199,8 +201,7 @@
                                 <td>${str.key}</td>
                                 <td>${str.value}</td>
                                 <td>
-                                    <a href="#" class="btn btn-primary btn-xs" data-toggle="modal"
-                                       data-target="#customerEditDialog"
+                                    <a href="#" class="btn btn-primary btn-xs" data-toggle="modal" data-target="#customerEditDialog"
                                        onclick="editCustomer(${row.cust_id})">修改</a>
                                     <a href="#" class="btn btn-danger btn-xs"
                                        onclick="deleteCustomer(${row.cust_id})">删除</a>
