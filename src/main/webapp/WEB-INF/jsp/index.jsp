@@ -72,8 +72,8 @@
 </head>
 
 <body>
-<div class="navbar navbar-default navbar-fixed-top" role="navigation">
-    <div class="container">
+<div class="navbar navbar-default navbar-fixed-top" role="navigation" >
+    <div style="margin-left: 100px;">
         <div class="navbar-header">
             <a class="navbar-brand redisAll" href="javascript:void(0);" >Redis控制台</a>
         </div>
@@ -91,7 +91,7 @@
 </div>
 
 <div style="height: 60px"></div>
-<div class="navbar-default sidebar" role="navigation" style="width: 9%;margin-top: 0px;">
+<div class="navbar-default sidebar" role="navigation" style="width: 121px;margin-top: 0px;">
     <div class="sidebar-nav navbar-collapse">
         <ul class="nav" id="side-menu">
             <li><a href="javascript:void(0);" class="redisAll active" ><i
@@ -111,7 +111,7 @@
     <!-- /.sidebar-collapse -->
 </div>
 <!--模态框-->
-<!--删除提示-->
+<!--全部删除提示-->
 <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -148,7 +148,7 @@
 </div><!-- /.modal -->
 
 
-<div class="container theme-showcase" style="width: 82%;border: 1px solid #ddd;">
+<div class="container theme-showcase" style="margin-left: 121px;border: 1px solid #ddd;">
     <!-- /.row -->
     <div class="panel panel-default">
         <div class="panel-body">
@@ -157,6 +157,12 @@
                 <span class="glyphicon" aria-hidden="true"></span>
                 <form id="fileForm" method="post" enctype="multipart/form-data">
                     <input type="file" name="file" value="" id="recover"/>
+                </form>
+            </span>
+            <span class="btn btn-success btn-file"> JDK序列化恢复
+                <span class="glyphicon" aria-hidden="true"></span>
+                <form id="serializeFileForm" method="post" enctype="multipart/form-data">
+                    <input type="file" name="file" value="" id="serializeRecover"/>
                 </form>
             </span>
             <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#myModal" >全部删除</button>
@@ -204,7 +210,7 @@
                                     <a href="#" class="btn btn-primary btn-xs" data-toggle="modal" data-target="#customerEditDialog"
                                        onclick="editCustomer(${row.cust_id})">修改</a>
                                     <a href="#" class="btn btn-danger btn-xs"
-                                       onclick="deleteCustomer(${row.cust_id})">删除</a>
+                                       onclick="deleteString(${str.key});">删除</a>
                                 </td>
                             </tr>
                         </c:forEach>

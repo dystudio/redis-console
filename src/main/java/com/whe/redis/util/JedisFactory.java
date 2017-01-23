@@ -1,6 +1,7 @@
 package com.whe.redis.util;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisCluster;
@@ -34,8 +35,8 @@ public class JedisFactory {
         InputStream in = JedisFactory.class.getResourceAsStream("/redis.properties");
         try {
             loadPro.load(in);
-            String redisCluster = loadPro.getProperty("redis.cluster");
             String single = loadPro.getProperty("redis.single");
+            String redisCluster = loadPro.getProperty("redis.cluster");
             if (StringUtils.isNotBlank(single)) {
                 ServerConstant.REDIS_TYPE = ServerConstant.SINGLE;
                 String[] split = single.split(":");
@@ -47,25 +48,27 @@ public class JedisFactory {
                 if (StringUtils.isNotBlank(pass)) {
                     jedis.auth(pass);
                 }
-            } else if (StringUtils.isNotBlank(redisCluster)) {
-                ServerConstant.REDIS_TYPE = ServerConstant.REDIS_CLUSTER;
-                String[] split = redisCluster.split(";");
-                   /* Stream<String[]> stream = Arrays.stream(split).map(":"::split);
+            } else {
+                if (StringUtils.isNotBlank(redisCluster)) {
+                    ServerConstant.REDIS_TYPE = ServerConstant.REDIS_CLUSTER;
+                    String[] split = redisCluster.split(";");
+                    /*Stream<String[]> stream = Arrays.stream(split).map(":"::split);
                     Set<HostAndPort> collect = stream.map(str -> new HostAndPort(str[0], Integer.parseInt(str[1]))).collect(Collectors.toSet());
                     System.out.println(collect);*/
-                Set<HostAndPort> set = new HashSet<>();
-                for (String str : split) {
-                    String[] strArr = str.split(":");
-                    if (strArr.length != 2) {
-                        throw new RuntimeException("ip和端口格式不正确");
+                    Set<HostAndPort> set = new HashSet<>();
+                    for (String str : split) {
+                        String[] strArr = str.split(":");
+                        if (strArr.length != 2) {
+                            throw new RuntimeException("ip和端口格式不正确");
+                        }
+                        HostAndPort hostAndPort = new HostAndPort(strArr[0], Integer.parseInt(strArr[1]));
+                        set.add(hostAndPort);
                     }
-                    HostAndPort hostAndPort = new HostAndPort(strArr[0], Integer.parseInt(strArr[1]));
-                    set.add(hostAndPort);
-                }
-                jedisCluster = new JedisCluster(set);
-                String pass = loadPro.getProperty("redis.pass");
-                if (StringUtils.isNotBlank(pass)) {
-                    jedisCluster.auth(pass);
+                    String pass = loadPro.getProperty("redis.pass");
+                    jedisCluster = new JedisCluster(set);
+                    if (StringUtils.isNotBlank(pass)) {
+                        jedisCluster = new JedisCluster(set, 3000, 3000, 5, pass, new GenericObjectPoolConfig());
+                    }
                 }
             }
         } catch (Exception e) {

@@ -2,6 +2,11 @@
  * Created by trustme on 2017/1/15.
  * index.js
  */
+//删除string
+function deleteString(key){
+
+}
+
 $(function () {
     //加载数据标记
     var loadDataFlag = true;
@@ -126,6 +131,28 @@ $(function () {
         $("#fileForm").ajaxSubmit(options);
         $("#recover").val("");
     });
+    //序列化恢复
+    $("#serializeRecover").on("change", function () {
+        var options = {
+            url: ctx + "/serializeRecover",
+            type: "post",
+            dataType: "json",
+            success: function (data) {
+                if (data == '1') {
+                    $("#promptTitle").html("成功提示");
+                    $("#promptContent").html("<p>恢复成功</p>");
+                    $("#promptBtn").removeClass("btn-danger").addClass("btn-success");
+                } else {
+                    $("#promptTitle").html("失败提示");
+                    $("#promptContent").html("<p>恢复失败</p>");
+                    $("#promptBtn").removeClass("btn-success").addClass("btn-danger");
+                }
+                $("#prompt").modal("show");
+            }
+        };
+        $("#serializeFileForm").ajaxSubmit(options);
+        $("#serializeRecover").val("");
+    });
     //删除全部数据
     $("#flushAll").on("click", function () {
         $('#myModal').modal('hide');
@@ -180,7 +207,7 @@ $(function () {
                     '<td>' + key + '</td>' +
                     '<td>' + data[key] + '</td>' +
                     '<td>' +
-                    '<a href="#" class="btn btn-primary btn-xs" data-toggle="modal" data-target="#customerEditDialog" >修改</a>' +
+                    '<a href="#" class="btn btn-primary btn-xs" data-toggle="modal" data-target="#customerEditDialog" >修改</a> ' +
                     '<a href="#" class="btn btn-danger btn-xs" >删除</a>' +
                     '</td></tr>';
             }
@@ -203,7 +230,7 @@ $(function () {
                 for (var i = 0, len = data[key].length; i < len; i++) {
                     str += '<td>' + data[key][i] + '</td>' +
                         '<td>' +
-                        '<a href="#" class="btn btn-primary btn-xs" data-toggle="modal" data-target="#customerEditDialog" >修改</a>' +
+                        '<a href="#" class="btn btn-primary btn-xs" data-toggle="modal" data-target="#customerEditDialog" >修改</a> ' +
                         '<a href="#" class="btn btn-danger btn-xs" >删除</a>' +
                         '</td></tr>';
                 }
@@ -227,7 +254,7 @@ $(function () {
                 for (var i = 0, len = data[key].length; i < len; i++) {
                     str += '<td>' + data[key][i] + '</td>' +
                         '<td>' +
-                        '<a href="#" class="btn btn-primary btn-xs" data-toggle="modal" data-target="#customerEditDialog" >修改</a>' +
+                        '<a href="#" class="btn btn-primary btn-xs" data-toggle="modal" data-target="#customerEditDialog" >修改</a> ' +
                         '<a href="#" class="btn btn-danger btn-xs" >删除</a>' +
                         '</td></tr>';
                 }
@@ -253,7 +280,7 @@ $(function () {
                     str += '<td>' + data[key][i].score + '</td>' +
                         '<td>' + data[key][i].element + '</td>' +
                         '<td>' +
-                        '<a href="#" class="btn btn-primary btn-xs" data-toggle="modal" data-target="#customerEditDialog" >修改</a>' +
+                        '<a href="#" class="btn btn-primary btn-xs" data-toggle="modal" data-target="#customerEditDialog" >修改</a> ' +
                         '<a href="#" class="btn btn-danger btn-xs" >删除</a>' +
                         '</td></tr>';
                 }
@@ -277,14 +304,11 @@ $(function () {
                 str += '<td rowspan="' + Object.getOwnPropertyNames(data[key]).length + '">' + key + '</td>';
                 for (var field in data[key]) {
                     str += '<td>' + field + '</td>' +
-                        '<td>' + data[key[field]] + '</td>' +
+                        '<td>' + data[key][field] + '</td>' +
                         '<td>' +
-                        '<a href="#" class="btn btn-primary btn-xs" data-toggle="modal" data-target="#customerEditDialog" >修改</a>' +
+                        '<a href="#" class="btn btn-primary btn-xs" data-toggle="modal"  data-target="#customerEditDialog" >修改</a> ' +
                         '<a href="#" class="btn btn-danger btn-xs" >删除</a>' +
                         '</td></tr>';
-                }
-                for (var i = 0, len = data[key].length; i < len; i++) {
-
                 }
             }
             str += '</tbody></table></div>';

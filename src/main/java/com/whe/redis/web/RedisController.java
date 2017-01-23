@@ -2,7 +2,7 @@ package com.whe.redis.web;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
-import com.whe.redis.service.JedisService;
+import com.whe.redis.service.RedisService;
 import com.whe.redis.util.ServerConstant;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -26,10 +26,10 @@ import java.util.*;
  * @author wanghongen
  */
 @Controller
-public class JedisController {
+public class RedisController {
 
     @Autowired
-    private JedisService jedisService;
+    private RedisService jedisService;
 
     /**
      * 入口 首页
@@ -187,12 +187,53 @@ public class JedisController {
                 }
                 if (map.containsKey(ServerConstant.REDIS_ZSET)) {
                     Map zSetMap = (Map) map.get(ServerConstant.REDIS_ZSET);
-                    System.out.println(zSetMap);
                     jedisService.saveAllZSet(zSetMap);
                 }
                 if (map.containsKey(ServerConstant.REDIS_HASH)) {
                     Map hashMap = (Map) map.get(ServerConstant.REDIS_HASH);
                     jedisService.saveAllHash(hashMap);
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "0";
+        }
+        return "1";
+    }
+
+    /**
+     * 序列化恢复数据
+     *
+     * @param file file
+     * @return string
+     */
+    @RequestMapping("/serializeRecover")
+    @ResponseBody
+    public String serializeRecover(MultipartFile file) {
+        try {
+            String data = new String(file.getBytes(), "UTF-8");
+            JSONArray jsonArray = JSON.parseArray(data);
+            jsonArray.stream().filter(obj -> obj instanceof Map).forEach(obj -> {
+                Map map = (Map) obj;
+                if (map.containsKey(ServerConstant.REDIS_STRING)) {
+                    Map stringMap = (Map) map.get(ServerConstant.REDIS_STRING);
+                    jedisService.saveAllStringSerialize(stringMap);
+                }
+                if (map.containsKey(ServerConstant.REDIS_LIST)) {
+                    Map listMap = (Map) map.get(ServerConstant.REDIS_LIST);
+                    jedisService.saveAllListSerialize(listMap);
+                }
+                if (map.containsKey(ServerConstant.REDIS_SET)) {
+                    Map setMap = (Map) map.get(ServerConstant.REDIS_SET);
+                    jedisService.saveAllSetSerialize(setMap);
+                }
+                if (map.containsKey(ServerConstant.REDIS_ZSET)) {
+                    Map zSetMap = (Map) map.get(ServerConstant.REDIS_ZSET);
+                    jedisService.saveAllZSetSerialize(zSetMap);
+                }
+                if (map.containsKey(ServerConstant.REDIS_HASH)) {
+                    Map hashMap = (Map) map.get(ServerConstant.REDIS_HASH);
+                    jedisService.saveAllHashSerialize(hashMap);
                 }
             });
         } catch (Exception e) {
@@ -210,7 +251,12 @@ public class JedisController {
     @RequestMapping("/flushAll")
     @ResponseBody
     public String flushAll() {
-        jedisService.flushAll();
-        return "1";
+        try {
+            jedisService.flushAll();
+            return "1";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "0";
+        }
     }
 }
