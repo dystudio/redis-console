@@ -1,13 +1,12 @@
 package com.whe.redis.service;
 
 import com.whe.redis.util.JedisFactory;
-import com.whe.redis.util.RedisClusterNode;
+import com.whe.redis.util.RedisClusterUtils;
 import com.whe.redis.util.SerializeUtils;
 import com.whe.redis.util.ServerConstant;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisCluster;
-import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.Tuple;
 
 import java.util.*;
@@ -28,20 +27,25 @@ public class RedisService {
     public Map<String, String> getAllString() {
         final Map<String, String> allString = new HashMap<>();
         if (ServerConstant.SINGLE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            Jedis jedis = JedisFactory.getJedis();
             return getNodeString(JedisFactory.getJedis());
         } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             JedisCluster jedisCluster = JedisFactory.getJedisCluster();
+            //检查集群节点是否发生变化
+            RedisClusterUtils.checkClusterChange(jedisCluster);
             jedisCluster.getClusterNodes()
-                    .forEach((key, pool) -> {
-                        Jedis jedis = null;
-                        try {
-                            jedis = pool.getResource();
-
-                            allString.putAll(getNodeString(jedis));
-                        } finally {
-                            assert jedis != null;
-                            jedis.close();
+                    .entrySet()
+                    .stream()
+                    .filter(entry -> JedisFactory.getRedisClusterNode().getMasterNodeInfoSet().contains(entry.getKey()))
+                    .forEach(entry -> {
+                        if (JedisFactory.getRedisClusterNode().getMasterNodeInfoSet().contains(entry.getKey())) {
+                            Jedis jedis = null;
+                            try {
+                                jedis = entry.getValue().getResource();
+                                allString.putAll(getNodeString(jedis));
+                            } finally {
+                                assert jedis != null;
+                                jedis.close();
+                            }
                         }
                     });
         }
@@ -58,15 +62,20 @@ public class RedisService {
         if (ServerConstant.SINGLE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             return getNodeList(JedisFactory.getJedis());
         } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            JedisFactory.getJedisCluster().getClusterNodes()
+            JedisCluster jedisCluster = JedisFactory.getJedisCluster();
+            //检查集群节点是否发生变化
+            RedisClusterUtils.checkClusterChange(jedisCluster);
+            jedisCluster.getClusterNodes()
                     .forEach((key, pool) -> {
-                        Jedis jedis = null;
-                        try {
-                            jedis = pool.getResource();
-                            allList.putAll(getNodeList(jedis));
-                        } finally {
-                            assert jedis != null;
-                            jedis.close();
+                        if (JedisFactory.getRedisClusterNode().getMasterNodeInfoSet().contains(key)) {
+                            Jedis jedis = null;
+                            try {
+                                jedis = pool.getResource();
+                                allList.putAll(getNodeList(jedis));
+                            } finally {
+                                assert jedis != null;
+                                jedis.close();
+                            }
                         }
                     });
         }
@@ -83,15 +92,20 @@ public class RedisService {
         if (ServerConstant.SINGLE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             return getNodeSet(JedisFactory.getJedis());
         } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            JedisFactory.getJedisCluster().getClusterNodes()
+            JedisCluster jedisCluster = JedisFactory.getJedisCluster();
+            //检查集群节点是否发生变化
+            RedisClusterUtils.checkClusterChange(jedisCluster);
+            jedisCluster.getClusterNodes()
                     .forEach((key, pool) -> {
-                        Jedis jedis = null;
-                        try {
-                            jedis = pool.getResource();
-                            allSet.putAll(getNodeSet(jedis));
-                        } finally {
-                            assert jedis != null;
-                            jedis.close();
+                        if (JedisFactory.getRedisClusterNode().getMasterNodeInfoSet().contains(key)) {
+                            Jedis jedis = null;
+                            try {
+                                jedis = pool.getResource();
+                                allSet.putAll(getNodeSet(jedis));
+                            } finally {
+                                assert jedis != null;
+                                jedis.close();
+                            }
                         }
                     });
         }
@@ -108,15 +122,20 @@ public class RedisService {
         if (ServerConstant.SINGLE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             return getNodeZSet(JedisFactory.getJedis());
         } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            JedisFactory.getJedisCluster().getClusterNodes()
+            JedisCluster jedisCluster = JedisFactory.getJedisCluster();
+            //检查集群节点是否发生变化
+            RedisClusterUtils.checkClusterChange(jedisCluster);
+            jedisCluster.getClusterNodes()
                     .forEach((key, pool) -> {
-                        Jedis jedis = null;
-                        try {
-                            jedis = pool.getResource();
-                            zSetMap.putAll(getNodeZSet(jedis));
-                        } finally {
-                            assert jedis != null;
-                            jedis.close();
+                        if (JedisFactory.getRedisClusterNode().getMasterNodeInfoSet().contains(key)) {
+                            Jedis jedis = null;
+                            try {
+                                jedis = pool.getResource();
+                                zSetMap.putAll(getNodeZSet(jedis));
+                            } finally {
+                                assert jedis != null;
+                                jedis.close();
+                            }
                         }
                     });
         }
@@ -133,15 +152,20 @@ public class RedisService {
         if (ServerConstant.SINGLE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             return getNodeHash(JedisFactory.getJedis());
         } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            JedisFactory.getJedisCluster().getClusterNodes()
+            JedisCluster jedisCluster = JedisFactory.getJedisCluster();
+            //检查集群节点是否发生变化
+            RedisClusterUtils.checkClusterChange(jedisCluster);
+            jedisCluster.getClusterNodes()
                     .forEach((key, pool) -> {
-                        Jedis jedis = null;
-                        try {
-                            jedis = pool.getResource();
-                            hashMap.putAll(getNodeHash(jedis));
-                        } finally {
-                            assert jedis != null;
-                            jedis.close();
+                        if (JedisFactory.getRedisClusterNode().getMasterNodeInfoSet().contains(key)) {
+                            Jedis jedis = null;
+                            try {
+                                jedis = pool.getResource();
+                                hashMap.putAll(getNodeHash(jedis));
+                            } finally {
+                                assert jedis != null;
+                                jedis.close();
+                            }
                         }
                     });
         }
@@ -305,26 +329,22 @@ public class RedisService {
         if (ServerConstant.SINGLE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             JedisFactory.getJedis().flushAll();
         } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            boolean flag = true;
             JedisCluster jedisCluster = JedisFactory.getJedisCluster();
-            Map<String, JedisPool> clusterNodes = jedisCluster.getClusterNodes();
-            RedisClusterNode redisClusterNode = null;
-            for (Map.Entry<String, JedisPool> entry : clusterNodes.entrySet()) {
-                if (flag) {
-                    flag = false;
-                    redisClusterNode = new RedisClusterNode(entry.getValue().getResource().clusterNodes());
-                }
-                if (redisClusterNode.getMasterNodeInfoSet().contains(entry.getKey())) {
-                    Jedis jedis = null;
-                    try {
-                        jedis = entry.getValue().getResource();
-                        jedis.flushDB();
-                    } finally {
-                        assert jedis != null;
-                        jedis.close();
-                    }
-                }
-            }
+            //检查集群节点是否发生变化
+            RedisClusterUtils.checkClusterChange(jedisCluster);
+            jedisCluster.getClusterNodes()
+                    .forEach((key, pool) -> {
+                        if (JedisFactory.getRedisClusterNode().getMasterNodeInfoSet().contains(key)) {
+                            Jedis jedis = null;
+                            try {
+                                jedis = pool.getResource();
+                                jedis.flushAll();
+                            } finally {
+                                assert jedis != null;
+                                jedis.close();
+                            }
+                        }
+                    });
         }
     }
 

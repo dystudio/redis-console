@@ -103,7 +103,9 @@ public class RedisController {
     public Map<String, Map<String, String>> hash() {
         return jedisService.getAllHash();
     }
+    public void keywordQuery(){
 
+    }
     /**
      * 备份数据
      *

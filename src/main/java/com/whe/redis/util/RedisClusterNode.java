@@ -11,18 +11,20 @@ public class RedisClusterNode {
     private Set<String> nodeInfoSet = new HashSet<>();
     private Set<String> masterNodeInfoSet = new HashSet<>();
     private Set<String> slaveNodeInfoSet = new HashSet<>();
+    private Set<String> clusterNodeSet = new HashSet<>();
+    private RedisClusterNode redisClusterNode = null;
 
     public RedisClusterNode(String clusterNodes) {
-        String[] split = clusterNodes.split("\n");
+        String[] split = clusterNodes.split("\\n");
         for (String nodeInfo : split) {
             nodeInfoSet.add(nodeInfo);
             String[] node = nodeInfo.split(" ");
             if (node.length > 3) {
+                clusterNodeSet.add(node[1]);
                 String[] role = node[2].split(",");
                 boolean isMaster;
                 if (role.length >= 2) {
                     isMaster = "master".equalsIgnoreCase(role[1]);
-
                 } else {
                     isMaster = "master".equalsIgnoreCase(role[0]);
                 }
@@ -34,6 +36,22 @@ public class RedisClusterNode {
             }
         }
 
+    }
+
+    public Set<String> getClusterNodeSet() {
+        return clusterNodeSet;
+    }
+
+    public void setClusterNodeSet(Set<String> clusterNodeSet) {
+        this.clusterNodeSet = clusterNodeSet;
+    }
+
+    public RedisClusterNode getRedisClusterNode() {
+        return redisClusterNode;
+    }
+
+    public void setRedisClusterNode(RedisClusterNode redisClusterNode) {
+        this.redisClusterNode = redisClusterNode;
     }
 
     public Set<String> getMasterNodeInfoSet() {
