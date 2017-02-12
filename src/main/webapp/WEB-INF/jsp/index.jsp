@@ -1,6 +1,5 @@
 <%@ page language="java" contentType="text/html; charset=UTF-8"
          pageEncoding="UTF-8" %>
-<%@ page trimDirectiveWhitespaces="true" %>
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
 <%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
@@ -12,70 +11,35 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="utf-8">
+    <!--浏览器兼容，兼容IE-->
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="">
-    <meta name="author" content="">
-
+    <!--视口：响应式-->
+    <meta name="viewport"
+          content="width=device-width, initial-scale=2,minimum-scale=1.5,maximum-scale=3,user-scalable=yes"/>
+    <!-- 上述3个meta标签*必须*放在最前面，任何其他内容都*必须*跟随其后！ -->
     <title>Redis控制台</title>
+    <!-- 1.导入css -->
+    <link href="${ctx}/css/bootstrap.css" rel="stylesheet">
+    <link href="${ctx}/css/index.css" rel="stylesheet">
 
-
-    <!-- Bootstrap Core CSS -->
-    <link href="${ctx}/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- MetisMenu CSS -->
-    <link href="${ctx}css/metisMenu.min.css" rel="stylesheet">
-
-    <!-- DataTables CSS -->
-    <link href="${ctx}css/dataTables.bootstrap.css" rel="stylesheet">
-
-    <!-- Custom CSS -->
-    <link href="${ctx}css/sb-admin-2.css" rel="stylesheet">
-
-    <!-- Custom Fonts -->
-    <link href="${ctx}css/font-awesome.min.css" rel="stylesheet"
-          type="text/css">
-    <link href="${ctx}css/boot-crm.css" rel="stylesheet"
-          type="text/css">
-    <style type="text/css">
-        .btn-file { /*  上传按钮*/
-            position: relative;
-            overflow: hidden;
-        }
-
-        .btn-file input[type=file] {
-            position: absolute;
-            top: 0;
-            right: 0;
-            min-width: 100%;
-            min-height: 100%;
-            font-size: 100px;
-            text-align: right;
-            filter: alpha(opacity=0);
-            opacity: 0;
-            outline: none;
-            background: white;
-            cursor: inherit;
-            display: block;
-        }
-    </style>
-
-    <!-- HTML5 Shim and Respond.js IE8 support of HTML5 elements and media queries -->
-    <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+    <!--兼容ie6、7、8的浏览器，他们都不支持html5-->
     <!--[if lt IE 9]>
     <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
     <script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
     <![endif]-->
+
     <script type="text/javascript">
-        var ctx="${ctx}";
+        var ctx = "${ctx}";
     </script>
+
+
 </head>
 
 <body>
-<div class="navbar navbar-default navbar-fixed-top" role="navigation" >
+<div class="navbar navbar-default navbar-fixed-top" role="navigation">
     <div style="margin-left: 100px;">
         <div class="navbar-header">
-            <a class="navbar-brand redisAll" href="javascript:void(0);" >Redis控制台</a>
+            <a class="navbar-brand redisAll" href="javascript:void(0);">Redis控制台</a>
         </div>
         <div class="navbar-collapse collapse">
             <ul class="nav navbar-nav">
@@ -89,9 +53,9 @@
         </div>
     </div>
 </div>
-
 <div style="height: 60px"></div>
-<div class="navbar-default sidebar" role="navigation" style="width: 121px;margin-top: 0px;">
+<div id="tree"></div>
+<%--<div class="navbar-left sidebar" role="navigation" style="width: 121px;margin-top: 0px;">
     <div class="sidebar-nav navbar-collapse">
         <ul class="nav" id="side-menu">
             <li><a href="javascript:void(0);" class="redisAll active" ><i
@@ -109,7 +73,7 @@
         </ul>
     </div>
     <!-- /.sidebar-collapse -->
-</div>
+</div>--%>
 <!--模态框-->
 <!--全部删除提示-->
 <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
@@ -148,9 +112,9 @@
 </div><!-- /.modal -->
 
 
-<div class="container theme-showcase" style="margin-left: 121px;border: 1px solid #ddd;">
+<div class="container theme-showcase" >
     <!-- /.row -->
-    <div class="panel panel-default">
+    <div class="panel panel-default" >
         <div class="panel-body">
             <button type="button" id="backup" class="btn btn-primary navbar-btn">备份</button>
             <span class="btn btn-success btn-file"> 恢复
@@ -165,20 +129,19 @@
                     <input type="file" name="file" value="" id="serializeRecover"/>
                 </form>
             </span>
-            <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#myModal" >全部删除</button>
-            <form class="form-inline" action="${ctx}"
+            <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#myModal">全部删除</button>
+            <form class="form-inline" action="${ctx}/index"
                   method="post" style="display: inline">
                 <div class="form-group">
-                    <label for="customerName">key</label>
-                    <input type="text" class="form-control" id="customerName" value="${custName }" name="custName">
+                    <label>key</label>
+                    <input type="text" class="form-control" id="parrent" value="sdfsdf" name="parrent">
                 </div>
                 <div class="form-group">
                     <label for="customerFrom">类型</label>
-                    <select class="form-control" id="customerFrom" placeholder="客户来源" name="custSource">
+                    <select class="form-control" id="customerFrom" name="custSource">
                         <option value="">--请选择--</option>
-                        <c:forEach items="${fromType}" var="item">
-                            <option value="${item.dict_id}"<c:if
-                                    test="${item.dict_id == custSource}"> selected</c:if>>${item.dict_item_name }</option>
+                        <c:forEach items="${type}" var="item">
+                            <option value="${item}">${item}</option>
                         </c:forEach>
                     </select>
                 </div>
@@ -187,7 +150,7 @@
         </div>
     </div>
     <div class="row">
-        <div class="col-lg-12" id="redisContent">
+        <div class="col-lg-12" id="redisContent" >
             <!-- string-->
             <c:if test="${fn:length(string)>0}">
                 <div class="panel panel-default">
@@ -207,7 +170,8 @@
                                 <td>${str.key}</td>
                                 <td>${str.value}</td>
                                 <td>
-                                    <a href="#" class="btn btn-primary btn-xs" data-toggle="modal" data-target="#customerEditDialog"
+                                    <a href="#" class="btn btn-primary btn-xs" data-toggle="modal"
+                                       data-target="#customerEditDialog"
                                        onclick="editCustomer(${row.cust_id})">修改</a>
                                     <a href="#" class="btn btn-danger btn-xs"
                                        onclick="deleteString(${str.key});">删除</a>
@@ -382,27 +346,24 @@
 </div>
 <!-- /#page-wrapper -->
 
-
-<!-- jQuery -->
-<script type="text/javascript" src="${ctx}js/jquery.min.js"></script>
-
-<!-- Bootstrap Core JavaScript -->
-<script type="text/javascript" src="${ctx}js/bootstrap.min.js"></script>
-
-<!-- Metis Menu Plugin JavaScript -->
-<script type="text/javascript" src="${ctx}js/metisMenu.min.js"></script>
-
-<!-- DataTables JavaScript -->
-<script type="text/javascript" src="${ctx}js/jquery.dataTables.min.js"></script>
-<script type="text/javascript" src="${ctx}js/dataTables.bootstrap.min.js"></script>
-
-<!-- Custom Theme JavaScript -->
-<script type="text/javascript" src="${ctx}js/sb-admin-2.js"></script>
-
-<script type="text/javascript" src="${ctx}/js/jquery.form.min.js"></script>
-
-<script type="text/javascript" src="${ctx}/js/redis/index.js"></script>
-
 </body>
+<!-- 2 jQuery类库 -->
+<script src="${ctx}/js/jquery.min.js"></script>
+<!-- 3 bootstrap 类库 -->
+<script src="${ctx}/js/bootstrap.min.js"></script>
+<script src="${ctx}/js/bootstrap-treeview.js"></script>
+<script src="${ctx}/js/redis/index.js"></script>
+<script type="text/javascript">
+    $(function () {
+        var defaultData = ${tree};
+        $('#tree').treeview({
+            color: "#428bca",
+            expandIcon: 'glyphicon glyphicon-chevron-right',
+            collapseIcon: 'glyphicon glyphicon-chevron-down',
+            showTags: true,
+            data: defaultData
+        });
+    })
 
+</script>
 </html>

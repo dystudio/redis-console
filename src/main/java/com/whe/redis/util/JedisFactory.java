@@ -27,6 +27,8 @@ public class JedisFactory {
     private static Jedis jedis;
     private static JedisCluster jedisCluster;
     private static RedisClusterNode redisClusterNode = null;
+    private static String standAlone;
+    private static String redisCluster;
 
     /**
      * 初始化数据
@@ -40,11 +42,11 @@ public class JedisFactory {
         InputStream in = JedisFactory.class.getResourceAsStream("/redis.properties");
         try {
             loadPro.load(in);
-            String single = loadPro.getProperty("redis.single");
-            String redisCluster = loadPro.getProperty("redis.cluster");
-            if (StringUtils.isNotBlank(single)) {
-                ServerConstant.REDIS_TYPE = ServerConstant.SINGLE;
-                String[] split = single.split(":");
+            standAlone = loadPro.getProperty("redis.stand.alone");
+            redisCluster = loadPro.getProperty("redis.cluster");
+            if (StringUtils.isNotBlank(standAlone)) {
+                ServerConstant.REDIS_TYPE = ServerConstant.STAND_ALONE;
+                String[] split = standAlone.split(":");
                 if (split.length != 2) {
                     throw new RuntimeException("ip和端口格式不正确");
                 }
@@ -55,7 +57,6 @@ public class JedisFactory {
                 }
             } else {
                 if (StringUtils.isNotBlank(redisCluster)) {
-                    ServerConstant.REDIS_TYPE = ServerConstant.REDIS_CLUSTER;
                     Set<HostAndPort> set = Stream.of(redisCluster)
                             .map(str -> str.split(";"))
                             .flatMap(Arrays::stream)
@@ -103,7 +104,7 @@ public class JedisFactory {
         if (jedisCluster != null) try {
             jedisCluster.close();
         } catch (Exception e) {
-            System.out.println("jedisCluster关闭失败");
+            System.out.println("redisCluster关闭失败");
             e.printStackTrace();
         }
     }
@@ -133,5 +134,10 @@ public class JedisFactory {
     public static void setRedisClusterNode(RedisClusterNode redisClusterNode) {
         JedisFactory.redisClusterNode = redisClusterNode;
     }
+
+    public static String getStandAlone() {
+        return standAlone;
+    }
+
 }
 
