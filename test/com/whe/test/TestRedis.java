@@ -22,7 +22,8 @@ public class TestRedis {
 
         IntStream.rangeClosed(0, 10000).parallel().forEach(i ->{
             Jedis jedis = jedisPool.getResource();
-            jedis.set("key" + i, "val" + i);
+            jedis.lpush("list", "val" + i);
+        //jedis.del("key" + i);
             System.out.println(i);
             jedis.close();
         } );
@@ -36,14 +37,14 @@ public class TestRedis {
         poolConfig.setMinIdle(10);
         JedisPool jedisPool = new JedisPool(poolConfig,"192.168.88.128", 6379,2000);
         long l = System.currentTimeMillis();
+        Jedis jedis = jedisPool.getResource();
 
-        for(int i=0;i<10000;i++){
-            Jedis jedis = jedisPool.getResource();
-           // jedis.set("key" + i, "val" + i);
-            jedis.del("key"+i);
+        for(int i=0;i<100000;i++){
+           jedis.set("key" + i, "val" + i);
+          // jedis.del("key"+i);
             System.out.println(i);
-            jedis.close();
         }
+        jedis.close();
         System.out.println("插入耗时:" + (System.currentTimeMillis() - l));
     }
 }

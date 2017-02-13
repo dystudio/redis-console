@@ -50,7 +50,7 @@ public class RedisController {
      */
     @RequestMapping(value = {"/index", "/"})
     public String index(Model model, String pattern) {
-        Set<String> keys = redisService.keys();
+       // Set<String> keys = redisService.keys();
         StringBuilder sb = new StringBuilder();
         sb.append("[{");
         sb.append("text:").append("'").append(JedisFactory.getStandAlone()).append("',");
@@ -65,19 +65,19 @@ public class RedisController {
             if (entry.getValue() > 0) {
                 sb.append(",");
                 sb.append("nodes:").append("[");
-                keys.forEach(key -> sb.append("{text:").append("'").append(key).append("'},"));
-                sb.deleteCharAt(sb.length() - 1).append("]");
+               // keys.forEach(key -> sb.append("{text:").append("'").append(key).append("'},"));
+                sb.append("]");
             }
             sb.append("},");
         });
         sb.deleteCharAt(sb.length() - 1).append("]}]");
         System.out.println(sb.toString());
         model.addAttribute("tree", sb.toString());
-        Map<String, String> allString = redisStringService.getAllString(pattern);
+       /* Map<String, String> allString = redisStringService.getAllString(pattern);
         Map<String, List<String>> allList = redisListService.getAllList();
         Map<String, Set<String>> allSet = redisSetService.getAllSet();
         Map<String, Set<Tuple>> allZSet = redisZSetService.getAllZSet();
-        Map<String, Map<String, String>> allHash = redisHashService.getAllHash();
+        Map<String, Map<String, String>> allHash = redisHashService.getAllHash();*/
      /*   Page<Map<String, List<String>>> listPage = redisListService.findListPageByQuery(1, "*");
         Page<Map<String, String>> stringPage = redisStringService.findStringPageByQuery(1, pattern);
         Page<Map<String, Set<String>>> setPage = redisSetService.findSetPageByQuery(1, "*");
@@ -97,11 +97,11 @@ public class RedisController {
         model.addAttribute("setPage", setPage);
         model.addAttribute("zSetPage", zSetPage);
         model.addAttribute("hashPage", hashPage);*/
-        model.addAttribute("string", allString);
+        /*model.addAttribute("string", allString);
         model.addAttribute("list", allList);
         model.addAttribute("set", allSet);
         model.addAttribute("zSet", allZSet);
-        model.addAttribute("hash", allHash);
+        model.addAttribute("hash", allHash);*/
 
         return "index";
     }

@@ -112,9 +112,9 @@
 </div><!-- /.modal -->
 
 
-<div class="container theme-showcase" >
+<div class="container theme-showcase">
     <!-- /.row -->
-    <div class="panel panel-default" >
+    <div class="panel panel-default">
         <div class="panel-body">
             <button type="button" id="backup" class="btn btn-primary navbar-btn">备份</button>
             <span class="btn btn-success btn-file"> 恢复
@@ -150,7 +150,7 @@
         </div>
     </div>
     <div class="row">
-        <div class="col-lg-12" id="redisContent" >
+        <div class="col-lg-12" id="redisContent">
             <!-- string-->
             <c:if test="${fn:length(string)>0}">
                 <div class="panel panel-default">
@@ -362,7 +362,23 @@
             collapseIcon: 'glyphicon glyphicon-chevron-down',
             showTags: true,
             data: defaultData
+            /* onNodeSelected: function () {
+             alert("节点:" + $(this).html());
+             }*/
+
         });
+        $('#tree').on('click', '.node-tree', function (event, data) {
+
+            // 事件代码...
+            var nodeId = $(this).attr("data-nodeid");
+            alert($('#tree').treeview('getNode', nodeId).text);
+        });
+        $('#tree').treeview('checkNode', [1, {silent: true}]);
+        $('#tree').treeview('checkAll', {silent: false});
+        $("#tree").treeview("addNode", [1, {node: {text: "新加的菜单"}}]);
+        $('#tree').treeview('revealNode', [1, {silent: true}]);
+        $('#tree').treeview('selectNode', [1, {silent: true}]);
+
     })
 
 </script>
