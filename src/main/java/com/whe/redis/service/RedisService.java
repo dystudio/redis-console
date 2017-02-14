@@ -4,13 +4,9 @@ import com.whe.redis.util.JedisFactory;
 import com.whe.redis.util.RedisClusterUtils;
 import com.whe.redis.util.ServerConstant;
 import org.springframework.stereotype.Service;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisCluster;
+import redis.clients.jedis.*;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Created by wang hongen on 2017/1/13.
@@ -18,11 +14,40 @@ import java.util.Set;
  */
 @Service
 public class RedisService {
+    private List<String> keys = new ArrayList<>();
+
+    public List<String> getKeysByDb(int db) {
+        JedisPool jedisPool=new JedisPool("192.168.88.128",6379);
+        Jedis jedis = jedisPool.getResource();
+        jedis.select(db);
+        ScanParams scanParams = new ScanParams();
+        scanParams.count(300);
+        scanParams.match("*");
+        ScanResult<String> scan = jedis.scan("0", scanParams);
+        jedis.close();
+        List<String> result = scan.getResult();
+        keys.addAll(result);
+        if (!scan.getStringCursor().equals("0")) {
+            new Thread(() -> {
+                String cursor = scan.getStringCursor();
+                Jedis resource = jedisPool.getResource();
+                while (!cursor.equals("0")) {
+                    ScanResult<String> scan1 = resource.scan(cursor, scanParams);
+                    cursor = scan1.getStringCursor();
+                    System.out.println(cursor);
+                    keys.addAll(scan1.getResult());
+                }
+                resource.close();
+            }).start();
+        }
+        return result;
+    }
 
     public Set<String> keys() {
+        System.out.println(keys);
         Jedis jedis = JedisFactory.getJedis();
         Long db = jedis.getDB();
-        jedis.select(0);
+        jedis.select(1);
         System.out.println("sdfsdf");
         return jedis.keys("*");
     }

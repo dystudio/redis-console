@@ -41,16 +41,26 @@ public class RedisController {
     private RedisZSetService redisZSetService;
     @Autowired
     private RedisHashService redisHashService;
+    @RequestMapping("/keys")
+    public void keys(){
+        redisService.keys();
+    }
 
+    @RequestMapping("/scan")
+    @ResponseBody
+    public List<String> scan(Integer db){
+        List<String> keysByDb = redisService.getKeysByDb(db);
+        return keysByDb;
+    }
     /**
      * 入口 首页
      *
      * @param model model
      * @return index
      */
-    @RequestMapping(value = {"/index", "/"})
+    @RequestMapping(value = {"/"})
     public String index(Model model, String pattern) {
-       // Set<String> keys = redisService.keys();
+        Set<String> keys = redisService.keys();
         StringBuilder sb = new StringBuilder();
         sb.append("[{");
         sb.append("text:").append("'").append(JedisFactory.getStandAlone()).append("',");
@@ -65,13 +75,12 @@ public class RedisController {
             if (entry.getValue() > 0) {
                 sb.append(",");
                 sb.append("nodes:").append("[");
-               // keys.forEach(key -> sb.append("{text:").append("'").append(key).append("'},"));
+                keys.forEach(key -> sb.append("{text:").append("'").append(key).append("'},"));
                 sb.append("]");
             }
             sb.append("},");
         });
         sb.deleteCharAt(sb.length() - 1).append("]}]");
-        System.out.println(sb.toString());
         model.addAttribute("tree", sb.toString());
        /* Map<String, String> allString = redisStringService.getAllString(pattern);
         Map<String, List<String>> allList = redisListService.getAllList();

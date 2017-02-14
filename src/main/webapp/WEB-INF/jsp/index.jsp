@@ -356,30 +356,92 @@
 <script type="text/javascript">
     $(function () {
         var defaultData = ${tree};
-        $('#tree').treeview({
-            color: "#428bca",
-            expandIcon: 'glyphicon glyphicon-chevron-right',
-            collapseIcon: 'glyphicon glyphicon-chevron-down',
-            showTags: true,
-            data: defaultData
-            /* onNodeSelected: function () {
-             alert("节点:" + $(this).html());
-             }*/
+        /*  $('#tree').treeview({
+         color: "#428bca",
+         expandIcon: 'glyphicon glyphicon-chevron-right',
+         collapseIcon: 'glyphicon glyphicon-chevron-down',
+         showTags: true,
+         data: defaultData
+         /!* onNodeSelected: function () {
+         alert("节点:" + $(this).html());
+         }*!/
 
-        });
+         });*/
         $('#tree').on('click', '.node-tree', function (event, data) {
+            $(this).siblings(".list-group-item").removeClass("node-selected");
+            if ($(this).hasClass("node-selected")) {
+                $(this).removeClass("node-selected");
+            } else {
+                $(this).addClass("node-selected");
+            }
+            /* // 事件代码...
+             var nodeId = $(this).attr("data-nodeid");
 
-            // 事件代码...
-            var nodeId = $(this).attr("data-nodeid");
-            alert($('#tree').treeview('getNode', nodeId).text);
+             console.log(nodeId)
+             var text = $('#tree').treeview('getNode', nodeId).text.toUpperCase();
+             var indexOf = text.indexOf("DB");
+             if (indexOf != -1) {
+             var dbSize = $(this).find(".badge").html();
+             var db = text.substr(indexOf + 3);
+             if (dbSize == 0 || true) {
+             $.ajax({
+             url: ctx + "/scan",
+             data: {db: db},
+             type: "post",
+             dataType: "json",
+             success: function (data) {
+             alert(data.length)
+             for (var i = 280; i < data.length; i++) {
+             $("#tree").treeview("addNode", [parseInt(nodeId), {node: {text: data[i]}}]);
+             }
+             }
+             })
+             }
+             }*/
         });
-        $('#tree').treeview('checkNode', [1, {silent: true}]);
-        $('#tree').treeview('checkAll', {silent: false});
-        $("#tree").treeview("addNode", [1, {node: {text: "新加的菜单"}}]);
-        $('#tree').treeview('revealNode', [1, {silent: true}]);
-        $('#tree').treeview('selectNode', [1, {silent: true}]);
+        //  $("#tree").initTree("addNode", [2, {node: {text: "assa"}}]);
+
 
     })
+    var nodeId = 0;
+    var tree = String();
+    var floor = Number(1);
+    var initTree = function (data) {
+        if (data != null && data.length >= 0) {
+            tree = '<ul class="list-group">';
+            appendTree(data);
+            tree += '</ul>';
+            $("#tree").addClass("treeview");
+            $("#tree").html(tree);
+        }
+
+    }
+    function appendTree(data) {
+        if (data == null || data.length == 0) {
+            return null;
+        } else {
+            for (var i = 0; i < data.length; i++) {
+                var obj = data[i];
+                tree += '<li class="list-group-item node-tree " parent-id="' + nodeId + '" data-nodeid="' + (nodeId++) + '" >';
+                for (var j = 0; j < floor; j++) {
+                    tree += '<span class="indent"></span>';
+                }
+                if (obj.nodes != null && obj.nodes.length > 0) {
+                    tree += '<span class="icon expand-icon glyphicon  glyphicon-chevron-right"></span>';
+                } else {
+                    tree += '<span class="icon  glyphicon "></span>';
+                }
+                tree += '<span class="icon node-icon ' + obj.icon + '"></span>' + obj.text + '</li>';
+                if (obj.targ != null) {
+                    tree += '<span class="badge">' + obj.targ + '</span>';
+                }
+            }
+            floor += 1;
+            return appendTree(obj.nodes);
+        }
+    }
+    var defaultData = ${tree};
+    initTree(defaultData);
 
 </script>
 </html>

@@ -19,28 +19,59 @@
     display: block;
 }
 
-#tree{
+#tree {
     width: 20%;
     position: fixed;
-    height:90%;
-    overflow:auto;
+    height: 90%;
+    overflow: auto;
 }
-.container{
+
+.container {
     position: absolute;
     left: 20%;
     padding: 0;
-    border:1px solid #ddd;
+    border: 1px solid #ddd;
 }
-.list-group-item{
+
+.list-group-item {
     /*display: table-footer-group;*/
     display: flex;
     width: 350px;
 }
-.server{
+
+.server {
     background: url("../img/redis.png") no-repeat 0 0;
     width: 25px !important;
 }
-.redisDb{
-    background:url("../img/db.png") no-repeat 0 0;
+
+.redisDb {
+    background: url("../img/db.png") no-repeat 0 0;
     width: 25px !important;
+}
+
+.treeview .list-group-item {
+    cursor: pointer;
+    color: #428bca;
+}
+
+.treeview span.indent {
+    margin-left: 10px;
+    margin-right: 10px
+}
+
+.treeview span.icon {
+    width: 12px;
+    margin-right: 5px
+}
+
+.treeview .node-disabled {
+    color: silver;
+    cursor: not-allowed
+}
+.treeview .node-selected {
+    background-color: #428bca;
+    color:#fff;
+}
+.treeview .show-node{
+
 }
