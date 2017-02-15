@@ -5,6 +5,10 @@ import com.whe.redis.util.RedisClusterUtils;
 import com.whe.redis.util.ServerConstant;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.*;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisCluster;
+import redis.clients.jedis.ScanParams;
+import redis.clients.jedis.ScanResult;
 
 import java.util.*;
 
@@ -17,7 +21,7 @@ public class RedisService {
     private List<String> keys = new ArrayList<>();
 
     public List<String> getKeysByDb(int db) {
-        JedisPool jedisPool=new JedisPool("192.168.88.128",6379);
+        JedisPool jedisPool=new JedisPool("192.168.200.134",6381);
         Jedis jedis = jedisPool.getResource();
         jedis.select(db);
         ScanParams scanParams = new ScanParams();
@@ -44,11 +48,8 @@ public class RedisService {
     }
 
     public Set<String> keys() {
-        System.out.println(keys);
         Jedis jedis = JedisFactory.getJedis();
-        Long db = jedis.getDB();
         jedis.select(1);
-        System.out.println("sdfsdf");
         return jedis.keys("*");
     }
 

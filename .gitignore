@@ -5,6 +5,8 @@ target/
 *.zip
 *.tar
 *.tar.gz
+rebel.xml
+rebel-remote.xml
 
 # eclipse ignore
 .settings/

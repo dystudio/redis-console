@@ -355,25 +355,7 @@
 <script src="${ctx}/js/redis/index.js"></script>
 <script type="text/javascript">
     $(function () {
-        var defaultData = ${tree};
-        /*  $('#tree').treeview({
-         color: "#428bca",
-         expandIcon: 'glyphicon glyphicon-chevron-right',
-         collapseIcon: 'glyphicon glyphicon-chevron-down',
-         showTags: true,
-         data: defaultData
-         /!* onNodeSelected: function () {
-         alert("节点:" + $(this).html());
-         }*!/
-
-         });*/
         $('#tree').on('click', '.node-tree', function (event, data) {
-            $(this).siblings(".list-group-item").removeClass("node-selected");
-            if ($(this).hasClass("node-selected")) {
-                $(this).removeClass("node-selected");
-            } else {
-                $(this).addClass("node-selected");
-            }
             /* // 事件代码...
              var nodeId = $(this).attr("data-nodeid");
 
@@ -398,50 +380,89 @@
              })
              }
              }*/
+
         });
-        //  $("#tree").initTree("addNode", [2, {node: {text: "assa"}}]);
-
-
+        var defaultData = ${tree};
+        $("#tree").initTree(defaultData);
     })
-    var nodeId = 0;
-    var tree = String();
-    var floor = Number(1);
-    var initTree = function (data) {
-        if (data != null && data.length >= 0) {
-            tree = '<ul class="list-group">';
-            appendTree(data);
-            tree += '</ul>';
-            $("#tree").addClass("treeview");
-            $("#tree").html(tree);
-        }
 
-    }
-    function appendTree(data) {
-        if (data == null || data.length == 0) {
-            return null;
-        } else {
-            for (var i = 0; i < data.length; i++) {
-                var obj = data[i];
-                tree += '<li class="list-group-item node-tree " parent-id="' + nodeId + '" data-nodeid="' + (nodeId++) + '" >';
-                for (var j = 0; j < floor; j++) {
-                    tree += '<span class="indent"></span>';
-                }
-                if (obj.nodes != null && obj.nodes.length > 0) {
-                    tree += '<span class="icon expand-icon glyphicon  glyphicon-chevron-right"></span>';
-                } else {
-                    tree += '<span class="icon  glyphicon "></span>';
-                }
-                tree += '<span class="icon node-icon ' + obj.icon + '"></span>' + obj.text + '</li>';
-                if (obj.targ != null) {
-                    tree += '<span class="badge">' + obj.targ + '</span>';
-                }
+    ;
+    (function ($, window, document, undefined) {
+        var tree = String();
+        var nodeId = 0;
+        $.fn.initTree = function (data) {
+            if (data != null && data.length >= 0) {
+                var floor = Number(0);
+                tree = '<ul class="list-group">';
+                appendTree(data, floor);
+                tree += '</ul>';
+                $(this).addClass("treeview");
+                $(this).html(tree);
+
+                $(this).on('click', '.node-tree', function (event, data) {
+                    $(this).siblings(".list-group-item").removeClass("node-selected");
+                    if (!$(this).hasClass("node-selected")) {
+                        $(this).addClass("node-selected");
+                    }
+                });
+
+                $(this).on('dblclick', '.node-tree', function () {
+
+                    var nodeId = $(this).attr("data-nodeid");
+                    var siblings = $(this).siblings(".list-group-item[parent-id='"+nodeId+"'] ");
+                    if($(this).find(".expand-icon").hasClass("glyphicon-chevron-right")){
+                        $(this).find(".expand-icon").removeClass("glyphicon-chevron-right").addClass("glyphicon-chevron-down")
+                    }else{
+                        $(this).find(".expand-icon").removeClass("glyphicon-chevron-down").addClass("glyphicon-chevron-right")
+                    }
+                    if(siblings.hasClass("show-node")){
+                        siblings.removeClass("show-node").addClass("hide-node");
+                    }else{
+                        siblings.removeClass("hide-node").addClass("show-node");
+                    }
+                })
             }
-            floor += 1;
-            return appendTree(obj.nodes);
-        }
-    }
-    var defaultData = ${tree};
-    initTree(defaultData);
 
+        };
+        var parentId = 0;
+
+        function appendTree(data, floor) {
+            alert(data)
+            if (!(data == null || data.length == 0)) {
+                for (var i = 0; i < data.length; i++) {
+                    var obj = data[i];
+                    tree += '<li class="list-group-item node-tree ';
+                    if(obj.expanded!=null){
+                        tree+=' show-node';
+                    }
+                    tree+=' " parent-id="' + parentId + '" data-nodeid="' + (++nodeId) + '" >';
+                    for (var j = 0; j < floor; j++) {
+                        tree += '<span class="indent"></span>';
+                    }
+                    if (obj.nodes != null && obj.nodes.length > 0) {
+                        tree += '<span class="icon expand-icon glyphicon  glyphicon-chevron-right"></span>';
+                    } else {
+                        tree += '<span class="icon  glyphicon "></span>';
+                    }
+                    if (obj.icon != null) {
+                        tree+='<img class="" src="'+obj.icon+'"/>';
+                    } else {
+                        tree += '<span class="icon node-icon"></span>';
+                    }
+                    tree+=obj.text;
+                    if (obj.tags != null) {
+                        tree += '<span class="badge">' + obj.tags + '</span>';
+                    }
+                    tree += '</li>';
+                }
+                floor += 1;
+                parentId++;
+                return arguments.callee(obj.nodes, floor);
+            } else {
+                return null;
+            }
+
+        }
+    })(jQuery, window, document);
 </script>
 </html>

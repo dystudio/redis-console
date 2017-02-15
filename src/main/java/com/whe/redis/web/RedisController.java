@@ -61,15 +61,18 @@ public class RedisController {
     @RequestMapping(value = {"/"})
     public String index(Model model, String pattern) {
         Set<String> keys = redisService.keys();
+        System.out.println(keys);
+        Map<Integer, Long> dataBases = redisService.getDataBases();
         StringBuilder sb = new StringBuilder();
         sb.append("[{");
         sb.append("text:").append("'").append(JedisFactory.getStandAlone()).append("',");
-        sb.append("icon:").append("'server',");
-        Map<Integer, Long> dataBases = redisService.getDataBases();
+        sb.append("icon:").append("'/img/redis.png',");
+
         sb.append("nodes:").append("[");
         dataBases.entrySet().forEach(entry -> {
             sb.append("{text:").append("'").append("DB-").append(entry.getKey()).append("',")
-                    .append("icon:").append("'redisDb',")
+                    .append("icon:").append("'/img/db.png',")
+                    .append("expanded:").append(true).append(",")
                     .append("tags:").append("['")
                     .append(entry.getValue()).append("']");
             if (entry.getValue() > 0) {
@@ -81,6 +84,7 @@ public class RedisController {
             sb.append("},");
         });
         sb.deleteCharAt(sb.length() - 1).append("]}]");
+        System.out.println(sb.toString());
         model.addAttribute("tree", sb.toString());
        /* Map<String, String> allString = redisStringService.getAllString(pattern);
         Map<String, List<String>> allList = redisListService.getAllList();
