@@ -36,7 +36,7 @@
 .list-group-item {
     /*display: table-footer-group;*/
     display: flex;
-    width: 350px;
+    width: 250px;
 }
 
 .server {

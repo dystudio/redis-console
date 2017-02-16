@@ -18,18 +18,18 @@ import java.util.*;
  */
 @Service
 public class RedisService {
-    private List<String> keys = new ArrayList<>();
-
+    private Map<Integer,List<String>> dbKeysMap=new HashMap<>();
     public List<String> getKeysByDb(int db) {
-        JedisPool jedisPool=new JedisPool("192.168.200.134",6381);
+        JedisPool jedisPool=new JedisPool("192.168.88.128",6379);
         Jedis jedis = jedisPool.getResource();
         jedis.select(db);
         ScanParams scanParams = new ScanParams();
-        scanParams.count(300);
+        scanParams.count(ServerConstant.PAGE_NUM);
         scanParams.match("*");
         ScanResult<String> scan = jedis.scan("0", scanParams);
         jedis.close();
         List<String> result = scan.getResult();
+        List<String> keys = new ArrayList<>();
         keys.addAll(result);
         if (!scan.getStringCursor().equals("0")) {
             new Thread(() -> {
@@ -38,9 +38,9 @@ public class RedisService {
                 while (!cursor.equals("0")) {
                     ScanResult<String> scan1 = resource.scan(cursor, scanParams);
                     cursor = scan1.getStringCursor();
-                    System.out.println(cursor);
                     keys.addAll(scan1.getResult());
                 }
+                dbKeysMap.put(db,keys);
                 resource.close();
             }).start();
         }
@@ -49,7 +49,7 @@ public class RedisService {
 
     public Set<String> keys() {
         Jedis jedis = JedisFactory.getJedis();
-        jedis.select(1);
+        jedis.select(0);
         return jedis.keys("*");
     }
 

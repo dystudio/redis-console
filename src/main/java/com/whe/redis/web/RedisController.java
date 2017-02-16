@@ -41,17 +41,19 @@ public class RedisController {
     private RedisZSetService redisZSetService;
     @Autowired
     private RedisHashService redisHashService;
+
     @RequestMapping("/keys")
-    public void keys(){
+    public void keys() {
         redisService.keys();
     }
 
     @RequestMapping("/scan")
     @ResponseBody
-    public List<String> scan(Integer db){
+    public List<String> scan(Integer db) {
         List<String> keysByDb = redisService.getKeysByDb(db);
         return keysByDb;
     }
+
     /**
      * 入口 首页
      *
@@ -59,32 +61,39 @@ public class RedisController {
      * @return index
      */
     @RequestMapping(value = {"/"})
-    public String index(Model model, String pattern) {
-        Set<String> keys = redisService.keys();
-        System.out.println(keys);
+    public String index(Model model,Integer pageNo, String pattern) {
+        if(pageNo==null){
+            pageNo=1;
+        }
         Map<Integer, Long> dataBases = redisService.getDataBases();
         StringBuilder sb = new StringBuilder();
         sb.append("[{");
         sb.append("text:").append("'").append(JedisFactory.getStandAlone()).append("',");
-        sb.append("icon:").append("'/img/redis.png',");
-
+        sb.append("icon:").append("'/img/redis.png',").append("expanded:").append(true).append(",")
+        ;
         sb.append("nodes:").append("[");
+        Integer finalPageNo = pageNo;
         dataBases.entrySet().forEach(entry -> {
             sb.append("{text:").append("'").append("DB-").append(entry.getKey()).append("',")
                     .append("icon:").append("'/img/db.png',")
                     .append("expanded:").append(true).append(",")
                     .append("tags:").append("['")
                     .append(entry.getValue()).append("']");
-            if (entry.getValue() > 0) {
+            Long dbSize = entry.getValue();
+            if (dbSize > 0) {
+                List<String> keysList = redisService.getKeysByDb(entry.getKey());
                 sb.append(",");
                 sb.append("nodes:").append("[");
-                keys.forEach(key -> sb.append("{text:").append("'").append(key).append("'},"));
+                keysList.forEach(key -> sb.append("{text:").append("'").append(key).append("'},"));
+                if (dbSize > 1000){
+                    long totalPage = dbSize / ServerConstant.PAGE_NUM;
+                    sb.append("{page:").append("'到第<input type=\"text\" id=\"PAGENO\" value="+ finalPageNo +" size="+String.valueOf(totalPage).length()+" maxlength=\"3\" />页 " + "<input type=\"button\" id=\"skip\" class=\"hand btn60x20\" value=\"确定\" " + "onclick=\"javascript: var pageNo=$(\\'#PAGENO\\').val(); if(pageNo>").append(totalPage).append(") ").append("pageNo=").append(totalPage).append(";  if(!isNaN(pageNo)) ").append("window.location.href = \\'/?pageNo=\\' + pageNo \"/></span>'}");
+                }
                 sb.append("]");
             }
             sb.append("},");
         });
         sb.deleteCharAt(sb.length() - 1).append("]}]");
-        System.out.println(sb.toString());
         model.addAttribute("tree", sb.toString());
        /* Map<String, String> allString = redisStringService.getAllString(pattern);
         Map<String, List<String>> allList = redisListService.getAllList();

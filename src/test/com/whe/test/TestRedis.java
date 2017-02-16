@@ -20,10 +20,10 @@ public class TestRedis {
 
         long l = System.currentTimeMillis();
 
-        IntStream.rangeClosed(0, 10000).parallel().forEach(i ->{
+        IntStream.rangeClosed(0, 5000).parallel().forEach(i ->{
             Jedis jedis = jedisPool.getResource();
-            jedis.lpush("list", "val" + i);
-        //jedis.del("key" + i);
+           // jedis.lpush("list", "val" + i);
+        jedis.del("list" + i);
             System.out.println(i);
             jedis.close();
         } );

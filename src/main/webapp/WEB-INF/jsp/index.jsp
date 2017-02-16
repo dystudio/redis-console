@@ -353,116 +353,39 @@
 <script src="${ctx}/js/bootstrap.min.js"></script>
 <script src="${ctx}/js/bootstrap-treeview.js"></script>
 <script src="${ctx}/js/redis/index.js"></script>
+<script src="${ctx}/js/redis/whe-tree.js"></script>
 <script type="text/javascript">
     $(function () {
-        $('#tree').on('click', '.node-tree', function (event, data) {
-            /* // 事件代码...
-             var nodeId = $(this).attr("data-nodeid");
+        var flag=true;
+       /* $('#tree').on('click', '.node-tree', function (event, data) {
+            // 事件代码...
+            var nodeId = $(this).attr("data-nodeid");
+            console.log(nodeId)
+            var text = $(this).find(".text").html().toUpperCase();
+            var indexOf = text.indexOf("DB");
+            if (indexOf != -1) {
+                var dbSize = $(this).find(".badge").html();
+                var db = text.substr(indexOf + 3);
+                if (dbSize >0&&flag ) {
+                    flag=false;
+                    $.ajax({
+                        url: ctx + "/scan",
+                        data: {db: db},
+                        type: "post",
+                        dataType: "json",
+                        success: function (data) {
+                            alert(data.length)
+                            $(this).siblings(".list-group-item[parent-id='" + nodeId + "']").remove();
+                          $(this).addNode(nodeId,data);
+                        }
+                    })
+                }
+            }
 
-             console.log(nodeId)
-             var text = $('#tree').treeview('getNode', nodeId).text.toUpperCase();
-             var indexOf = text.indexOf("DB");
-             if (indexOf != -1) {
-             var dbSize = $(this).find(".badge").html();
-             var db = text.substr(indexOf + 3);
-             if (dbSize == 0 || true) {
-             $.ajax({
-             url: ctx + "/scan",
-             data: {db: db},
-             type: "post",
-             dataType: "json",
-             success: function (data) {
-             alert(data.length)
-             for (var i = 280; i < data.length; i++) {
-             $("#tree").treeview("addNode", [parseInt(nodeId), {node: {text: data[i]}}]);
-             }
-             }
-             })
-             }
-             }*/
-
-        });
+        });*/
         var defaultData = ${tree};
         $("#tree").initTree(defaultData);
     })
 
-    ;
-    (function ($, window, document, undefined) {
-        var tree = String();
-        var nodeId = 0;
-        $.fn.initTree = function (data) {
-            if (data != null && data.length >= 0) {
-                var floor = Number(0);
-                tree = '<ul class="list-group">';
-                appendTree(data, floor);
-                tree += '</ul>';
-                $(this).addClass("treeview");
-                $(this).html(tree);
-
-                $(this).on('click', '.node-tree', function (event, data) {
-                    $(this).siblings(".list-group-item").removeClass("node-selected");
-                    if (!$(this).hasClass("node-selected")) {
-                        $(this).addClass("node-selected");
-                    }
-                });
-
-                $(this).on('dblclick', '.node-tree', function () {
-
-                    var nodeId = $(this).attr("data-nodeid");
-                    var siblings = $(this).siblings(".list-group-item[parent-id='"+nodeId+"'] ");
-                    if($(this).find(".expand-icon").hasClass("glyphicon-chevron-right")){
-                        $(this).find(".expand-icon").removeClass("glyphicon-chevron-right").addClass("glyphicon-chevron-down")
-                    }else{
-                        $(this).find(".expand-icon").removeClass("glyphicon-chevron-down").addClass("glyphicon-chevron-right")
-                    }
-                    if(siblings.hasClass("show-node")){
-                        siblings.removeClass("show-node").addClass("hide-node");
-                    }else{
-                        siblings.removeClass("hide-node").addClass("show-node");
-                    }
-                })
-            }
-
-        };
-        var parentId = 0;
-
-        function appendTree(data, floor) {
-            alert(data)
-            if (!(data == null || data.length == 0)) {
-                for (var i = 0; i < data.length; i++) {
-                    var obj = data[i];
-                    tree += '<li class="list-group-item node-tree ';
-                    if(obj.expanded!=null){
-                        tree+=' show-node';
-                    }
-                    tree+=' " parent-id="' + parentId + '" data-nodeid="' + (++nodeId) + '" >';
-                    for (var j = 0; j < floor; j++) {
-                        tree += '<span class="indent"></span>';
-                    }
-                    if (obj.nodes != null && obj.nodes.length > 0) {
-                        tree += '<span class="icon expand-icon glyphicon  glyphicon-chevron-right"></span>';
-                    } else {
-                        tree += '<span class="icon  glyphicon "></span>';
-                    }
-                    if (obj.icon != null) {
-                        tree+='<img class="" src="'+obj.icon+'"/>';
-                    } else {
-                        tree += '<span class="icon node-icon"></span>';
-                    }
-                    tree+=obj.text;
-                    if (obj.tags != null) {
-                        tree += '<span class="badge">' + obj.tags + '</span>';
-                    }
-                    tree += '</li>';
-                }
-                floor += 1;
-                parentId++;
-                return arguments.callee(obj.nodes, floor);
-            } else {
-                return null;
-            }
-
-        }
-    })(jQuery, window, document);
 </script>
 </html>

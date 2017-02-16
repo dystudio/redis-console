@@ -9,6 +9,7 @@ public class ServerConstant {
 
     public final static String REDIS_CLUSTER = "redisCluster";
     public final static String STAND_ALONE = "standAlone";
+    public final static Integer PAGE_NUM = 1000;
 
     public final static String REDIS_STRING = "string";
     public final static String REDIS_LIST= "list";
