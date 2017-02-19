@@ -4,13 +4,17 @@ import com.whe.redis.util.JedisFactory;
 import com.whe.redis.util.RedisClusterUtils;
 import com.whe.redis.util.ServerConstant;
 import org.springframework.stereotype.Service;
-import redis.clients.jedis.*;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisCluster;
 import redis.clients.jedis.ScanParams;
 import redis.clients.jedis.ScanResult;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * Created by wang hongen on 2017/1/13.
@@ -18,51 +22,63 @@ import java.util.*;
  */
 @Service
 public class RedisService {
-    private Map<Integer,List<String>> dbKeysMap=new HashMap<>();
-    public List<String> getKeysByDb(int db) {
-        JedisPool jedisPool=new JedisPool("192.168.88.128",6379);
-        Jedis jedis = jedisPool.getResource();
+
+    public ScanResult<String> getKeysByDb(int db, String cursor) {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
         ScanParams scanParams = new ScanParams();
         scanParams.count(ServerConstant.PAGE_NUM);
-        scanParams.match("*");
-        ScanResult<String> scan = jedis.scan("0", scanParams);
-        jedis.close();
-        List<String> result = scan.getResult();
-        List<String> keys = new ArrayList<>();
-        keys.addAll(result);
-        if (!scan.getStringCursor().equals("0")) {
-            new Thread(() -> {
-                String cursor = scan.getStringCursor();
-                Jedis resource = jedisPool.getResource();
-                while (!cursor.equals("0")) {
-                    ScanResult<String> scan1 = resource.scan(cursor, scanParams);
-                    cursor = scan1.getStringCursor();
-                    keys.addAll(scan1.getResult());
-                }
-                dbKeysMap.put(db,keys);
-                resource.close();
-            }).start();
+        scanParams.match(ServerConstant.DEFAULT_MATCH);
+        if (cursor == null) {
+            cursor = ServerConstant.DEFAULT_CURSOR;
         }
-        return result;
+        ScanResult<String> scan = jedis.scan(cursor, scanParams);
+        jedis.close();
+        return scan;
+    }
+
+    public void getValBykey(Integer db, String key) {
+        Optional.ofNullable(db).map(i -> {
+            Jedis jedis = JedisFactory.getJedisPool().getResource();
+            jedis.select(i);
+            String type = jedis.type(key);
+            if (type.equals(ServerConstant.REDIS_STRING)) {
+                jedis.get(key);
+                jedis.ttl(key);
+
+            }
+            jedis.close();
+            return "";
+        });
+    }
+
+    public Map<String, String> getType(int db,List<String> keys) {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        Map<String, String> map = keys.stream().collect(Collectors.toMap(key -> key, jedis::type));
+        jedis.close();
+        return map;
     }
 
     public Set<String> keys() {
-        Jedis jedis = JedisFactory.getJedis();
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(0);
-        return jedis.keys("*");
+        Set<String> keys = jedis.keys("*");
+        jedis.close();
+        return keys;
     }
 
     public Map<Integer, Long> getDataBases() {
-        Jedis jedis = JedisFactory.getJedis();
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
         List<String> list = jedis.configGet(ServerConstant.DATABASES);
         int size = Integer.parseInt(list.get(1));
-        Map<Integer, Long> dbSize = new HashMap<>();
-        for (int i = 0; i < size; i++) {
+        Map<Integer, Long> map = IntStream.range(0, size).boxed().collect(Collectors.toMap(i -> i, i -> {
             jedis.select(i);
-            dbSize.put(i, jedis.dbSize());
-        }
-        return dbSize;
+            Long dbSize = jedis.dbSize();
+            return dbSize;
+        }));
+        jedis.close();
+        return map;
     }
 
 
@@ -71,7 +87,9 @@ public class RedisService {
      */
     public void flushAll() {
         if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            JedisFactory.getJedis().flushAll();
+            Jedis jedis = JedisFactory.getJedisPool().getResource();
+            jedis.flushAll();
+            jedis.close();
         } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             JedisCluster jedisCluster = JedisFactory.getJedisCluster();
             //检查集群节点是否发生变化

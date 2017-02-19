@@ -9,16 +9,23 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
+import redis.clients.jedis.ScanResult;
 import redis.clients.jedis.Tuple;
 
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Stream;
 
 /**
  * Created by wang hongen on 2017/1/12.
@@ -47,13 +54,6 @@ public class RedisController {
         redisService.keys();
     }
 
-    @RequestMapping("/scan")
-    @ResponseBody
-    public List<String> scan(Integer db) {
-        List<String> keysByDb = redisService.getKeysByDb(db);
-        return keysByDb;
-    }
-
     /**
      * 入口 首页
      *
@@ -61,51 +61,9 @@ public class RedisController {
      * @return index
      */
     @RequestMapping(value = {"/"})
-    public String index(Model model,Integer pageNo, String pattern) {
-        if(pageNo==null){
-            pageNo=1;
-        }
-        Map<Integer, Long> dataBases = redisService.getDataBases();
-        StringBuilder sb = new StringBuilder();
-        sb.append("[{");
-        sb.append("text:").append("'").append(JedisFactory.getStandAlone()).append("',");
-        sb.append("icon:").append("'/img/redis.png',").append("expanded:").append(true).append(",")
-        ;
-        sb.append("nodes:").append("[");
-        Integer finalPageNo = pageNo;
-        dataBases.entrySet().forEach(entry -> {
-            sb.append("{text:").append("'").append("DB-").append(entry.getKey()).append("',")
-                    .append("icon:").append("'/img/db.png',")
-                    .append("expanded:").append(true).append(",")
-                    .append("tags:").append("['")
-                    .append(entry.getValue()).append("']");
-            Long dbSize = entry.getValue();
-            if (dbSize > 0) {
-                List<String> keysList = redisService.getKeysByDb(entry.getKey());
-                sb.append(",");
-                sb.append("nodes:").append("[");
-                keysList.forEach(key -> sb.append("{text:").append("'").append(key).append("'},"));
-                if (dbSize > 1000){
-                    long totalPage = dbSize / ServerConstant.PAGE_NUM;
-                    sb.append("{page:").append("'到第<input type=\"text\" id=\"PAGENO\" value="+ finalPageNo +" size="+String.valueOf(totalPage).length()+" maxlength=\"3\" />页 " + "<input type=\"button\" id=\"skip\" class=\"hand btn60x20\" value=\"确定\" " + "onclick=\"javascript: var pageNo=$(\\'#PAGENO\\').val(); if(pageNo>").append(totalPage).append(") ").append("pageNo=").append(totalPage).append(";  if(!isNaN(pageNo)) ").append("window.location.href = \\'/?pageNo=\\' + pageNo \"/></span>'}");
-                }
-                sb.append("]");
-            }
-            sb.append("},");
-        });
-        sb.deleteCharAt(sb.length() - 1).append("]}]");
-        model.addAttribute("tree", sb.toString());
-       /* Map<String, String> allString = redisStringService.getAllString(pattern);
-        Map<String, List<String>> allList = redisListService.getAllList();
-        Map<String, Set<String>> allSet = redisSetService.getAllSet();
-        Map<String, Set<Tuple>> allZSet = redisZSetService.getAllZSet();
-        Map<String, Map<String, String>> allHash = redisHashService.getAllHash();*/
-     /*   Page<Map<String, List<String>>> listPage = redisListService.findListPageByQuery(1, "*");
-        Page<Map<String, String>> stringPage = redisStringService.findStringPageByQuery(1, pattern);
-        Page<Map<String, Set<String>>> setPage = redisSetService.findSetPageByQuery(1, "*");
-        Page<Map<String, Set<Tuple>>> zSetPage = redisZSetService.findZSetPageByQuery(1, "*");
-        Page<Map<String, Map<String, String>>> hashPage = redisHashService.findHashPageByQuery(1, "*");*/
-
+    public String index(Model model, @RequestParam(defaultValue = "0") String cursor, String pattern, HttpServletRequest request, HttpServletResponse response) throws UnsupportedEncodingException {
+        String treeJson = treeJson(cursor, request, response);
+        model.addAttribute("tree", treeJson);
         Set<String> type = new HashSet<>();
         type.add("string");
         type.add("list");
@@ -114,22 +72,26 @@ public class RedisController {
         type.add("hash");
         model.addAttribute("type", type);
 
-       /* model.addAttribute("stringPage", stringPage);
-        model.addAttribute("listPage", listPage);
-        model.addAttribute("setPage", setPage);
-        model.addAttribute("zSetPage", zSetPage);
-        model.addAttribute("hashPage", hashPage);*/
-        /*model.addAttribute("string", allString);
-        model.addAttribute("list", allList);
-        model.addAttribute("set", allSet);
-        model.addAttribute("zSet", allZSet);
-        model.addAttribute("hash", allHash);*/
-
         return "index";
+    }
+
+    public void getValBykey(Integer db, String key) {
+
     }
 
     /**
      * ajax加载string类型数据
+     *
+     * @return map
+     */
+    @RequestMapping(value = {"/getString"})
+    @ResponseBody
+    public Map<String, String> getString(Integer db, String key) {
+        return redisStringService.getString(db, key);
+    }
+
+    /**
+     * ajax加载所有string类型数据
      *
      * @return map
      */
@@ -178,9 +140,6 @@ public class RedisController {
         return redisHashService.getAllHash();
     }
 
-    public void keywordQuery() {
-
-    }
 
     /**
      * 备份数据
@@ -336,5 +295,134 @@ public class RedisController {
             e.printStackTrace();
             return "0";
         }
+    }
+
+    @RequestMapping("/upPage")
+    @ResponseBody
+    public String upPage(Integer db, String cursor, HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+        String upCursor = getUpCursorByCookie(cookies, db, cursor);
+        return dbJson(db, cursor, upCursor, request);
+    }
+
+    @RequestMapping("/nextPage")
+    @ResponseBody
+    public String nextPage(Integer db, String cursor, HttpServletRequest request, HttpServletResponse response) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null && cookies.length > 0) {
+            Optional<Cookie> cookie = Stream.of(cookies).filter(c -> c.getName().equals(ServerConstant.REDIS_CURSOR)).findAny();
+            cookie.ifPresent(c -> {
+                        String value = null;
+                        try {
+                            value = URLDecoder.decode(c.getValue(), ServerConstant.ENCODING);
+                        } catch (UnsupportedEncodingException e) {
+                            e.printStackTrace();
+                        }
+                        Map map = JSON.parseObject(value, Map.class);
+                        List<String> list = (List<String>) map.get(db);
+                        list.add(cursor);
+                        try {
+                            c.setValue(URLEncoder.encode(JSON.toJSONString(map), ServerConstant.ENCODING));
+                        } catch (UnsupportedEncodingException e) {
+                            e.printStackTrace();
+                        }
+                        response.addCookie(c);
+                    }
+            );
+        }
+        String upCursor = getUpCursorByCookie(cookies, db, cursor);
+        return dbJson(db, cursor, upCursor, request);
+    }
+
+    private String getUpCursorByCookie(Cookie[] cookies, Integer db, String cursor) {
+        if (ServerConstant.DEFAULT_CURSOR.equals(cursor)) {
+            return ServerConstant.DEFAULT_CURSOR;
+        }
+        return Stream.of(cookies)
+                .filter(c -> c.getName().equals(ServerConstant.REDIS_CURSOR))
+                .findAny()
+                .map(c -> {
+                    String value = null;
+                    try {
+                        value = URLDecoder.decode(c.getValue(), ServerConstant.ENCODING);
+                    } catch (UnsupportedEncodingException e) {
+                        e.printStackTrace();
+                    }
+                    Map map = JSON.parseObject(value, Map.class);
+                    List<String> list = (List<String>) map.get(db);
+                    for (int i = 0; i < list.size(); i++) {
+                        if (list.get(i).equals(cursor)) {
+                            return list.get(i - 1);
+                        }
+                    }
+                    return ServerConstant.DEFAULT_CURSOR;
+                }).orElse(ServerConstant.DEFAULT_CURSOR);
+    }
+
+    private String treeJson(String cursor, HttpServletRequest request, HttpServletResponse response) throws UnsupportedEncodingException {
+        Map<Integer, Long> dataBases = redisService.getDataBases();
+        StringBuilder sb = new StringBuilder();
+        sb.append("[{");
+        sb.append("text:").append("'").append(JedisFactory.getStandAlone()).append("',");
+        sb.append("icon:").append(request.getContextPath()).append("'/img/redis.png',").append("expanded:").append(true).append(",");
+        sb.append("nodes:").append("[");
+        Map<Integer, List<String>> map = new HashMap<>();
+        dataBases.entrySet().forEach(entry -> {
+            sb.append("{text:").append("'").append("DB-").append(entry.getKey()).append("',")
+                    .append("icon:").append(request.getContextPath()).append("'/img/db.png',")
+                    .append("tags:").append("['").append(entry.getValue()).append("']");
+            Long dbSize = entry.getValue();
+            if (dbSize > 0) {
+                ScanResult<String> scanResult = redisService.getKeysByDb(entry.getKey(), cursor);
+                sb.append(",");
+                sb.append("nodes:").append("[");
+                Map<String, String> typeMap = redisService.getType(entry.getKey(), scanResult.getResult());
+                typeMap.forEach((key, type) -> sb.append("{text:").append("'").append(key).append("',icon:'")
+                        .append(request.getContextPath()).append("/img/").append(type).append(".png").append("',type:'").append(type).append("'},"));
+                if (dbSize > ServerConstant.PAGE_NUM) {
+                    List<String> list = new ArrayList<>();
+                    list.add("0");
+                    map.put(entry.getKey(), list);
+                    String stringCursor = scanResult.getStringCursor();
+                    sb.append("{page:").append("'<ul class=\"pagination\" style=\"margin:0px\"> <li class=\"disabled\" ><a  href=\"javascript:void(0);\" onclick=\"upPage(")
+                            .append(entry.getKey()).append(",").append(ServerConstant.DEFAULT_CURSOR).append(",event)").append(" \">上一页</a></li><li ");
+                    if ("0".equals(stringCursor)) {
+                        sb.append(" class=\"disabled\"");
+                    }
+                    sb.append("> <a  href=\"javascript:void(0);\" onclick=\"nextPage(").append(entry.getKey()).append(",").append(stringCursor).append(",event)").append(" \">下一页</a></li></ul>'}");
+                }
+                sb.append("]");
+            }
+            sb.append("},");
+        });
+        sb.deleteCharAt(sb.length() - 1).append("]}]");
+        String jsonString = JSON.toJSONString(map);
+        String encode = URLEncoder.encode(jsonString, ServerConstant.ENCODING);
+        Cookie cookie = new Cookie(ServerConstant.REDIS_CURSOR, encode);
+        cookie.setPath("/");
+        cookie.setMaxAge(-1);
+        response.addCookie(cookie);
+        return sb.toString();
+    }
+
+    private String dbJson(Integer db, String cursor, String upCursor, HttpServletRequest request) {
+        StringBuilder sb = new StringBuilder();
+        ScanResult<String> scanResult = redisService.getKeysByDb(db, cursor);
+        sb.append("[");
+        Map<String, String> typeMap = redisService.getType(db, scanResult.getResult());
+        typeMap.forEach((key, type) -> sb.append("{text:").append("'").append(key).append("',icon:'")
+                .append(request.getContextPath()).append("/img/").append(type).append(".png").append("',type:'").append(type).append("'},"));
+        String stringCursor = scanResult.getStringCursor();
+        sb.append("{page:").append("'<ul class=\"pagination\" style=\"margin:0px\"> <li ");
+        if (cursor == null || "0".equals(cursor)) {
+            sb.append(" class=\"disabled\"");
+        }
+        sb.append("><a  href=\"javascript:void(0);\" onclick=\"upPage(").append(db).append(",").append(upCursor).append(",event)").append(" \">上一页</a></li><li ");
+        if ("0".equals(stringCursor)) {
+            sb.append(" class=\"disabled\"");
+        }
+        sb.append("> <a  href=\"javascript:void(0);\" onclick=\"nextPage(").append(db).append(",").append(stringCursor).append(",event)").append(" \">下一页</a></li></ul>'}");
+        sb.append("]");
+        return sb.toString();
     }
 }

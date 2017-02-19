@@ -24,7 +24,7 @@ import java.util.stream.Stream;
  */
 public class JedisFactory {
 
-    private static Jedis jedis;
+    private static JedisPool jedisPool;
     private static JedisCluster jedisCluster;
     private static RedisClusterNode redisClusterNode = null;
     private static String standAlone;
@@ -50,10 +50,13 @@ public class JedisFactory {
                 if (split.length != 2) {
                     throw new RuntimeException("ip和端口格式不正确");
                 }
-                jedis = new Jedis(split[0], Integer.parseInt(split[1]));
+                GenericObjectPoolConfig poolConfig = RedisPoolConfig.getGenericObjectPoolConfig();
+
                 String pass = loadPro.getProperty("redis.pass");
                 if (StringUtils.isNotBlank(pass)) {
-                    jedis.auth(pass);
+                    jedisPool = new JedisPool(poolConfig, split[0], Integer.parseInt(split[1]), RedisPoolConfig.TIMEOUT, pass);
+                } else {
+                    jedisPool = new JedisPool(poolConfig, split[0], Integer.parseInt(split[1]));
                 }
             } else {
                 if (StringUtils.isNotBlank(redisCluster)) {
@@ -99,7 +102,7 @@ public class JedisFactory {
      * 关闭连接
      */
     public static void close() {
-        if (jedis != null) jedis.close();
+        if (jedisPool != null) jedisPool.close();
 
         if (jedisCluster != null) try {
             jedisCluster.close();
@@ -119,12 +122,12 @@ public class JedisFactory {
     }
 
     /**
-     * 获得jedis
+     * 获得JedisPool
      *
-     * @return Jedis
+     * @return JedisPool
      */
-    public static Jedis getJedis() {
-        return jedis;
+    public static JedisPool getJedisPool() {
+        return jedisPool;
     }
 
     public static RedisClusterNode getRedisClusterNode() {

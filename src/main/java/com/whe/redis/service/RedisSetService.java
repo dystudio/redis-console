@@ -25,7 +25,10 @@ public class RedisSetService {
     public Map<String, Set<String>> getAllSet() {
         final Map<String, Set<String>> allSet = new HashMap<>();
         if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            return getNodeSet(JedisFactory.getJedis());
+            Jedis jedis = JedisFactory.getJedisPool().getResource();
+            Map<String, Set<String>> setMap = getNodeSet(jedis);
+            jedis.close();
+            return setMap;
         } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             JedisCluster jedisCluster = JedisFactory.getJedisCluster();
             //检查集群节点是否发生变化
@@ -55,7 +58,7 @@ public class RedisSetService {
     public Page<Map<String, Set<String>>> findSetPageByQuery(int pageNo, String pattern) {
         Page<Map<String, Set<String>>> page = new Page<>();
         if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            Jedis jedis = JedisFactory.getJedis();
+            Jedis jedis = JedisFactory.getJedisPool().getResource();
             if (pageNo == 1) {
                 Set<String> keys = jedis.keys(pattern);
                 keys.forEach(key -> {
@@ -69,6 +72,7 @@ public class RedisSetService {
             page.setPageNo(pageNo);
             Map<String, Set<String>> setMap = findSetByKeys(setKeys, jedis);
             page.setResults(setMap);
+            jedis.close();
             return page;
         }
         return null;
@@ -105,8 +109,9 @@ public class RedisSetService {
      */
     public void saveAllSet(Map<String, List<String>> setMap) {
         if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            Jedis jedis = JedisFactory.getJedis();
+            Jedis jedis = JedisFactory.getJedisPool().getResource();
             setMap.forEach((key, list) -> new HashSet<>(list).forEach(val -> jedis.sadd(key, val)));
+            jedis.close();
         } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             JedisCluster jedisCluster = JedisFactory.getJedisCluster();
             setMap.forEach((key, list) -> new HashSet<>(list).forEach(val -> jedisCluster.sadd(key, val)));
@@ -120,8 +125,9 @@ public class RedisSetService {
      */
     public void saveAllSetSerialize(Map<String, List<String>> setMap) {
         if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            Jedis jedis = JedisFactory.getJedis();
+            Jedis jedis = JedisFactory.getJedisPool().getResource();
             setMap.forEach((key, list) -> new HashSet<>(list).forEach(val -> jedis.sadd(key.getBytes(), SerializeUtils.serialize(val))));
+            jedis.close();
         } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             JedisCluster jedisCluster = JedisFactory.getJedisCluster();
             setMap.forEach((key, list) -> new HashSet<>(list).forEach(val -> jedisCluster.sadd(key.getBytes(), SerializeUtils.serialize(val))));

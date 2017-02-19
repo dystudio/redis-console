@@ -48,33 +48,66 @@
     background: url("../img/db.png") no-repeat 0 0;
     width: 25px !important;
 }
-
-.treeview .list-group-item {
+.string{
+    background: url("../img/string.png") no-repeat 0 0;
+}
+.set{
+    background: url("../img/set.png") no-repeat 0 0;
+}
+.treeView .list-group-item {
     cursor: pointer;
     color: #428bca;
 }
 
-.treeview span.indent {
+.treeView span.indent {
     margin-left: 10px;
     margin-right: 10px
 }
 
-.treeview span.icon {
+.treeView span.icon {
     width: 12px;
     margin-right: 5px
 }
 
-.treeview .node-disabled {
+.treeView .node-disabled {
     color: silver;
     cursor: not-allowed
 }
-.treeview .node-selected {
+
+.treeView .node-selected {
     background-color: #428bca;
-    color:#fff;
+    color: #fff;
 }
-.treeview .show-node{
+
+.treeView .show-node {
     display: block;
 }
-.treeview .hide-node{
+
+.treeView .hide-node {
     display: none;
+}
+
+.treeView ul li {
+    list-style: none;
+}
+
+.child_ul {
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+.node-tree {
+    cursor: pointer;
+    color: #428bca;
+    margin-left: 15px;
+    padding: 1px;
+}
+
+.disabled {
+    pointer-events: none;
+}
+
+
+.form-control{
+    height: 38px;
 }

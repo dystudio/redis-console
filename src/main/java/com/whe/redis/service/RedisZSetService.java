@@ -11,6 +11,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toMap;
 
 /**
@@ -29,7 +30,10 @@ public class RedisZSetService {
     public Map<String, Set<Tuple>> getAllZSet() {
         final Map<String, Set<Tuple>> zSetMap = new HashMap<>();
         if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            return getNodeZSet(JedisFactory.getJedis());
+            Jedis jedis = JedisFactory.getJedisPool().getResource();
+            Map<String, Set<Tuple>> map = getNodeZSet(jedis);
+            jedis.close();
+            return map;
         } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             JedisCluster jedisCluster = JedisFactory.getJedisCluster();
             //检查集群节点是否发生变化
@@ -59,7 +63,7 @@ public class RedisZSetService {
     public Page<Map<String, Set<Tuple>>> findZSetPageByQuery(int pageNo, String pattern) {
         Page<Map<String, Set<Tuple>>> page = new Page<>();
         if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            Jedis jedis = JedisFactory.getJedis();
+            Jedis jedis = JedisFactory.getJedisPool().getResource();
             if (pageNo == 1) {
                 Set<String> keys = jedis.keys(pattern);
                 keys.forEach(key -> {
@@ -73,6 +77,7 @@ public class RedisZSetService {
             page.setPageNo(pageNo);
             Map<String, Set<Tuple>> zSetMap = findZSetByKeys(zSetKeys, jedis);
             page.setResults(zSetMap);
+            jedis.close();
             return page;
         }
         return null;
@@ -109,8 +114,9 @@ public class RedisZSetService {
      */
     public void saveAllZSet(Map<String, Map<String, Number>> zSetMap) {
         if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            Jedis jedis = JedisFactory.getJedis();
+            Jedis jedis = JedisFactory.getJedisPool().getResource();
             zSetMap.forEach((key, map) -> map.forEach((elem, score) -> jedis.zadd(key, score.doubleValue(), elem)));
+            jedis.close();
         } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             JedisCluster jedisCluster = JedisFactory.getJedisCluster();
             zSetMap.forEach((key, map) -> map.forEach((elem, score) -> jedisCluster.zadd(key, score.doubleValue(), elem)));
@@ -124,8 +130,9 @@ public class RedisZSetService {
      */
     public void saveAllZSetSerialize(Map<String, Map<String, Number>> zSetMap) {
         if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            Jedis jedis = JedisFactory.getJedis();
+            Jedis jedis = JedisFactory.getJedisPool().getResource();
             zSetMap.forEach((key, map) -> map.forEach((elem, score) -> jedis.zadd(key.getBytes(), score.doubleValue(), SerializeUtils.serialize(elem))));
+            jedis.close();
         } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             JedisCluster jedisCluster = JedisFactory.getJedisCluster();
             zSetMap.forEach((key, map) -> map.forEach((elem, score) -> jedisCluster.zadd(key.getBytes(), score.doubleValue(), SerializeUtils.serialize(elem))));

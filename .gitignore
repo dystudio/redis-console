@@ -1,5 +1,4 @@
 # maven ignore
-target/
 *.jar
 *.war
 *.zip
@@ -18,6 +17,8 @@ rebel-remote.xml
 *.ipr
 *.iml
 *.iws
+out/
+target/
 
 # temp ignore
 *.log

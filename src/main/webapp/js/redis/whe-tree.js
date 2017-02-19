@@ -5,75 +5,60 @@
 ;
 (function ($, window, document, undefined) {
     var tree = String();
-    var nodeId = 0;
     $.fn.initTree = function (data) {
         if (data != null && data.length >= 0) {
-            var floor = Number(0);
             tree = '<ul class="list-group">';
-            appendTree(data, floor);
+            appendTree(data);
             tree += '</ul>';
-            $(this).addClass("treeview");
+            $(this).addClass("treeView");
             $(this).html(tree);
 
-            $(this).on('click', '.node-tree', function (event, data) {
-                $(this).siblings(".list-group-item").removeClass("node-selected");
+            $(this).on('click', '.node-div', function (event, data) {
+                $(".treeView").find(".node-div").removeClass("node-selected");
                 if (!$(this).hasClass("node-selected")) {
                     $(this).addClass("node-selected");
                 }
             });
 
-            $(this).on('dblclick', '.node-tree', function () {
-
-                var nodeId = $(this).attr("data-nodeid");
-                var siblings = $(this).siblings(".list-group-item[parent-id='" + nodeId + "'] ");
+            $(this).on('dblclick', '.node-div', function () {
                 if ($(this).find(".expand-icon").hasClass("glyphicon-chevron-right")) {
-
                     $(this).find(".expand-icon").removeClass("glyphicon-chevron-right").addClass("glyphicon-chevron-down");
+                    $(this).siblings().removeClass("hide-node").addClass("show-node");
                 } else {
-                    $(this).siblings(".list-group-item").find(".expand-icon").removeClass("glyphicon-chevron-down").addClass("glyphicon-chevron-right")
+                    $(this).find(".expand-icon").removeClass("glyphicon-chevron-down").addClass("glyphicon-chevron-right")
+                    $(this).siblings().removeClass("show-node").addClass("hide-node");
                 }
-                if (siblings.hasClass("show-node")) {
-                    siblings.removeClass("show-node").addClass("hide-node");
-                    siblings.each(function () {
-                        $(this).siblings(".list-group-item[parent-id='" + $(this).attr("data-nodeid") + "'] ").removeClass("show-node").addClass("hide-node");
-                    })
+            });
+            $(".expand-icon").on('click', function () {
+                if ($(this).hasClass("glyphicon-chevron-right")) {
+                    $(this).removeClass("glyphicon-chevron-right").addClass("glyphicon-chevron-down");
+                    $(this).parent(".node-div").siblings().removeClass("hide-node").addClass("show-node");
                 } else {
-                    siblings.removeClass("hide-node").addClass("show-node");
+                    $(this).removeClass("glyphicon-chevron-down").addClass("glyphicon-chevron-right")
+                    $(this).parent(".node-div").siblings().removeClass("show-node").addClass("hide-node");
                 }
+
             })
         }
 
     };
-    var parentId = 0;
 
-    function appendTree(data, floor) {
+    function appendTree(data) {
         if (!(data == null || data.length == 0)) {
             for (var i = 0; i < data.length; i++) {
                 var obj = data[i];
                 if (obj.page != null) {
-                    tree += '<li class="list-group-item ';
-                    if (obj.expanded != null && obj.expanded) {
-                        tree += ' show-node';
-                    } else {
-                        tree += ' hide-node';
-                    }
-                    tree += ' " parent-id="' + parentId + '" data-nodeid="' + (++nodeId) + '" >';
-                    tree += obj.page;
-                    tree += '</li>';
+                    tree += '<li >' + obj.page + '</li>';
                     continue;
                 }
-                tree += '<li class="list-group-item node-tree ';
-                if (obj.expanded != null && obj.expanded) {
-                    tree += ' show-node';
-                } else {
-                    tree += ' hide-node';
-                }
-                tree += ' " parent-id="' + parentId + '" data-nodeid="' + (++nodeId) + '" >';
-                for (var j = 0; j < floor; j++) {
-                    tree += '<span class="indent"></span>';
-                }
+                tree += '<li class="node-tree"  ><div class="node-div">';
                 if (obj.nodes != null && obj.nodes.length > 0) {
-                    tree += '<span class="icon expand-icon glyphicon  glyphicon-chevron-right"></span>';
+                    tree += '<span class="icon expand-icon glyphicon  ';
+                    if (obj.expanded != null && obj.expanded) {
+                        tree += 'glyphicon-chevron-down"></span>';
+                    } else {
+                        tree += 'glyphicon-chevron-right"></span>';
+                    }
                 } else {
                     tree += '<span class="icon  glyphicon "></span>';
                 }
@@ -83,30 +68,33 @@
                     tree += '<span class="icon node-icon"></span>';
                 }
 
-                tree += '<span class="text">' + obj.text + '</span>';
+                tree += '<span class="text" ';
+                if (obj.type != null) {
+                    tree += ' type="'+obj.type+'"';
+                }
+                tree += '>' + obj.text + '</span>';
                 if (obj.tags != null) {
                     tree += '<span class="badge">' + obj.tags + '</span>';
                 }
-
-                tree += '</li>';
+                tree += '</div>';
                 if (obj.nodes != null) {
-                    floor += 1;
-                    parentId = nodeId;
-                    arguments.callee(obj.nodes, floor);
-                    floor--;
-                    parentId = i - i + 1;
-                } else {
+                    tree += '<ul class="child_ul';
+                    if (obj.expanded != null && obj.expanded) {
+                        tree += ' show-node">';
+                    } else {
+                        tree += ' hide-node">';
+                    }
+                    arguments.callee(obj.nodes);
+                    tree += '</ul></li>';
                 }
             }
         } else {
             return null;
         }
-        $.fn.addNode = function (id, data) {
-            var nodeData = String();
-            for (var i = 0; i < data.length; i++) {
-                nodeData += '<li class="list-group-item node-tree  show-node " parent-id="' + id + '" data-nodeid="' + (++nodeId) + '"><span class="indent"></span><span class="indent"></span><span class="icon  glyphicon  "></span><span class="text">' + data[i] + '</span></li>';
-            }
-            $(".list-group").find(".list-group-item[data-nodeid='" + id + "']").after(nodeData);
+        $.fn.addNode = function (data) {
+            tree = '';
+            appendTree(data);
+            $(this).closest(".child_ul").html(tree);
         }
     }
 })(jQuery, window, document);

@@ -28,7 +28,10 @@ public class RedisHashService {
     public Map<String, Map<String, String>> getAllHash() {
         final Map<String, Map<String, String>> hashMap = new HashMap<>();
         if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            return getNodeHash(JedisFactory.getJedis());
+            Jedis jedis = JedisFactory.getJedisPool().getResource();
+            Map<String, Map<String, String>> nodeHash = getNodeHash(jedis);
+            jedis.close();
+            return nodeHash;
         } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             JedisCluster jedisCluster = JedisFactory.getJedisCluster();
             //检查集群节点是否发生变化
@@ -58,7 +61,7 @@ public class RedisHashService {
     public Page<Map<String, Map<String, String>>> findHashPageByQuery(int pageNo, String pattern) {
         Page<Map<String, Map<String, String>>> page = new Page<>();
         if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            Jedis jedis = JedisFactory.getJedis();
+            Jedis jedis = JedisFactory.getJedisPool().getResource();
             if (pageNo == 1) {
                 Set<String> keys = jedis.keys(pattern);
                 keys.forEach(key -> {
@@ -72,6 +75,7 @@ public class RedisHashService {
             page.setPageNo(pageNo);
             Map<String, Map<String, String>> hashMap = findhashByKeys(hashKeys, jedis);
             page.setResults(hashMap);
+            jedis.close();
             return page;
         }
         return null;
@@ -110,8 +114,9 @@ public class RedisHashService {
      */
     public void saveAllHashSerialize(Map<String, Map<String, String>> hashMap) {
         if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            Jedis jedis = JedisFactory.getJedis();
+            Jedis jedis = JedisFactory.getJedisPool().getResource();
             hashMap.forEach((key, map) -> map.forEach((field, val) -> jedis.hset(key.getBytes(), SerializeUtils.serialize(field), SerializeUtils.serialize(val))));
+            jedis.close();
         } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             JedisCluster jedisCluster = JedisFactory.getJedisCluster();
             hashMap.forEach((key, map) -> map.forEach((field, val) -> jedisCluster.hset(key.getBytes(), SerializeUtils.serialize(field), SerializeUtils.serialize(val))));
@@ -126,8 +131,9 @@ public class RedisHashService {
      */
     public void saveAllHash(Map<String, Map<String, String>> hashMap) {
         if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            Jedis jedis = JedisFactory.getJedis();
+            Jedis jedis = JedisFactory.getJedisPool().getResource();
             hashMap.forEach((key, map) -> map.forEach((field, val) -> jedis.hset(key, field, val)));
+            jedis.close();
         } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             JedisCluster jedisCluster = JedisFactory.getJedisCluster();
             hashMap.forEach((key, map) -> map.forEach((field, val) -> jedisCluster.hset(key, field, val)));

@@ -55,25 +55,6 @@
 </div>
 <div style="height: 60px"></div>
 <div id="tree"></div>
-<%--<div class="navbar-left sidebar" role="navigation" style="width: 121px;margin-top: 0px;">
-    <div class="sidebar-nav navbar-collapse">
-        <ul class="nav" id="side-menu">
-            <li><a href="javascript:void(0);" class="redisAll active" ><i
-                    class="fa fa-fw"></i>全部</a></li>
-            <li><a href="javascript:void(0);" id="string"><i
-                    class="fa fa-fw"></i> string</a></li>
-            <li><a href="javascript:void(0);" id="list"><i
-                    class="fa  fa-fw"></i> list</a></li>
-            <li><a href="javascript:void(0);" id="set"><i
-                    class="fa  fa-fw"></i> set</a></li>
-            <li><a href="javascript:void(0);" id="zSet"><i
-                    class="fa  fa-fw"></i> zSet</a></li>
-            <li><a href="javascript:void(0);" id="hash"><i
-                    class="fa  fa-fw"></i> hash</a></li>
-        </ul>
-    </div>
-    <!-- /.sidebar-collapse -->
-</div>--%>
 <!--模态框-->
 <!--全部删除提示-->
 <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel" aria-hidden="true">
@@ -134,7 +115,7 @@
                   method="post" style="display: inline">
                 <div class="form-group">
                     <label>key</label>
-                    <input type="text" class="form-control" id="parrent" value="sdfsdf" name="parrent">
+                    <input type="text" class="form-control" id="parrent" value="" name="parrent">
                 </div>
                 <div class="form-group">
                     <label for="customerFrom">类型</label>
@@ -149,6 +130,40 @@
             </form>
         </div>
     </div>
+    <ul class="nav nav-tabs">
+        <li role="presentation" class="active"><a href="#">string</a></li>
+        <li role="presentation"><a href="#">生存时间</a></li>
+    </ul>
+    <div class="panel panel-default">
+        <table class="table table-bordered ">
+            <thead>
+            <tr>
+                <th style="width: 40%;">key</th>
+                <th>value</th>
+                <th style="width: 95px">操作</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td style="padding: 0;">
+                    <form>
+                        <div>
+                            <input type="text" class="form-control" placeholder="key">
+                        </div>
+                    </form>
+                </td>
+                <td>21312</td>
+                <td>
+                    <a href="#" class="btn btn-primary btn-xs" data-toggle="modal"
+                       data-target="#customerEditDialog"
+                       onclick="editCustomer(${row.cust_id})">修改</a>
+                    <a href="#" class="btn btn-danger btn-xs"
+                       onclick="deleteString(${str.key});">删除</a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
     <div class="row">
         <div class="col-lg-12" id="redisContent">
             <!-- string-->
@@ -156,7 +171,7 @@
                 <div class="panel panel-default">
                     <div class="panel-heading">string</div>
                     <!-- /.panel-heading -->
-                    <table class="table table-bordered table-striped" style="border-bottom: 1px solid #ddd">
+                    <table class="table table-bordered table-hover" style="border-bottom: 1px solid #ddd">
                         <thead>
                         <tr style=" border-top: 1px solid #ddd;">
                             <th>key</th>
@@ -335,17 +350,12 @@
                     </table>
                 </div>
             </c:if>
-
-            <div class="col-md-12 text-right">
-                <itcast:page url="${pageContext.request.contextPath }/customer/index.action"/>
-            </div>
             <!-- /.panel -->
         </div>
         <!-- /.col-lg-12 -->
     </div>
 </div>
 <!-- /#page-wrapper -->
-
 </body>
 <!-- 2 jQuery类库 -->
 <script src="${ctx}/js/jquery.min.js"></script>
@@ -355,37 +365,72 @@
 <script src="${ctx}/js/redis/index.js"></script>
 <script src="${ctx}/js/redis/whe-tree.js"></script>
 <script type="text/javascript">
-    $(function () {
-        var flag=true;
-       /* $('#tree').on('click', '.node-tree', function (event, data) {
-            // 事件代码...
-            var nodeId = $(this).attr("data-nodeid");
-            console.log(nodeId)
-            var text = $(this).find(".text").html().toUpperCase();
-            var indexOf = text.indexOf("DB");
-            if (indexOf != -1) {
-                var dbSize = $(this).find(".badge").html();
-                var db = text.substr(indexOf + 3);
-                if (dbSize >0&&flag ) {
-                    flag=false;
-                    $.ajax({
-                        url: ctx + "/scan",
-                        data: {db: db},
-                        type: "post",
-                        dataType: "json",
-                        success: function (data) {
-                            alert(data.length)
-                            $(this).siblings(".list-group-item[parent-id='" + nodeId + "']").remove();
-                          $(this).addNode(nodeId,data);
-                        }
-                    })
-                }
-            }
 
-        });*/
+    $(function () {
         var defaultData = ${tree};
         $("#tree").initTree(defaultData);
-    })
+        $("#tree").on('click', '.node-div', function () {
+            var $result = $(this).find(".expand-icon");
+            if ($result.length > 0) {
+                return;
+            }
+            var db = $(this).parent().closest(".child_ul").siblings(".node-div").find(".text").html().toUpperCase();
+            var indexOf = db.indexOf("DB-");
+            db = db.substring(indexOf + 3);
+            var text = $(this).find(".text");
+            var key = text.html();
+            var type = text.attr("type");
+            if (type == 'string') {
+                $.ajax({
+                    url: ctx + "/getString",
+                    data: {db: db, key: key},
+                    type: "post",
+                    dataType: "json",
+                    success: function (data) {
+                        $("#redisContent").empty();
+                        var str='<ul class="nav nav-tabs"><li role="presentation" class="active"><a href="#">'+type+'</a></li>'+
+                                '<li role="presentation"><a href="#">生存时间</a></li> </ul> <div class="panel panel-default">'+
+                                '<table class="table table-bordered "><thead> <tr><th style="width: 40%;">key</th><th>value</th>' +
+                                '<th style="width: 95px">操作</th> </tr> </thead> <tbody> <tr> <td style="padding: 0;">'+
+                                '<form> <div> <input type="text" class="form-control" value="'+key+'"></div> </form> </td>'+
+                                '<td>21312</td> <td> <a href="#" class="btn btn-primary btn-xs" data-toggle="modal" data-target="#customerEditDialog"'+
+                                'onclick="editCustomer(22)">修改</a> <a href="#" class="btn btn-danger btn-xs" onclick="deleteString(2);">删除</a>'+
+                                '</td> </tr></tbody> </table> </div>';
+                        $("#redisContent").append(str);
+                    }
+                });
+            }
 
+        })
+
+    })
+    function nextPage(db, cursor, event) {
+        event = event || window.event;
+        var obj = event.srcElement ? event.srcElement : event.target;
+        $.ajax({
+            url: ctx + "/nextPage",
+            data: {db: db, cursor: cursor},
+            type: "post",
+            dataType: "text",
+            success: function (data) {
+                data = eval('(' + data + ')');
+                $(obj).addNode(data)
+            }
+        })
+    }
+    function upPage(db, cursor, event) {
+        event = event || window.event;
+        var obj = event.srcElement ? event.srcElement : event.target;
+        $.ajax({
+            url: ctx + "/upPage",
+            data: {db: db, cursor: cursor},
+            type: "post",
+            dataType: "text",
+            success: function (data) {
+                data = eval('(' + data + ')');
+                $(obj).addNode(data)
+            }
+        })
+    }
 </script>
 </html>
