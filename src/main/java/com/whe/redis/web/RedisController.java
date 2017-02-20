@@ -140,6 +140,45 @@ public class RedisController {
         return redisHashService.getAllHash();
     }
 
+    /**
+     * string更新值
+     *
+     * @param db     db
+     * @param oldKey 旧key
+     * @param newKey 新key
+     * @return 2:key已存在;1:成功;0:失败
+     */
+    @RequestMapping(value = {"/renameNx"})
+    @ResponseBody
+    public String rename(int db, String oldKey, String newKey) {
+        try {
+            return redisService.renameNx(db, oldKey, newKey) == 0 ? "2" : "1";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "0";
+        }
+    }
+
+    /**
+     * string更新值
+     *
+     * @param db  db
+     * @param key key
+     * @param val newValue
+     * @return 1:成功;0:失败
+     */
+    @RequestMapping(value = {"/updateString"})
+    @ResponseBody
+    public String updateString(int db, String key, String val) {
+        try {
+            redisStringService.updateVal(db, key, val);
+            return "1";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "0";
+        }
+    }
+
 
     /**
      * 备份数据

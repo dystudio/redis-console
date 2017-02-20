@@ -5,6 +5,7 @@
 ;
 (function ($, window, document, undefined) {
     var tree = String();
+    var nodeId = Number(0);
     $.fn.initTree = function (data) {
         if (data != null && data.length >= 0) {
             tree = '<ul class="list-group">';
@@ -51,7 +52,7 @@
                     tree += '<li >' + obj.page + '</li>';
                     continue;
                 }
-                tree += '<li class="node-tree"  ><div class="node-div">';
+                tree += '<li class="node-tree" node-id="' + (nodeId++) + '" ><div class="node-div">';
                 if (obj.nodes != null && obj.nodes.length > 0) {
                     tree += '<span class="icon expand-icon glyphicon  ';
                     if (obj.expanded != null && obj.expanded) {
@@ -70,7 +71,7 @@
 
                 tree += '<span class="text" ';
                 if (obj.type != null) {
-                    tree += ' type="'+obj.type+'"';
+                    tree += ' type="' + obj.type + '"';
                 }
                 tree += '>' + obj.text + '</span>';
                 if (obj.tags != null) {

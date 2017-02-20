@@ -83,7 +83,7 @@
                 <h4 class="modal-title" id="promptTitle">成功提示</h4>
             </div>
             <div class="modal-body" id="promptContent">
-                <p>删除成功</p>
+                <p>操作成功</p>
             </div>
             <div class="modal-footer">
                 <button type="button" id="promptBtn" class="btn btn-success" data-dismiss="modal">确认</button>
@@ -130,74 +130,83 @@
             </form>
         </div>
     </div>
-    <ul class="nav nav-tabs">
-        <li role="presentation" class="active"><a href="#">string</a></li>
-        <li role="presentation"><a href="#">生存时间</a></li>
-    </ul>
-    <div class="panel panel-default">
-        <table class="table table-bordered ">
-            <thead>
-            <tr>
-                <th style="width: 40%;">key</th>
-                <th>value</th>
-                <th style="width: 95px">操作</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr>
-                <td style="padding: 0;">
-                    <form>
-                        <div>
-                            <input type="text" class="form-control" placeholder="key">
-                        </div>
-                    </form>
-                </td>
-                <td>21312</td>
-                <td>
-                    <a href="#" class="btn btn-primary btn-xs" data-toggle="modal"
-                       data-target="#customerEditDialog"
-                       onclick="editCustomer(${row.cust_id})">修改</a>
-                    <a href="#" class="btn btn-danger btn-xs"
-                       onclick="deleteString(${str.key});">删除</a>
-                </td>
-            </tr>
-            </tbody>
-        </table>
+    <div id="redisContent">
+        <ul class="nav nav-tabs">
+            <li role="presentation" class="active"><a href="javascript:void(0);">string</a></li>
+            <li role="presentation"><a href="javascript:void(0);">生存时间</a></li>
+        </ul>
+        <div class="panel panel-default" id="type-content">
+            <table class="table table-bordered ">
+                <thead>
+                <tr>
+                    <th style="width: 88%;">key</th>
+                    <th style="text-align: center;">操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td style="padding: 0;">
+                        <input type="text" class="form-control" disabled placeholder="key">
+                    </td>
+                    <td>
+                        <a href="#" class="btn btn-primary btn-xs" data-toggle="modal"
+                           data-target="#customerEditDialog"
+                           onclick="removeDisabled(event)">修改</a>
+                        <button type="button" class="btn btn-success btn-xs disabled">保存</button>
+                        <a href="#" class="btn btn-danger btn-xs"
+                           onclick="deleteString(${str.key});">删除</a>
+                    </td>
+                </tr>
+                </tbody>
+                <thead>
+                <tr>
+                    <th>value</th>
+                    <th style="text-align: center;">操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td style="padding: 0;">
+                        <input type="text" class="form-control" value="value">
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-success btn-xs " onclick="updateString(this)">保存</button>
+
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="panel panel-default" style="display: none;" id="ttl-content">
+            <table class="table table-bordered ">
+                <thead>
+                <tr>
+                    <th style="width: 92%;">过期时间(秒)</th>
+                    <th style="text-align: center;">操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr>
+                    <td style="padding: 0;">
+                        <input type="text" class="form-control" disabled
+                               value="" size="5" style="ime-mode:disabled"
+                               onkeyup="checkNumber(this)" onafterpaste="checkNumber(this)"/>
+                    </td>
+                    <td>
+                        <a href="#" class="btn btn-primary btn-xs" data-toggle="modal"
+                           data-target="#customerEditDialog"
+                           onclick="removeDisabled(event)">修改</a>
+                        <button type="button" class="btn btn-success btn-xs disabled">保存</button>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
     </div>
+
     <div class="row">
-        <div class="col-lg-12" id="redisContent">
+        <div class="col-lg-12">
             <!-- string-->
-            <c:if test="${fn:length(string)>0}">
-                <div class="panel panel-default">
-                    <div class="panel-heading">string</div>
-                    <!-- /.panel-heading -->
-                    <table class="table table-bordered table-hover" style="border-bottom: 1px solid #ddd">
-                        <thead>
-                        <tr style=" border-top: 1px solid #ddd;">
-                            <th>key</th>
-                            <th>value</th>
-                            <th style="width: 95px">操作</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <c:forEach items="${string}" var="str">
-                            <tr>
-                                <td>${str.key}</td>
-                                <td>${str.value}</td>
-                                <td>
-                                    <a href="#" class="btn btn-primary btn-xs" data-toggle="modal"
-                                       data-target="#customerEditDialog"
-                                       onclick="editCustomer(${row.cust_id})">修改</a>
-                                    <a href="#" class="btn btn-danger btn-xs"
-                                       onclick="deleteString(${str.key});">删除</a>
-                                </td>
-                            </tr>
-                        </c:forEach>
-                        </tbody>
-                    </table>
-                    <!-- /.panel-body -->
-                </div>
-            </c:if>
 
             <!-- list-->
             <c:if test="${fn:length(list)>0}">
@@ -361,12 +370,112 @@
 <script src="${ctx}/js/jquery.min.js"></script>
 <!-- 3 bootstrap 类库 -->
 <script src="${ctx}/js/bootstrap.min.js"></script>
-<script src="${ctx}/js/bootstrap-treeview.js"></script>
 <script src="${ctx}/js/redis/index.js"></script>
 <script src="${ctx}/js/redis/whe-tree.js"></script>
 <script type="text/javascript">
+    //当前key
+    var key;
+    //当前数据类型
+    var redisType;
+    //当前是第几个数据库
+    var redisDb;
+    var string = "string";
+    var list = "list";
+    var set = "set";
+    var zset = "zset";
+    var hash = "hash";
+    var nowNodeId;
+    /**
+     * 重命名key
+     **/
+    function rename(th) {
+        var newKey = $(th).closest("tr").find("input").val();
+        if (newKey.trim() == ''||newKey==key) {
+            return;
+        }
+        $.ajax({
+            url: ctx + "/renameNx",
+            data: {db: redisDb, oldKey: key, newKey: newKey},
+            type: "post",
+            dataType: "json",
+            success: function (data) {
+                if (data == "1") {
+                    $("#prompt").modal("show");
+                    key=newKey;
+                    $("li[node-id='"+nowNodeId+"']").find(".text").html(key);
+                } else if(data=="2"){
+                    alert("键已存在");
+                }else{
+                    alert("操作失败");
+                }
+            }
+        });
+    }
+    function setTTL(th) {
+        var ttl = $(th).closest("tr").find("input").val();
+        alert(ttl)
+        alert(isNaN(ttl))
+    }
+    /**
+     * string更新值
+     * */
+    function updateString(th) {
+        var val = $(th).closest("tr").find("input").val();
+        if (val.trim() == '') {
+            return;
+        }
+        $.ajax({
+            url: ctx + "/updateString",
+            data: {db: redisDb, key: key, val: val},
+            type: "post",
+            dataType: "json",
+            success: function (data) {
+                if (data == "1") {
+                    $("#prompt").modal("show");
+                } else {
+                    alert("操作失败");
+                }
+
+            }
+        });
+    }
+    function removeDisabled(event) {
+        event = event || window.event;
+        var obj = event.srcElement ? event.srcElement : event.target;
+        $(obj).next("button").removeClass("disabled");
+        $(obj).closest("tr").find("input").removeAttr("disabled");
+    }
+
+    /**
+     * 检查是否是数字不包含小数点 包含负数
+     * @param th this
+     */
+    function checkNumber(th) {
+        var value = th.value;
+        if (value || value.length > 0) {
+            var charAt = value.charAt(0);
+            if (charAt == '-') {
+                th.value = charAt + value.replace(/[^0-9]/g, '');
+            } else {
+                th.value = value.replace(/[^0-9]/g, '');
+            }
+        }
+    }
 
     $(function () {
+        //key导航切换
+        $("#redisContent").on('click', ".nav-tabs li", function () {
+            $(this).siblings("li").removeClass("active");
+            $(this).addClass("active");
+            var text = $(this).find("a").html();
+            if (text == "生存时间") {
+                $("#type-content").css("display", "none");
+                $("#ttl-content").css("display", "block");
+            } else {
+                $("#ttl-content").css("display", "none");
+                $("#type-content").css("display", "block");
+            }
+        })
         var defaultData = ${tree};
         $("#tree").initTree(defaultData);
         $("#tree").on('click', '.node-div', function () {
@@ -376,26 +485,36 @@
             }
             var db = $(this).parent().closest(".child_ul").siblings(".node-div").find(".text").html().toUpperCase();
             var indexOf = db.indexOf("DB-");
-            db = db.substring(indexOf + 3);
+            redisDb = db.substring(indexOf + 3);
             var text = $(this).find(".text");
-            var key = text.html();
+            key = text.html();
             var type = text.attr("type");
-            if (type == 'string') {
+            nowNodeId=$(this).closest("li").attr("node-id");
+            if (type == string) {
+                redisType = type;
                 $.ajax({
                     url: ctx + "/getString",
-                    data: {db: db, key: key},
+                    data: {db: redisDb, key: key},
                     type: "post",
                     dataType: "json",
                     success: function (data) {
                         $("#redisContent").empty();
-                        var str='<ul class="nav nav-tabs"><li role="presentation" class="active"><a href="#">'+type+'</a></li>'+
-                                '<li role="presentation"><a href="#">生存时间</a></li> </ul> <div class="panel panel-default">'+
-                                '<table class="table table-bordered "><thead> <tr><th style="width: 40%;">key</th><th>value</th>' +
-                                '<th style="width: 95px">操作</th> </tr> </thead> <tbody> <tr> <td style="padding: 0;">'+
-                                '<form> <div> <input type="text" class="form-control" value="'+key+'"></div> </form> </td>'+
-                                '<td>21312</td> <td> <a href="#" class="btn btn-primary btn-xs" data-toggle="modal" data-target="#customerEditDialog"'+
-                                'onclick="editCustomer(22)">修改</a> <a href="#" class="btn btn-danger btn-xs" onclick="deleteString(2);">删除</a>'+
-                                '</td> </tr></tbody> </table> </div>';
+                        var str = '<ul class="nav nav-tabs"><li role="presentation" class="active"><a href="javascript:void(0);">' + type + '</a></li>' +
+                                '<li role="presentation"><a href="javascript:void(0);">生存时间</a></li> </ul> <div class="panel panel-default" id="type-content">' +
+                                '<table class="table table-bordered "><thead> <tr><th style="width: 88%;">key</th><th style="text-align: center">' +
+                                '操作</th> </tr> </thead> <tbody> <tr> <td style="padding: 0;"><input type="text" disabled class="form-control" ' +
+                                'value="' + key + '"> </td><td> <a href="javascript:void(0);" class="btn btn-primary btn-xs" ' +
+                                'onclick="removeDisabled(event)">修改</a> <button type="button" class="btn btn-success btn-xs disabled" onclick="rename(this)">保存</button>' +
+                                '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="deleteString(2);" style="margin-left: 4px;">删除</a>' +
+                                '</td> </tr></tbody><thead><tr><th>value</th><th style="text-align: center;">操作</th></tr></thead>' +
+                                '<tbody><tr><td style="padding: 0;"><input type="text" class="form-control" value="' + data.string + '"></td>' +
+                                '<td><button type="button" class="btn btn-success btn-xs " onclick="updateString(this)">保存</button></td></tr></table>' +
+                                '</table> </div><div class="panel panel-default" style="display: none;" id="ttl-content"> <table class="table table-bordered ">' +
+                                '<thead><tr><th style="width: 92%;">过期时间(秒)</th><th style="text-align: center;">操作</th></tr></thead>' +
+                                '<tbody><tr><td style="padding: 0;"><input type="text" class="form-control" disabled value="' + data.ttl + '"  style="ime-mode:disabled"' +
+                                'onkeyup="checkNumber(this)"/></td><td><a href="javascript:void(0);" class="btn btn-primary btn-xs"' +
+                                'onclick="removeDisabled(event)">修改</a><button type="button" class="btn btn-success btn-xs disabled" style="margin-left: 5px;" onclick="setTTL(this)">保存</button>' +
+                                '</td></tr></tbody></table></div>';
                         $("#redisContent").append(str);
                     }
                 });
@@ -403,7 +522,7 @@
 
         })
 
-    })
+    });
     function nextPage(db, cursor, event) {
         event = event || window.event;
         var obj = event.srcElement ? event.srcElement : event.target;
@@ -418,6 +537,7 @@
             }
         })
     }
+
     function upPage(db, cursor, event) {
         event = event || window.event;
         var obj = event.srcElement ? event.srcElement : event.target;

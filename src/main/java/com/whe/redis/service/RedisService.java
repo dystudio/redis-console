@@ -52,7 +52,22 @@ public class RedisService {
         });
     }
 
-    public Map<String, String> getType(int db,List<String> keys) {
+    /**
+     * 更新key
+     *
+     * @param db     db
+     * @param oldKey 旧key
+     * @param newKey 新key
+     */
+    public long renameNx(int db, String oldKey, String newKey) {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        Long aLong = jedis.renamenx(oldKey, newKey);
+        jedis.close();
+        return aLong;
+    }
+
+    public Map<String, String> getType(int db, List<String> keys) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
         Map<String, String> map = keys.stream().collect(Collectors.toMap(key -> key, jedis::type));

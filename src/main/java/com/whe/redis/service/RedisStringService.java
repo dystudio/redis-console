@@ -57,11 +57,19 @@ public class RedisStringService {
         return allString;
     }
 
+    /**
+     * 根据数据库和key获得val
+     *
+     * @param db  db
+     * @param key key
+     * @return Map<String,String>
+     */
     public Map<String, String> getString(int db, String key) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
         String val = jedis.get(key);
         Long ttl = jedis.ttl(key);
+        jedis.close();
         Map<String, String> map = new HashMap<>();
         map.put(ServerConstant.REDIS_STRING, val);
         map.put(ServerConstant.TTL, ttl + "");
@@ -69,68 +77,21 @@ public class RedisStringService {
     }
 
     /**
-     * 模糊分页查询string类型数据
+     * 更新val
      *
-     * @return Page<Map<String, String>>
+     * @param db  db
+     * @param key key
+     * @param val newValue
      */
-    public Page<Map<String, String>> findStringPageByQuery(int pageNo, String pattern) {
-        if (pattern == null) {
-            pattern = "*";
-        }
-        Page<Map<String, String>> page = new Page<>();
-        if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            Jedis jedis = JedisFactory.getJedisPool().getResource();
-            if (pageNo == 1) {
-                Set<String> keys = jedis.keys(pattern);
-                keys.forEach(key -> {
-                    if (ServerConstant.REDIS_STRING.equalsIgnoreCase(jedis.type(key))) {
-                        stringKeys.add(key);
-                    }
-                });
-            }
-            //总数据
-            page.setTotalRecord(stringKeys.size());
-            page.setPageNo(pageNo);
-            Map<String, String> stringMap = findStringByKeys(stringKeys, jedis);
-            page.setResults(stringMap);
-            jedis.close();
-            return page;
-        } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            JedisCluster jedisCluster = JedisFactory.getJedisCluster();
-            //检查集群节点是否发生变化
-            RedisClusterUtils.checkClusterChange(jedisCluster);
-            Map<String, JedisPool> clusterNodes = jedisCluster.getClusterNodes();
-            String finalPattern = pattern;
-            clusterNodes.entrySet().forEach(pool -> {
-                Jedis resource = pool.getValue().getResource();
-                Set<String> keys = resource.keys(finalPattern);
-                keys.forEach(key -> {
-                    if (ServerConstant.REDIS_STRING.equalsIgnoreCase(resource.type(key))) {
-                        stringKeys.add(key);
-                    }
-                });
-                resource.close();
-            });
-            //总数据
-            page.setTotalRecord(stringKeys.size());
-            page.setPageNo(pageNo);
-            clusterNodes.entrySet()
-                    .stream()
-                    .filter(entry -> JedisFactory.getRedisClusterNode().getMasterNodeInfoSet().contains(entry.getKey()))
-                    .forEach(entry -> {
-                        if (JedisFactory.getRedisClusterNode().getMasterNodeInfoSet().contains(entry.getKey())) {
-                            Jedis jedis = null;
-                            try {
-                                jedis = entry.getValue().getResource();
-                            } finally {
-                                assert jedis != null;
-                                jedis.close();
-                            }
-                        }
-                    });
-        }
-        return null;
+    public void updateVal(int db, String key, String val) {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        jedis.set(key, val);
+        jedis.close();
     }
+
+
+
 
     /**
      * 获得当前节点所有String

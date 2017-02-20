@@ -174,11 +174,6 @@ $(function () {
             }
         })
     });
-    //提示框关闭
-    $("#prompt").on("hide.bs.modal", function () {
-        redisAll();
-    });
-
 
     /**
      * 显示数据
