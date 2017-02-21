@@ -9,7 +9,7 @@ public class ServerConstant {
 
     public final static String REDIS_CLUSTER = "redisCluster";
     public final static String STAND_ALONE = "standAlone";
-    public final static Integer PAGE_NUM = 1000;
+    public final static Integer PAGE_NUM = 50;
     public final static String REDIS_CURSOR = "redisCursor";
     public final static String DEFAULT_CURSOR = "0";
     public final static String DEFAULT_MATCH = "*";

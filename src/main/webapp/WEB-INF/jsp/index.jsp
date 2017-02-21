@@ -139,7 +139,7 @@
             <table class="table table-bordered ">
                 <thead>
                 <tr>
-                    <th style="width: 88%;">key</th>
+                    <th style="width: 87%;">key</th>
                     <th style="text-align: center;">操作</th>
                 </tr>
                 </thead>
@@ -181,7 +181,7 @@
             <table class="table table-bordered ">
                 <thead>
                 <tr>
-                    <th style="width: 92%;">过期时间(秒)</th>
+                    <th style="width: 91%;">过期时间(秒)</th>
                     <th style="text-align: center;">操作</th>
                 </tr>
                 </thead>
@@ -390,7 +390,7 @@
      **/
     function rename(th) {
         var newKey = $(th).closest("tr").find("input").val();
-        if (newKey.trim() == ''||newKey==key) {
+        if (newKey.trim() == '' || newKey == key) {
             return;
         }
         $.ajax({
@@ -400,21 +400,43 @@
             dataType: "json",
             success: function (data) {
                 if (data == "1") {
-                    $("#prompt").modal("show");
-                    key=newKey;
-                    $("li[node-id='"+nowNodeId+"']").find(".text").html(key);
-                } else if(data=="2"){
-                    alert("键已存在");
-                }else{
-                    alert("操作失败");
+                    key = newKey;
+                    $("li[node-id='" + nowNodeId + "']").find(".text").html(key);
                 }
+                showModel(data);
             }
         });
     }
-    function setTTL(th) {
-        var ttl = $(th).closest("tr").find("input").val();
-        alert(ttl)
-        alert(isNaN(ttl))
+    //更新生存时间
+    function setExpire(th) {
+        var seconds = $(th).closest("tr").find("input").val();
+        if (!isNaN(seconds)) {
+            $.ajax({
+                url: ctx + "/setExpire",
+                data: {db: redisDb, key: key, seconds: seconds},
+                type: "post",
+                dataType: "json",
+                success: function (data) {
+                    showModel(data);
+                }
+            });
+        }
+    }
+    //删除key
+    function delKey(th) {
+        $.ajax({
+            url: ctx + "/delKey",
+            data: {db: redisDb, key: key},
+            type: "post",
+            dataType: "json",
+            success: function (data) {
+                showModel(data);
+                if (data == "1") {
+                    $("li[node-id='" + nowNodeId + "']").empty();
+                    $("#redisContent").empty();
+                }
+            }
+        });
     }
     /**
      * string更新值
@@ -430,12 +452,7 @@
             type: "post",
             dataType: "json",
             success: function (data) {
-                if (data == "1") {
-                    $("#prompt").modal("show");
-                } else {
-                    alert("操作失败");
-                }
-
+                showModel(data);
             }
         });
     }
@@ -489,7 +506,7 @@
             var text = $(this).find(".text");
             key = text.html();
             var type = text.attr("type");
-            nowNodeId=$(this).closest("li").attr("node-id");
+            nowNodeId = $(this).closest("li").attr("node-id");
             if (type == string) {
                 redisType = type;
                 $.ajax({
@@ -501,19 +518,19 @@
                         $("#redisContent").empty();
                         var str = '<ul class="nav nav-tabs"><li role="presentation" class="active"><a href="javascript:void(0);">' + type + '</a></li>' +
                                 '<li role="presentation"><a href="javascript:void(0);">生存时间</a></li> </ul> <div class="panel panel-default" id="type-content">' +
-                                '<table class="table table-bordered "><thead> <tr><th style="width: 88%;">key</th><th style="text-align: center">' +
+                                '<table class="table table-bordered "><thead> <tr><th style="width: 87%;">key</th><th style="text-align: center">' +
                                 '操作</th> </tr> </thead> <tbody> <tr> <td style="padding: 0;"><input type="text" disabled class="form-control" ' +
                                 'value="' + key + '"> </td><td> <a href="javascript:void(0);" class="btn btn-primary btn-xs" ' +
                                 'onclick="removeDisabled(event)">修改</a> <button type="button" class="btn btn-success btn-xs disabled" onclick="rename(this)">保存</button>' +
-                                '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="deleteString(2);" style="margin-left: 4px;">删除</a>' +
+                                '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delKey(this);" style="margin-left: 4px;">删除</a>' +
                                 '</td> </tr></tbody><thead><tr><th>value</th><th style="text-align: center;">操作</th></tr></thead>' +
                                 '<tbody><tr><td style="padding: 0;"><input type="text" class="form-control" value="' + data.string + '"></td>' +
                                 '<td><button type="button" class="btn btn-success btn-xs " onclick="updateString(this)">保存</button></td></tr></table>' +
                                 '</table> </div><div class="panel panel-default" style="display: none;" id="ttl-content"> <table class="table table-bordered ">' +
-                                '<thead><tr><th style="width: 92%;">过期时间(秒)</th><th style="text-align: center;">操作</th></tr></thead>' +
+                                '<thead><tr><th style="width: 91%;">过期时间(秒)</th><th style="text-align: center;">操作</th></tr></thead>' +
                                 '<tbody><tr><td style="padding: 0;"><input type="text" class="form-control" disabled value="' + data.ttl + '"  style="ime-mode:disabled"' +
                                 'onkeyup="checkNumber(this)"/></td><td><a href="javascript:void(0);" class="btn btn-primary btn-xs"' +
-                                'onclick="removeDisabled(event)">修改</a><button type="button" class="btn btn-success btn-xs disabled" style="margin-left: 5px;" onclick="setTTL(this)">保存</button>' +
+                                'onclick="removeDisabled(event)">修改</a><button type="button" class="btn btn-success btn-xs disabled" style="margin-left: 5px;" onclick="setExpire(this)">保存</button>' +
                                 '</td></tr></tbody></table></div>';
                         $("#redisContent").append(str);
                     }
@@ -551,6 +568,24 @@
                 $(obj).addNode(data)
             }
         })
+    }
+
+    function showModel(data) {
+        if (data == '1') {
+            $("#promptTitle").html("成功提示");
+            $("#promptContent").html("<p>修改成功</p>");
+            $("#promptBtn").removeClass("btn-danger").addClass("btn-success");
+        } else if (data == "2") {
+            $("#promptTitle").html("失败提示");
+            $("#promptContent").html("<p>键已存在!</p>");
+            $("#promptBtn").removeClass("btn-success").addClass("btn-danger");
+        } else {
+            $("#promptTitle").html("失败提示");
+            $("#promptContent").html("<p>修改失败</p>");
+            $("#promptBtn").removeClass("btn-success").addClass("btn-danger");
+        }
+        $("#prompt").modal("show");
+
     }
 </script>
 </html>

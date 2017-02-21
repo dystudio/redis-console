@@ -67,6 +67,34 @@ public class RedisService {
         return aLong;
     }
 
+
+    /**
+     * 更新生存时间
+     *
+     * @param db      db
+     * @param key     key
+     * @param seconds 秒
+     */
+    public void setExpire(int db, String key, int seconds) {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        jedis.expire(key, seconds);
+        jedis.close();
+    }
+   /**
+     * 删除key
+     *
+     * @param db      db
+     * @param key     key
+     */
+    public void delKey(int db, String key) {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        jedis.del(key);
+        jedis.close();
+    }
+
+
     public Map<String, String> getType(int db, List<String> keys) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);

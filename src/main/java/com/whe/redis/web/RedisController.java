@@ -61,7 +61,8 @@ public class RedisController {
      * @return index
      */
     @RequestMapping(value = {"/"})
-    public String index(Model model, @RequestParam(defaultValue = "0") String cursor, String pattern, HttpServletRequest request, HttpServletResponse response) throws UnsupportedEncodingException {
+    public String index(Model model, @RequestParam(defaultValue = "0") String cursor, String pattern, HttpServletRequest request, HttpServletResponse response) {
+
         String treeJson = treeJson(cursor, request, response);
         model.addAttribute("tree", treeJson);
         Set<String> type = new HashSet<>();
@@ -141,7 +142,7 @@ public class RedisController {
     }
 
     /**
-     * string更新值
+     * key重命名
      *
      * @param db     db
      * @param oldKey 旧key
@@ -150,9 +151,48 @@ public class RedisController {
      */
     @RequestMapping(value = {"/renameNx"})
     @ResponseBody
-    public String rename(int db, String oldKey, String newKey) {
+    public String renameNx(int db, String oldKey, String newKey) {
         try {
             return redisService.renameNx(db, oldKey, newKey) == 0 ? "2" : "1";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "0";
+        }
+    }
+
+    /**
+     * 更新生存时间
+     *
+     * @param db      db
+     * @param key     key
+     * @param seconds 秒
+     * @return 1:成功;0:失败
+     */
+    @RequestMapping(value = {"/setExpire"})
+    @ResponseBody
+    public String setExpire(int db, String key, int seconds) {
+        try {
+            redisService.setExpire(db, key, seconds);
+            return "1";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "0";
+        }
+    }
+
+    /**
+     * 删除key
+     *
+     * @param db  db
+     * @param key key
+     * @return 1:成功;0:失败
+     */
+    @RequestMapping(value = {"/delKey"})
+    @ResponseBody
+    public String delKey(int db, String key) {
+        try {
+            redisService.delKey(db, key);
+            return "1";
         } catch (Exception e) {
             e.printStackTrace();
             return "0";
@@ -398,7 +438,7 @@ public class RedisController {
                 }).orElse(ServerConstant.DEFAULT_CURSOR);
     }
 
-    private String treeJson(String cursor, HttpServletRequest request, HttpServletResponse response) throws UnsupportedEncodingException {
+    private String treeJson(String cursor, HttpServletRequest request, HttpServletResponse response) {
         Map<Integer, Long> dataBases = redisService.getDataBases();
         StringBuilder sb = new StringBuilder();
         sb.append("[{");
@@ -436,7 +476,12 @@ public class RedisController {
         });
         sb.deleteCharAt(sb.length() - 1).append("]}]");
         String jsonString = JSON.toJSONString(map);
-        String encode = URLEncoder.encode(jsonString, ServerConstant.ENCODING);
+        String encode = null;
+        try {
+            encode = URLEncoder.encode(jsonString, ServerConstant.ENCODING);
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
         Cookie cookie = new Cookie(ServerConstant.REDIS_CURSOR, encode);
         cookie.setPath("/");
         cookie.setMaxAge(-1);

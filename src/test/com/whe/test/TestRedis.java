@@ -16,14 +16,14 @@ public class TestRedis {
         poolConfig.setMaxIdle(20);
         poolConfig.setMaxTotal(20);
         poolConfig.setMinIdle(10);
-        JedisPool jedisPool = new JedisPool(poolConfig, "192.168.88.128", 6379, 2000);
+        JedisPool jedisPool = new JedisPool(poolConfig, "192.168.200.134", 6381, 2000);
 
         long l = System.currentTimeMillis();
 
-        IntStream.rangeClosed(5000, 10000).parallel().forEach(i -> {
+        IntStream.rangeClosed(50, 5000).parallel().forEach(i -> {
             Jedis jedis = jedisPool.getResource();
             // jedis.lpush("list", "val" + i);
-             jedis.del("key" + i);
+             jedis.del("yhPush_key" + i);
             jedis.select(0);
 //            jedis.set("key" + i, "val" + i);
             System.out.println(i);

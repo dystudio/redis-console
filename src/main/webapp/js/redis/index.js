@@ -2,10 +2,6 @@
  * Created by trustme on 2017/1/15.
  * index.js
  */
-//删除string
-function deleteString(key){
-
-}
 
 $(function () {
     //加载数据标记
