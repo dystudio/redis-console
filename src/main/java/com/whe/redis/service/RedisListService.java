@@ -51,27 +51,20 @@ public class RedisListService {
     }
 
     /**
-     * 模糊分页查询list类型数据
+     * 根据key查询list类型数据
      *
-     * @return Page<Map<String, List<String>>>
+     * @return Page<List<String>>
      */
-    public Page<Map<String, List<String>>> findListPageByQuery(int pageNo, String pattern) {
-        Page<Map<String, List<String>>> page = new Page<>();
+    public Page<List<String>> findListPageByKey(int db, String key, int pageNo) {
+        Page<List<String>> page = new Page<>();
         if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             Jedis jedis = JedisFactory.getJedisPool().getResource();
-            if (pageNo == 1) {
-                Set<String> keys = jedis.keys(pattern);
-                keys.forEach(key -> {
-                    if (ServerConstant.REDIS_LIST.equalsIgnoreCase(jedis.type(key))) {
-                        listKeys.add(key);
-                    }
-                });
-            }
+            jedis.select(db);
+            List<String> list = jedis.lrange(key, (pageNo-1) * ServerConstant.PAGE_NUM, pageNo  * ServerConstant.PAGE_NUM);
             //总数据
-            page.setTotalRecord(listKeys.size());
+            page.setTotalRecord(jedis.llen(key));
             page.setPageNo(pageNo);
-            Map<String, List<String>> listMap = findListByKeys(listKeys, jedis, page);
-            page.setResults(listMap);
+            page.setResults(list);
             jedis.close();
             return page;
         }

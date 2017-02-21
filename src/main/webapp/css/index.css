@@ -108,7 +108,9 @@
     pointer-events: none;
 }
 
-
 .form-control{
     height: 39px;
+}
+#page{
+    margin-left: 18%;
 }

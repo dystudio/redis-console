@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.whe.redis.service.*;
 import com.whe.redis.util.JedisFactory;
+import com.whe.redis.util.Page;
 import com.whe.redis.util.ServerConstant;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -103,7 +104,20 @@ public class RedisController {
     }
 
     /**
-     * ajax加载list类型数据
+     * ajax分页加载list类型数据
+     *
+     * @return map
+     */
+    @RequestMapping(value = {"/getList"})
+    @ResponseBody
+    public Page<List<String>> getList(int db, String key, int pageNo,HttpServletRequest request) {
+        Page<List<String>> page = redisListService.findListPageByKey(db, key, pageNo);
+        page.pageViewAjax(request.getContextPath()+"/getList","");
+        return page;
+    }
+
+    /**
+     * ajax加载所遇list类型数据
      *
      * @return map
      */

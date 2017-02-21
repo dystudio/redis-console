@@ -11,7 +11,7 @@ public class RedisPoolConfig {
     /**
      * 连接超时
      */
-    public final static int TIMEOUT=3000;
+    final static int TIMEOUT=3000;
 
     /**
      * 连接池中最大连接数。高版本：maxTotal，低版本：maxActive
