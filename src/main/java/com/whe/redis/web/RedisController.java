@@ -77,18 +77,14 @@ public class RedisController {
         return "index";
     }
 
-    public void getValBykey(Integer db, String key) {
-
-    }
-
     /**
      * ajax加载string类型数据
      *
-     * @return map
+     * @return String
      */
     @RequestMapping(value = {"/getString"})
     @ResponseBody
-    public Map<String, String> getString(Integer db, String key) {
+    public String getString(Integer db, String key) {
         return redisStringService.getString(db, key);
     }
 
@@ -173,7 +169,23 @@ public class RedisController {
             return "0";
         }
     }
-
+    /**
+     * 获得生存时间
+     *
+     * @param db      db
+     * @param key     key
+     * @return 1:成功;0:失败
+     */
+    @RequestMapping(value = {"/ttl"})
+    @ResponseBody
+    public long ttl(int db, String key) {
+        try {
+            return redisService.ttl(db, key);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
     /**
      * 更新生存时间
      *
@@ -232,8 +244,50 @@ public class RedisController {
             return "0";
         }
     }
-
-
+    /**
+     * list根据索引更新value
+     *
+     * @param db    db
+     * @param index index
+     * @param key   key
+     * @param val val
+     *@return 1:成功;0:失败
+     */
+    @RequestMapping(value = {"/updateList"})
+    @ResponseBody
+    public String updateList(int db,int index,String key,String val) {
+        try {
+            redisListService.lSet(db,index,key,val);
+            return "1";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "0";
+        }
+    }
+    /**
+     * list根据索引删除
+     *
+     * @param db    db
+     * @param listSize listSize
+     * @param index   index
+     * @param key key
+     *@return 1:成功;0:失败
+     */
+    @RequestMapping(value = {"/delList"})
+    @ResponseBody
+    public String delList(int db,int listSize,int index,String key) {
+        try {
+            long lLen = redisListService.lLen(db, key);
+            if(listSize!=lLen){
+                return "2";
+            }
+            redisListService.lRem(db,index,key);
+            return "1";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "0";
+        }
+    }
     /**
      * 备份数据
      *

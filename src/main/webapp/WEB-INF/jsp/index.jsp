@@ -412,6 +412,7 @@
     var zset = "zset";
     var hash = "hash";
     var nowNodeId;
+    var listSize = 0;
     /**
      * 重命名key
      **/
@@ -483,6 +484,45 @@
             }
         });
     }
+    function updateList(th) {
+        var val = $(th).closest("tr").find("input").val();
+        var index = $(th).closest("tr").find("td").first().html();
+        --index;
+        $.ajax({
+            url: ctx + "/updateList",
+            data: {db: redisDb, index: index, key: key, val: val},
+            type: "post",
+            dataType: "json",
+            success: function (data) {
+                showModel(data);
+            }
+        });
+    }
+    function delList(th) {
+        var index = $(th).closest("tr").find("td").first().html();
+        --index;
+        var len = $(th).closest("tr").prevAll().length;
+        var strLen = len.toString();
+        var strIndex = index.toString();
+        len = parseInt(strIndex.substring(strIndex.length - strLen.length)) - len;
+        index = index - len;
+        alert(index);
+        $.ajax({
+            url: ctx + "/delList",
+            data: {db: redisDb, index: index, listSize: listSize, key: key},
+            type: "post",
+            dataType: "json",
+            success: function (data) {
+                if (data == "2") {
+                    alert("不能从list删除行,因为行已经改变了。重载值并再试一次");
+                    return;
+                }
+                $(th).closest("tr").remove();
+                --listSize;
+                showModel(data);
+            }
+        });
+    }
     function removeDisabled(event) {
         event = event || window.event;
         var obj = event.srcElement ? event.srcElement : event.target;
@@ -513,6 +553,18 @@
             $(this).addClass("active");
             var text = $(this).find("a").html();
             if (text == "生存时间") {
+                if (!$(this).hasClass("firstClick")) {
+                    $(this).addClass("firstClick");
+                    $.ajax({
+                        url: ctx + "/ttl",
+                        data: {db: redisDb, key: key},
+                        type: "post",
+                        dataType: "json",
+                        success: function (data) {
+                            $("#ttl-content").find("input").val(data);
+                        }
+                    });
+                }
                 $("#type-content").css("display", "none");
                 $("#ttl-content").css("display", "block");
             } else {
@@ -544,30 +596,30 @@
                     type: "post",
                     dataType: "json",
                     success: function (data) {
-                        $("#redisContent").empty();
                         var str = '<ul class="nav nav-tabs"><li role="presentation" class="active"><a href="javascript:void(0);">list</a></li>' +
-                                '<li role="presentation"><a href="javascript:void(0);">生存时间</a></li> </ul> <div class="panel panel-default" id="type-content">' +
+                                '<li role="presentation"><a href="javascript:void(0);">生存时间</a></li> </ul> <div class="panel" id="type-content">' +
                                 '<table class="table table-bordered "><thead> <tr><th style="width: 87%;">key</th><th style="text-align: center">' +
-                                '操作</th> </tr> </thead> <tbody> <tr> <td style="padding: 0;"><input type="text" disabled class="form-control" ' +
+                                '操作</th> </tr> </thead> <tbody style="border: 1px solid #ddd;"> <tr> <td style="padding: 0;"><input type="text" disabled class="form-control" ' +
                                 'value="' + key + '"> </td><td> <a href="javascript:void(0);" class="btn btn-primary btn-xs" ' +
                                 'onclick="removeDisabled(event)">修改</a> <button type="button" class="btn btn-success btn-xs disabled" onclick="rename(this)">保存</button>' +
                                 '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delKey(this);" style="margin-left: 4px;">删除</a>' +
-                                '</td> </tr></tbody><thead><tr><th>value</th><th style="text-align: center;">操作</th></tr></thead><tbody id="list-content">';
+                                '</td> </tr></tbody></table><table class="table table-bordered "><thead><tr><th style="width:3%;">row</th><th style="width:83%;">value</th><th style="text-align: center;">操作</th></tr></thead><tbody id="list-content">';
                         for (var i = 0; i < data.results.length; i++) {
-                            str += '<tr><td style="padding: 0;"><input type="text" class="form-control" value="' + data.results[i] + '"></td>' +
-                                    '<td><button type="button" class="btn btn-success btn-xs " onclick="updateString(this)">保存</button>' +
-                                    '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delKey(this);" style="margin-left: 4px;">删除</a></td></tr>';
+                            str += '<tr><td >' + ((data.pageNo - 1) * data.pageSize + i + 1) + '</td><td style="padding: 0;"><input type="text" class="form-control" value="' + data.results[i] + '"></td>' +
+                                    '<td><button type="button" class="btn btn-success btn-xs " onclick="updateList(this)">保存</button>' +
+                                    '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delList(this);" style="margin-left: 4px;">删除</a></td></tr>';
                         }
                         str += '</table><div id="page">';
                         for (var j = 0; j < data.pageView.length; j++) {
                             str += data.pageView[j];
                         }
-                        str += '</div></div><div class="panel panel-default" style="display: none;" id="ttl-content"> <table class="table table-bordered ">' +
+                        str += '</div></div><div class="panel " style="display: none;" id="ttl-content"> <table class="table table-bordered ">' +
                                 '<thead><tr><th style="width: 91%;">过期时间(秒)</th><th style="text-align: center;">操作</th></tr></thead>' +
-                                '<tbody><tr><td style="padding: 0;"><input type="text" class="form-control" disabled value="' + data.ttl + '"  style="ime-mode:disabled"' +
+                                '<tbody><tr><td style="padding: 0;"><input type="text" class="form-control" disabled value="' + data.ttl + '"  ' +
                                 'onkeyup="checkNumber(this)"/></td><td><a href="javascript:void(0);" class="btn btn-primary btn-xs"' +
                                 'onclick="removeDisabled(event)">修改</a><button type="button" class="btn btn-success btn-xs disabled" style="margin-left: 5px;" onclick="setExpire(this)">保存</button>' +
                                 '</td></tr></tbody></table></div>';
+                        listSize = data.totalRecord;
                         $("#redisContent").html(str);
                     }
                 });
@@ -583,17 +635,18 @@
             type: "post",
             dataType: "json",
             success: function (data) {
-                var str="";
+                var str = "";
                 for (var i = 0; i < data.results.length; i++) {
-                    str += '<tr><td style="padding: 0;"><input type="text" class="form-control" value="' + data.results[i] + '"></td>' +
-                            '<td><button type="button" class="btn btn-success btn-xs " onclick="updateString(this)">保存</button>' +
-                            '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delKey(this);" style="margin-left: 4px;">删除</a></td></tr>';
+                    str += '<tr><td>' + ((data.pageNo - 1) * data.pageSize + i + 1) + '</td><td style="padding: 0;"><input type="text" class="form-control" value="' + data.results[i] + '"></td>' +
+                            '<td><button type="button" class="btn btn-success btn-xs " onclick="updateList(this)">保存</button>' +
+                            '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delList(this);" style="margin-left: 4px;">删除</a></td></tr>';
                 }
                 $("#list-content").html(str);
-                var page="";
+                var page = "";
                 for (var j = 0; j < data.pageView.length; j++) {
                     page += data.pageView[j];
                 }
+                listSize = data.totalRecord;
                 $("#page").html(page);
             }
         });
@@ -603,9 +656,8 @@
             url: ctx + "/getString",
             data: {db: redisDb, key: key},
             type: "post",
-            dataType: "json",
+            dataType: "text",
             success: function (data) {
-                $("#redisContent").empty();
                 var str = '<ul class="nav nav-tabs"><li role="presentation" class="active"><a href="javascript:void(0);">string</a></li>' +
                         '<li role="presentation"><a href="javascript:void(0);">生存时间</a></li> </ul> <div class="panel panel-default" id="type-content">' +
                         '<table class="table table-bordered "><thead> <tr><th style="width: 87%;">key</th><th style="text-align: center">' +
@@ -614,15 +666,15 @@
                         'onclick="removeDisabled(event)">修改</a> <button type="button" class="btn btn-success btn-xs disabled" onclick="rename(this)">保存</button>' +
                         '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delKey(this);" style="margin-left: 4px;">删除</a>' +
                         '</td> </tr></tbody><thead><tr><th>value</th><th style="text-align: center;">操作</th></tr></thead>' +
-                        '<tbody><tr><td style="padding: 0;"><input type="text" class="form-control" value="' + data.string + '"></td>' +
+                        '<tbody><tr><td style="padding: 0;"><input type="text" class="form-control" value="' + data + '"></td>' +
                         '<td><button type="button" class="btn btn-success btn-xs " onclick="updateString(this)">保存</button></td></tr></table>' +
                         '</table> </div><div class="panel panel-default" style="display: none;" id="ttl-content"> <table class="table table-bordered ">' +
                         '<thead><tr><th style="width: 91%;">过期时间(秒)</th><th style="text-align: center;">操作</th></tr></thead>' +
-                        '<tbody><tr><td style="padding: 0;"><input type="text" class="form-control" disabled value="' + data.ttl + '"  style="ime-mode:disabled"' +
+                        '<tbody><tr><td style="padding: 0;"><input type="text" class="form-control" disabled value=""  style="ime-mode:disabled"' +
                         'onkeyup="checkNumber(this)"/></td><td><a href="javascript:void(0);" class="btn btn-primary btn-xs"' +
                         'onclick="removeDisabled(event)">修改</a><button type="button" class="btn btn-success btn-xs disabled" style="margin-left: 5px;" onclick="setExpire(this)">保存</button>' +
                         '</td></tr></tbody></table></div>';
-                $("#redisContent").append(str);
+                $("#redisContent").html(str);
             }
         });
     }

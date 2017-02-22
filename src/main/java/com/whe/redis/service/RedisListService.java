@@ -33,19 +33,18 @@ public class RedisListService {
             JedisCluster jedisCluster = JedisFactory.getJedisCluster();
             //检查集群节点是否发生变化
             RedisClusterUtils.checkClusterChange(jedisCluster);
-            jedisCluster.getClusterNodes()
-                    .forEach((key, pool) -> {
-                        if (JedisFactory.getRedisClusterNode().getMasterNodeInfoSet().contains(key)) {
-                            Jedis jedis = null;
-                            try {
-                                jedis = pool.getResource();
-                                allList.putAll(getNodeList(jedis));
-                            } finally {
-                                assert jedis != null;
-                                jedis.close();
-                            }
-                        }
-                    });
+            jedisCluster.getClusterNodes().forEach((key, pool) -> {
+                if (JedisFactory.getRedisClusterNode().getMasterNodeInfoSet().contains(key)) {
+                    Jedis jedis = null;
+                    try {
+                        jedis = pool.getResource();
+                        allList.putAll(getNodeList(jedis));
+                    } finally {
+                        assert jedis != null;
+                        jedis.close();
+                    }
+                }
+            });
         }
         return allList;
     }
@@ -60,7 +59,7 @@ public class RedisListService {
         if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             Jedis jedis = JedisFactory.getJedisPool().getResource();
             jedis.select(db);
-            List<String> list = jedis.lrange(key, (pageNo-1) * ServerConstant.PAGE_NUM, pageNo  * ServerConstant.PAGE_NUM);
+            List<String> list = jedis.lrange(key, (pageNo - 1) * ServerConstant.PAGE_NUM, pageNo * ServerConstant.PAGE_NUM);
             //总数据
             page.setTotalRecord(jedis.llen(key));
             page.setPageNo(pageNo);
@@ -72,16 +71,46 @@ public class RedisListService {
     }
 
     /**
+     * 根据索引更新value
+     *
+     * @param db    db
+     * @param index index
+     * @param key   key
+     * @param value value
+     */
+    public void lSet(int db, int index, String key, String value) {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        jedis.lset(key, index, value);
+        jedis.close();
+    }
+
+
+    public long lLen(int db, String key) {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        Long aLong = jedis.llen(key);
+        jedis.close();
+        return aLong;
+    }
+
+    public void lRem(int db, int index, String key) {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        String uuid = UUID.randomUUID().toString();
+        jedis.lset(key, index, uuid);
+        jedis.lrem(key, 0, uuid);
+        jedis.close();
+    }
+
+    /**
      * 获得当前节点所有list
      *
      * @param jedis jedis
      * @return Map
      */
     private Map<String, List<String>> getNodeList(Jedis jedis) {
-        return jedis.keys("*")
-                .stream()
-                .filter(key -> ServerConstant.REDIS_LIST.equalsIgnoreCase(jedis.type(key)))
-                .collect(toMap(key -> key, key -> jedis.lrange(key, 0, -1)));
+        return jedis.keys("*").stream().filter(key -> ServerConstant.REDIS_LIST.equalsIgnoreCase(jedis.type(key))).collect(toMap(key -> key, key -> jedis.lrange(key, 0, -1)));
     }
 
     /**
@@ -89,12 +118,10 @@ public class RedisListService {
      *
      * @param keys  Set<String> keys
      * @param jedis Jedis
-     * @return Map<String, List<String>>
+     * @return Map<String,List<String>>
      */
     private Map<String, List<String>> findListByKeys(Set<String> keys, Jedis jedis, Page page) {
-        return keys.stream().collect(toMap(key -> key, key ->
-                jedis.lrange(key, (page.getPageNo() - 1) * page.getPageSize(), page.getPageNo() * page.getPageSize())
-        ));
+        return keys.stream().collect(toMap(key -> key, key -> jedis.lrange(key, (page.getPageNo() - 1) * page.getPageSize(), page.getPageNo() * page.getPageSize())));
     }
 
 

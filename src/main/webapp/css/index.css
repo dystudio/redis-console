@@ -114,3 +114,6 @@
 #page{
     margin-left: 18%;
 }
+#list-content{
+    border-bottom: 1px solid #ddd;
+}

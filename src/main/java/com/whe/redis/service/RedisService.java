@@ -67,6 +67,19 @@ public class RedisService {
         return aLong;
     }
 
+    /**
+     *
+     * @param db db
+     * @param key key
+     * @return long
+     */
+    public long ttl(int db,String key){
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        Long ttl = jedis.ttl(key);
+        jedis.close();
+        return ttl;
+    }
 
     /**
      * 更新生存时间

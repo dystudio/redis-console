@@ -62,18 +62,14 @@ public class RedisStringService {
      *
      * @param db  db
      * @param key key
-     * @return Map<String,String>
+     * @return String
      */
-    public Map<String, String> getString(int db, String key) {
+    public String getString(int db, String key) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
         String val = jedis.get(key);
-        Long ttl = jedis.ttl(key);
         jedis.close();
-        Map<String, String> map = new HashMap<>();
-        map.put(ServerConstant.REDIS_STRING, val);
-        map.put(ServerConstant.TTL, ttl + "");
-        return map;
+        return val;
     }
 
     /**
