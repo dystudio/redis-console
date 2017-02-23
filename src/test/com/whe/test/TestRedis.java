@@ -9,6 +9,7 @@ import java.util.stream.IntStream;
 
 /**
  * Created by trustme on 2017/2/12.
+ * Test
  */
 public class TestRedis {
     public static void main(String[] args) {
@@ -20,11 +21,11 @@ public class TestRedis {
 
         long l = System.currentTimeMillis();
 
-        IntStream.rangeClosed(0, 5000).parallel().forEach(i -> {
+        IntStream.rangeClosed(0, 2000).parallel().forEach(i -> {
             Jedis jedis = jedisPool.getResource();
-             jedis.lpush("list", "val" + i);
+            jedis.select(1);
+            jedis.sadd("set", "val" + i);
             // jedis.del("key" + i);
-            jedis.select(0);
 //            jedis.set("key" + i, "val" + i);
             System.out.println(i);
             jedis.close();

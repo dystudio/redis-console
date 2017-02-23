@@ -106,9 +106,9 @@ public class RedisController {
      */
     @RequestMapping(value = {"/getList"})
     @ResponseBody
-    public Page<List<String>> getList(int db, String key, int pageNo,HttpServletRequest request) {
+    public Page<List<String>> getList(int db, String key, int pageNo, HttpServletRequest request) {
         Page<List<String>> page = redisListService.findListPageByKey(db, key, pageNo);
-        page.pageViewAjax(request.getContextPath()+"/getList","");
+        page.pageViewAjax(request.getContextPath() + "/getList", "");
         return page;
     }
 
@@ -125,6 +125,17 @@ public class RedisController {
 
     /**
      * ajax加载set类型数据
+     *
+     * @return map
+     */
+    @RequestMapping(value = {"/getSet"})
+    @ResponseBody
+    public Set<String> getSet(int db, String key) {
+        return redisSetService.getSet(db, key);
+    }
+
+    /**
+     * ajax加载所有set类型数据
      *
      * @return map
      */
@@ -169,11 +180,12 @@ public class RedisController {
             return "0";
         }
     }
+
     /**
      * 获得生存时间
      *
-     * @param db      db
-     * @param key     key
+     * @param db  db
+     * @param key key
      * @return 1:成功;0:失败
      */
     @RequestMapping(value = {"/ttl"})
@@ -186,6 +198,7 @@ public class RedisController {
             return -1;
         }
     }
+
     /**
      * 更新生存时间
      *
@@ -244,50 +257,78 @@ public class RedisController {
             return "0";
         }
     }
+
     /**
      * list根据索引更新value
      *
      * @param db    db
      * @param index index
      * @param key   key
-     * @param val val
-     *@return 1:成功;0:失败
+     * @param val   val
+     * @return 1:成功;0:失败
      */
     @RequestMapping(value = {"/updateList"})
     @ResponseBody
-    public String updateList(int db,int index,String key,String val) {
+    public String updateList(int db, int index, String key, String val) {
         try {
-            redisListService.lSet(db,index,key,val);
+            redisListService.lSet(db, index, key, val);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
             return "0";
         }
     }
+
     /**
      * list根据索引删除
      *
-     * @param db    db
+     * @param db       db
      * @param listSize listSize
-     * @param index   index
-     * @param key key
-     *@return 1:成功;0:失败
+     * @param index    index
+     * @param key      key
+     * @return 1:成功;0:失败
      */
     @RequestMapping(value = {"/delList"})
     @ResponseBody
-    public String delList(int db,int listSize,int index,String key) {
+    public String delList(int db, int listSize, int index, String key) {
         try {
             long lLen = redisListService.lLen(db, key);
-            if(listSize!=lLen){
+            if (listSize != lLen) {
                 return "2";
             }
-            redisListService.lRem(db,index,key);
+            redisListService.lRem(db, index, key);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
             return "0";
         }
     }
+
+
+    @RequestMapping(value = {"/updateSet"})
+    @ResponseBody
+    public String updateSet(int db, String key, String oldVal, String newVal) {
+        try {
+            redisSetService.updateSet(db, key, oldVal, newVal);
+            return "1";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "0";
+        }
+    }
+
+    @RequestMapping(value = {"/delSet"})
+    @ResponseBody
+    public String delSet(int db, String key, String val) {
+        try {
+            redisSetService.delSet(db, key, val);
+            return "1";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "0";
+        }
+    }
+
     /**
      * 备份数据
      *
@@ -459,23 +500,22 @@ public class RedisController {
         if (cookies != null && cookies.length > 0) {
             Optional<Cookie> cookie = Stream.of(cookies).filter(c -> c.getName().equals(ServerConstant.REDIS_CURSOR)).findAny();
             cookie.ifPresent(c -> {
-                        String value = null;
-                        try {
-                            value = URLDecoder.decode(c.getValue(), ServerConstant.ENCODING);
-                        } catch (UnsupportedEncodingException e) {
-                            e.printStackTrace();
-                        }
-                        Map map = JSON.parseObject(value, Map.class);
-                        List<String> list = (List<String>) map.get(db);
-                        list.add(cursor);
-                        try {
-                            c.setValue(URLEncoder.encode(JSON.toJSONString(map), ServerConstant.ENCODING));
-                        } catch (UnsupportedEncodingException e) {
-                            e.printStackTrace();
-                        }
-                        response.addCookie(c);
-                    }
-            );
+                String value = null;
+                try {
+                    value = URLDecoder.decode(c.getValue(), ServerConstant.ENCODING);
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
+                Map map = JSON.parseObject(value, Map.class);
+                List<String> list = (List<String>) map.get(db);
+                list.add(cursor);
+                try {
+                    c.setValue(URLEncoder.encode(JSON.toJSONString(map), ServerConstant.ENCODING));
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
+                response.addCookie(c);
+            });
         }
         String upCursor = getUpCursorByCookie(cookies, db, cursor);
         return dbJson(db, cursor, upCursor, request);
@@ -485,25 +525,22 @@ public class RedisController {
         if (ServerConstant.DEFAULT_CURSOR.equals(cursor)) {
             return ServerConstant.DEFAULT_CURSOR;
         }
-        return Stream.of(cookies)
-                .filter(c -> c.getName().equals(ServerConstant.REDIS_CURSOR))
-                .findAny()
-                .map(c -> {
-                    String value = null;
-                    try {
-                        value = URLDecoder.decode(c.getValue(), ServerConstant.ENCODING);
-                    } catch (UnsupportedEncodingException e) {
-                        e.printStackTrace();
-                    }
-                    Map map = JSON.parseObject(value, Map.class);
-                    List<String> list = (List<String>) map.get(db);
-                    for (int i = 0; i < list.size(); i++) {
-                        if (list.get(i).equals(cursor)) {
-                            return list.get(i - 1);
-                        }
-                    }
-                    return ServerConstant.DEFAULT_CURSOR;
-                }).orElse(ServerConstant.DEFAULT_CURSOR);
+        return Stream.of(cookies).filter(c -> c.getName().equals(ServerConstant.REDIS_CURSOR)).findAny().map(c -> {
+            String value = null;
+            try {
+                value = URLDecoder.decode(c.getValue(), ServerConstant.ENCODING);
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
+            Map map = JSON.parseObject(value, Map.class);
+            List<String> list = (List<String>) map.get(db);
+            for (int i = 0; i < list.size(); i++) {
+                if (list.get(i).equals(cursor)) {
+                    return list.get(i - 1);
+                }
+            }
+            return ServerConstant.DEFAULT_CURSOR;
+        }).orElse(ServerConstant.DEFAULT_CURSOR);
     }
 
     private String treeJson(String cursor, HttpServletRequest request, HttpServletResponse response) {
@@ -515,24 +552,20 @@ public class RedisController {
         sb.append("nodes:").append("[");
         Map<Integer, List<String>> map = new HashMap<>();
         dataBases.entrySet().forEach(entry -> {
-            sb.append("{text:").append("'").append("DB-").append(entry.getKey()).append("',")
-                    .append("icon:").append(request.getContextPath()).append("'/img/db.png',")
-                    .append("tags:").append("['").append(entry.getValue()).append("']");
+            sb.append("{text:").append("'").append("DB-").append(entry.getKey()).append("',").append("icon:").append(request.getContextPath()).append("'/img/db.png',").append("tags:").append("['").append(entry.getValue()).append("']");
             Long dbSize = entry.getValue();
             if (dbSize > 0) {
                 ScanResult<String> scanResult = redisService.getKeysByDb(entry.getKey(), cursor);
                 sb.append(",");
                 sb.append("nodes:").append("[");
                 Map<String, String> typeMap = redisService.getType(entry.getKey(), scanResult.getResult());
-                typeMap.forEach((key, type) -> sb.append("{text:").append("'").append(key).append("',icon:'")
-                        .append(request.getContextPath()).append("/img/").append(type).append(".png").append("',type:'").append(type).append("'},"));
+                typeMap.forEach((key, type) -> sb.append("{text:").append("'").append(key).append("',icon:'").append(request.getContextPath()).append("/img/").append(type).append(".png").append("',type:'").append(type).append("'},"));
                 if (dbSize > ServerConstant.PAGE_NUM) {
                     List<String> list = new ArrayList<>();
                     list.add("0");
                     map.put(entry.getKey(), list);
                     String stringCursor = scanResult.getStringCursor();
-                    sb.append("{page:").append("'<ul class=\"pagination\" style=\"margin:0px\"> <li class=\"disabled\" ><a  href=\"javascript:void(0);\" onclick=\"upPage(")
-                            .append(entry.getKey()).append(",").append(ServerConstant.DEFAULT_CURSOR).append(",event)").append(" \">上一页</a></li><li ");
+                    sb.append("{page:").append("'<ul class=\"pagination\" style=\"margin:0px\"> <li class=\"disabled\" ><a  href=\"javascript:void(0);\" onclick=\"upPage(").append(entry.getKey()).append(",").append(ServerConstant.DEFAULT_CURSOR).append(",event)").append(" \">上一页</a></li><li ");
                     if ("0".equals(stringCursor)) {
                         sb.append(" class=\"disabled\"");
                     }
@@ -562,8 +595,7 @@ public class RedisController {
         ScanResult<String> scanResult = redisService.getKeysByDb(db, cursor);
         sb.append("[");
         Map<String, String> typeMap = redisService.getType(db, scanResult.getResult());
-        typeMap.forEach((key, type) -> sb.append("{text:").append("'").append(key).append("',icon:'")
-                .append(request.getContextPath()).append("/img/").append(type).append(".png").append("',type:'").append(type).append("'},"));
+        typeMap.forEach((key, type) -> sb.append("{text:").append("'").append(key).append("',icon:'").append(request.getContextPath()).append("/img/").append(type).append(".png").append("',type:'").append(type).append("'},"));
         String stringCursor = scanResult.getStringCursor();
         sb.append("{page:").append("'<ul class=\"pagination\" style=\"margin:0px\"> <li ");
         if (cursor == null || "0".equals(cursor)) {

@@ -1,6 +1,9 @@
 package com.whe.redis.service;
 
-import com.whe.redis.util.*;
+import com.whe.redis.util.JedisFactory;
+import com.whe.redis.util.RedisClusterUtils;
+import com.whe.redis.util.SerializeUtils;
+import com.whe.redis.util.ServerConstant;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisCluster;
@@ -33,19 +36,18 @@ public class RedisSetService {
             JedisCluster jedisCluster = JedisFactory.getJedisCluster();
             //检查集群节点是否发生变化
             RedisClusterUtils.checkClusterChange(jedisCluster);
-            jedisCluster.getClusterNodes()
-                    .forEach((key, pool) -> {
-                        if (JedisFactory.getRedisClusterNode().getMasterNodeInfoSet().contains(key)) {
-                            Jedis jedis = null;
-                            try {
-                                jedis = pool.getResource();
-                                allSet.putAll(getNodeSet(jedis));
-                            } finally {
-                                assert jedis != null;
-                                jedis.close();
-                            }
-                        }
-                    });
+            jedisCluster.getClusterNodes().forEach((key, pool) -> {
+                if (JedisFactory.getRedisClusterNode().getMasterNodeInfoSet().contains(key)) {
+                    Jedis jedis = null;
+                    try {
+                        jedis = pool.getResource();
+                        allSet.putAll(getNodeSet(jedis));
+                    } finally {
+                        assert jedis != null;
+                        jedis.close();
+                    }
+                }
+            });
         }
         return allSet;
     }
@@ -53,29 +55,32 @@ public class RedisSetService {
     /**
      * 模糊分页查询set类型数据
      *
-     * @return Page<Map<String, Set<String>>>
+     * @return Set<String>
      */
-    public Page<Map<String, Set<String>>> findSetPageByQuery(int pageNo, String pattern) {
-        Page<Map<String, Set<String>>> page = new Page<>();
+    public Set<String> getSet(int db, String key) {
         if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             Jedis jedis = JedisFactory.getJedisPool().getResource();
-            if (pageNo == 1) {
-                Set<String> keys = jedis.keys(pattern);
-                keys.forEach(key -> {
-                    if (ServerConstant.REDIS_SET.equalsIgnoreCase(jedis.type(key))) {
-                        setKeys.add(key);
-                    }
-                });
-            }
-            //总数据
-            page.setTotalRecord(setKeys.size());
-            page.setPageNo(pageNo);
-            Map<String, Set<String>> setMap = findSetByKeys(setKeys, jedis);
-            page.setResults(setMap);
+            jedis.select(db);
+            Set<String> set = jedis.smembers(key);
             jedis.close();
-            return page;
+            return set;
         }
         return null;
+    }
+
+    public void updateSet(int db, String key, String oldVal, String newVal) {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        jedis.srem(key, oldVal);
+        jedis.sadd(key, newVal);
+        jedis.close();
+    }
+
+    public void delSet(int db,String key,String val){
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        jedis.srem(key,val);
+        jedis.close();
     }
 
     /**
@@ -85,10 +90,7 @@ public class RedisSetService {
      * @return Map
      */
     private Map<String, Set<String>> getNodeSet(Jedis jedis) {
-        return jedis.keys("*")
-                .stream()
-                .filter(key -> ServerConstant.REDIS_SET.equalsIgnoreCase(jedis.type(key)))
-                .collect(toMap(key -> key, jedis::smembers));
+        return jedis.keys("*").stream().filter(key -> ServerConstant.REDIS_SET.equalsIgnoreCase(jedis.type(key))).collect(toMap(key -> key, jedis::smembers));
     }
 
     /**
