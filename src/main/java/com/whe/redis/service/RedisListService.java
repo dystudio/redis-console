@@ -15,7 +15,6 @@ import static java.util.stream.Collectors.toMap;
  */
 @Service
 public class RedisListService {
-    private Set<String> listKeys = new HashSet<>();
 
     /**
      * 获得所有list数据
@@ -50,7 +49,7 @@ public class RedisListService {
     }
 
     /**
-     * 根据key查询list类型数据
+     * 根据key分页查询list类型数据
      *
      * @return Page<List<String>>
      */

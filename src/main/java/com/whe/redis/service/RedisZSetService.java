@@ -7,11 +7,9 @@ import redis.clients.jedis.JedisCluster;
 import redis.clients.jedis.Tuple;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static java.util.stream.Collectors.collectingAndThen;
 import static java.util.stream.Collectors.toMap;
 
 /**
@@ -20,7 +18,6 @@ import static java.util.stream.Collectors.toMap;
  */
 @Service
 public class RedisZSetService {
-    private Set<String> zSetKeys = new HashSet<>();
 
     /**
      * 获得所有zSet数据
@@ -56,31 +53,39 @@ public class RedisZSetService {
     }
 
     /**
-     * 模糊分页查询zSet类型数据
+     * 根据key分页查询zSet类型数据
      *
-     * @return Page<Map<String, Set<Tuple>>>
+     * @return Page<Set<Tuple>>
      */
-    public Page<Map<String, Set<Tuple>>> findZSetPageByQuery(int pageNo, String pattern) {
-        Page<Map<String, Set<Tuple>>> page = new Page<>();
+    public Page<Set<Tuple>> findZSetPageByKey(int db, int pageNo, String key) {
+        Page<Set<Tuple>> page = new Page<>();
         if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
             Jedis jedis = JedisFactory.getJedisPool().getResource();
-            if (pageNo == 1) {
-                Set<String> keys = jedis.keys(pattern);
-                keys.forEach(key -> {
-                    if (ServerConstant.REDIS_ZSET.equalsIgnoreCase(jedis.type(key))) {
-                        zSetKeys.add(key);
-                    }
-                });
-            }
+            jedis.select(db);
+            Set<Tuple> tupleSet = jedis.zrangeByScoreWithScores(key, (pageNo - 1) * ServerConstant.PAGE_NUM, pageNo * ServerConstant.PAGE_NUM);
             //总数据
-            page.setTotalRecord(zSetKeys.size());
+            page.setTotalRecord(jedis.zcard(key));
             page.setPageNo(pageNo);
-            Map<String, Set<Tuple>> zSetMap = findZSetByKeys(zSetKeys, jedis);
-            page.setResults(zSetMap);
+            page.setResults(tupleSet);
             jedis.close();
             return page;
         }
         return null;
+    }
+
+    public void updateZSet(int db, String key, String oldVal, String newVal, double score) {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        jedis.zrem(key, oldVal);
+        jedis.zadd(key, score, newVal);
+        jedis.close();
+    }
+
+    public void delZSet(int db, String key, String val) {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        jedis.zrem(key, val);
+        jedis.close();
     }
 
     /**

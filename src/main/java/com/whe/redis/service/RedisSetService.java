@@ -18,7 +18,6 @@ import static java.util.stream.Collectors.toMap;
  */
 @Service
 public class RedisSetService {
-    private Set<String> setKeys = new HashSet<>();
 
     /**
      * 获得所有set数据
@@ -53,7 +52,7 @@ public class RedisSetService {
     }
 
     /**
-     * 模糊分页查询set类型数据
+     * 查询set类型数据
      *
      * @return Set<String>
      */
@@ -76,10 +75,10 @@ public class RedisSetService {
         jedis.close();
     }
 
-    public void delSet(int db,String key,String val){
+    public void delSet(int db, String key, String val) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
-        jedis.srem(key,val);
+        jedis.srem(key, val);
         jedis.close();
     }
 

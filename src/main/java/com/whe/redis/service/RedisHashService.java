@@ -1,12 +1,14 @@
 package com.whe.redis.service;
 
-import com.whe.redis.util.*;
+import com.whe.redis.util.JedisFactory;
+import com.whe.redis.util.RedisClusterUtils;
+import com.whe.redis.util.SerializeUtils;
+import com.whe.redis.util.ServerConstant;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisCluster;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -18,7 +20,6 @@ import static java.util.stream.Collectors.toMap;
  */
 @Service
 public class RedisHashService {
-    private Set<String> hashKeys = new HashSet<>();
 
     /**
      * 获得所有hash数据
@@ -53,34 +54,33 @@ public class RedisHashService {
         return hashMap;
     }
 
-    /**
-     * 模糊分页查询hash类型数据
-     *
-     * @return Page<Map<String, Map<String, String>>>
-     */
-    public Page<Map<String, Map<String, String>>> findHashPageByQuery(int pageNo, String pattern) {
-        Page<Map<String, Map<String, String>>> page = new Page<>();
-        if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            Jedis jedis = JedisFactory.getJedisPool().getResource();
-            if (pageNo == 1) {
-                Set<String> keys = jedis.keys(pattern);
-                keys.forEach(key -> {
-                    if (ServerConstant.REDIS_HASH.equalsIgnoreCase(jedis.type(key))) {
-                        hashKeys.add(key);
-                    }
-                });
-            }
-            //总数据
-            page.setTotalRecord(hashKeys.size());
-            page.setPageNo(pageNo);
-            Map<String, Map<String, String>> hashMap = findhashByKeys(hashKeys, jedis);
-            page.setResults(hashMap);
-            jedis.close();
-            return page;
-        }
-        return null;
+    public Map<String, String> hGetAll(int db, String key) {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        Map<String, String> map = jedis.hgetAll(key);
+        jedis.close();
+        return map;
     }
 
+    public void hSet(int db,String key,String field,String val){
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        jedis.hset(key,field,val);
+        jedis.close();
+    }
+    public void updateHash(int db,String key,String oldField,String newField,String val){
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        jedis.hdel(key,oldField);
+        jedis.hset(key,newField,val);
+        jedis.close();
+    }
+    public void delHash(int db,String key,String field){
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        jedis.hdel(key,field);
+        jedis.close();
+    }
 
     /**
      * 获得当前节点所有hash

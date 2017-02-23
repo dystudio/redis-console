@@ -113,7 +113,7 @@ public class RedisController {
     }
 
     /**
-     * ajax加载所遇list类型数据
+     * ajax加载所有list类型数据
      *
      * @return map
      */
@@ -124,7 +124,7 @@ public class RedisController {
     }
 
     /**
-     * ajax加载set类型数据
+     * ajax加载所有set类型数据
      *
      * @return map
      */
@@ -139,14 +139,16 @@ public class RedisController {
      *
      * @return map
      */
-    @RequestMapping(value = {"/set"})
+    @RequestMapping(value = {"/getZSet"})
     @ResponseBody
-    public Map<String, Set<String>> set() {
-        return redisSetService.getAllSet();
+    public Page<Set<Tuple>> getZSet(int db, int pageNo, String key) {
+        Page<Set<Tuple>> page = redisZSetService.findZSetPageByKey(db, pageNo, key);
+        page.pageViewAjax("/getZSet", "");
+        return page;
     }
 
     /**
-     * ajax加载zSet类型数据
+     * ajax加载所有zSet类型数据
      *
      * @return map
      */
@@ -156,10 +158,17 @@ public class RedisController {
         return redisZSetService.getAllZSet();
     }
 
+
     @RequestMapping(value = {"/hash"})
     @ResponseBody
     public Map<String, Map<String, String>> hash() {
         return redisHashService.getAllHash();
+    }
+
+    @RequestMapping(value = {"/hGetAll"})
+    @ResponseBody
+    public Map<String, String> hGetAll(int db, String key) {
+        return redisHashService.hGetAll(db, key);
     }
 
     /**
@@ -322,6 +331,66 @@ public class RedisController {
     public String delSet(int db, String key, String val) {
         try {
             redisSetService.delSet(db, key, val);
+            return "1";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "0";
+        }
+    }
+
+    @RequestMapping(value = {"/updateZSet"})
+    @ResponseBody
+    public String updateZSet(int db, String key, String oldVal, String newVal, double score) {
+        try {
+            redisZSetService.updateZSet(db, key, oldVal, newVal, score);
+            return "1";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "0";
+        }
+    }
+
+    @RequestMapping(value = {"/delZSet"})
+    @ResponseBody
+    public String delZSet(int db, String key, String val) {
+        try {
+            redisZSetService.delZSet(db, key, val);
+            return "1";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "0";
+        }
+    }
+
+    @RequestMapping(value = {"/hSet"})
+    @ResponseBody
+    public String hSet(int db, String key, String field, String val) {
+        try {
+            redisHashService.hSet(db, key, field, val);
+            return "1";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "0";
+        }
+    }
+
+    @RequestMapping(value = {"/updateHash"})
+    @ResponseBody
+    public String updateHash(int db, String key, String oldField, String newField, String val) {
+        try {
+            redisHashService.updateHash(db, key, oldField, newField, val);
+            return "1";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "0";
+        }
+    }
+
+    @RequestMapping(value = {"/delHash"})
+    @ResponseBody
+    public String delHash(int db, String key, String field) {
+        try {
+            redisHashService.delHash(db, key, field);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();

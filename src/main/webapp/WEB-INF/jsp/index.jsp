@@ -515,9 +515,12 @@
         var len = $(th).closest("tr").prevAll().length;
         var strLen = len.toString();
         var strIndex = index.toString();
-        len = parseInt(strIndex.substring(strIndex.length - strLen.length)) - len;
-        index = index - len;
-        alert(index);
+        var num = parseInt(strIndex.substring(strIndex.length - strLen.length));
+        if (num > 50) {
+            index = index - ((num - 50) - len);
+        } else {
+            index = index - (num - len);
+        }
         $.ajax({
             url: ctx + "/delList",
             data: {db: redisDb, index: index, listSize: listSize, key: key},
@@ -545,6 +548,9 @@
             type: "post",
             dataType: "json",
             success: function (data) {
+                if(data=="1"){
+                    node.attr("oldVal",val);
+                }
                 showModel(data);
             }
         });
@@ -558,6 +564,90 @@
             dataType: "json",
             success: function (data) {
                 $(th).closest("tr").remove();
+                if (data == "1") {
+                    return;
+                }
+                showModel(data);
+            }
+        });
+    }
+    function updateZSet(th) {
+        var node = $(th).closest("td").prev("td").find("input");
+        var oldVal = node.attr("oldVal");
+        var newVal = node.val();
+        var score = $(th).closest("tr").find("input").val();
+        $.ajax({
+            url: ctx + "/updateZSet",
+            data: {db: redisDb, key: key, oldVal: oldVal, newVal: newVal, score: score},
+            type: "post",
+            dataType: "json",
+            success: function (data) {
+                if(data=="1"){
+                    node.attr("oldVal",newVal);
+                }
+                showModel(data);
+            }
+        });
+
+    }
+    function delZSet(th) {
+        var val = $(th).closest("td").prev("td").find("input").attr("oldVal");
+        $.ajax({
+            url: ctx + "/delZSet",
+            data: {db: redisDb, key: key, val: val},
+            type: "post",
+            dataType: "json",
+            success: function (data) {
+                $(th).closest("tr").remove();
+                if (data == "1") {
+                    return;
+                }
+                showModel(data);
+            }
+        });
+    }
+    function updateHash(th) {
+        var val = $(th).closest("td").prev("td").find("input").val();
+        var node = $(th).closest("tr").find("input");
+        var oldField = node.attr("oldField");
+        var newField = node.val();
+        if (oldField == newField) {
+            $.ajax({
+                url: ctx + "/hSet",
+                data: {db: redisDb, key: key, field: oldField, val: val},
+                type: "post",
+                dataType: "json",
+                success: function (data) {
+                    showModel(data);
+                }
+            });
+        } else {
+            $.ajax({
+                url: ctx + "/updateHash",
+                data: {db: redisDb, key: key, oldField: oldField, newField: newField, val: val},
+                type: "post",
+                dataType: "json",
+                success: function (data) {
+                    if(data=="1"){
+                        node.attr("oldField",newField);
+                    }
+                    showModel(data);
+                }
+            });
+        }
+    }
+    function delHash(th) {
+        var field = $(th).closest("tr").find("input").attr("oldField");
+        $.ajax({
+            url: ctx + "/delHash",
+            data: {db: redisDb, key: key, field: field},
+            type: "post",
+            dataType: "json",
+            success: function (data) {
+                $(th).closest("tr").remove();
+                if (data == "1") {
+                    return;
+                }
                 showModel(data);
             }
         });
@@ -584,7 +674,31 @@
             }
         }
     }
-
+    function checkDouble(th) {
+        var value = th.value;
+        var index = value.indexOf(".");
+        if (index != -1) {
+            if (index > 0) {
+                if (value.charAt(0) == '-' && value.charAt(1) == '.') {
+                    value = "-0.";
+                } else {
+                    var start = value.substring(0, index + 1);
+                    var end = value.substring(index + 1);
+                    value = start + end.replace(".", "");
+                }
+            } else {
+                value = 0 + value;
+            }
+        }
+        if (value || value.length > 0) {
+            var charAt = value.charAt(0);
+            if (charAt == '-') {
+                th.value = charAt + value.replace(/[^\d\.]/g, '');
+            } else {
+                th.value = value.replace(/[^\d\.]/g, '');
+            }
+        }
+    }
     $(function () {
         //key导航切换
         $("#redisContent").on('click', ".nav-tabs li", function () {
@@ -629,61 +743,120 @@
             if (type == string) {
                 getString();
             } else if (type == list) {
-                $.ajax({
-                    url: ctx + "/getList",
-                    data: {db: redisDb, key: key, pageNo: 1},
-                    type: "post",
-                    dataType: "json",
-                    success: function (data) {
-                        var str = '<ul class="nav nav-tabs"><li role="presentation" class="active"><a href="javascript:void(0);">list</a></li>' +
-                            '<li role="presentation"><a href="javascript:void(0);">生存时间</a></li> </ul> <div class="panel" id="type-content">' +
-                            '<table class="table table-bordered "><thead> <tr><th style="width: 87%;">key</th><th style="text-align: center">' +
-                            '操作</th> </tr> </thead> <tbody style="border: 1px solid #ddd;"> <tr> <td style="padding: 0;"><input type="text" disabled class="form-control" ' +
-                            'value="' + key + '"> </td><td> <a href="javascript:void(0);" class="btn btn-primary btn-xs" ' +
-                            'onclick="removeDisabled(event)">修改</a> <button type="button" class="btn btn-success btn-xs disabled" onclick="rename(this)">保存</button>' +
-                            '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delKey(this);" style="margin-left: 4px;">删除</a>' +
-                            '</td> </tr></tbody></table><table class="table table-bordered "><thead><tr><th style="width:3%;">row</th><th style="width:83%;">value</th><th style="text-align: center;">操作</th></tr></thead><tbody id="list-content">';
-                        for (var i = 0; i < data.results.length; i++) {
-                            str += '<tr><td >' + ((data.pageNo - 1) * data.pageSize + i + 1) + '</td><td style="padding: 0;"><input type="text" class="form-control" value="' + data.results[i] + '"></td>' +
-                                '<td><button type="button" class="btn btn-success btn-xs " onclick="updateList(this)">保存</button>' +
-                                '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delList(this);" style="margin-left: 4px;">删除</a></td></tr>';
-                        }
-                        str += '</table><div id="page">';
-                        for (var j = 0; j < data.pageView.length; j++) {
-                            str += data.pageView[j];
-                        }
-                        str += '</div></div>' + ttlStr;
-                        listSize = data.totalRecord;
-                        $("#redisContent").html(str);
-                    }
-                });
+                getList();
             } else if (type == set) {
                 getSet();
+            } else if (type == zset) {
+                getZSet();
+            } else if (type == hash) {
+               getHash();
             }
 
         })
 
     });
     function pageViewAjax(url, th) {
+        if (redisType == list) {
+            $.ajax({
+                url: url,
+                data: {db: redisDb, key: key},
+                type: "post",
+                dataType: "json",
+                success: function (data) {
+                    var str = "";
+                    for (var i = 0; i < data.results.length; i++) {
+                        str += '<tr><td>' + ((data.pageNo - 1) * data.pageSize + i + 1) + '</td><td style="padding: 0;"><input type="text" class="form-control" value="' + data.results[i] + '"></td>' +
+                            '<td><button type="button" class="btn btn-success btn-xs " onclick="updateList(this)">保存</button>' +
+                            '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delList(this);" style="margin-left: 4px;">删除</a></td></tr>';
+                    }
+                    $("#list-content").html(str);
+                    var page = "";
+                    for (var j = 0; j < data.pageView.length; j++) {
+                        page += data.pageView[j];
+                    }
+                    listSize = data.totalRecord;
+                    $("#page").html(page);
+                }
+            });
+        } else if (redisType == zset) {
+            $.ajax({
+                url: url,
+                data: {db: redisDb, key: key},
+                type: "post",
+                dataType: "json",
+                success: function (data) {
+                    var str = "";
+                    for (var i = 0; i < data.results.length; i++) {
+                        str += '<tr><td style="padding: 0;"><input type="text" maxlength="50" class="form-control" value="' + data.results[i].score + '" onkeyup="checkDouble(this)">' +
+                            '</td><td style="padding: 0;"><input type="text" class="form-control"  oldVal="' + data.results[i].element + '" value="' + data.results[i].element + '"></td>' +
+                            '<td><button type="button" class="btn btn-success btn-xs " onclick="updateZSet(this)">保存</button>' +
+                            '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delZSet(this);" style="margin-left: 4px;">删除</a></td></tr>';
+                    }
+                    $("#zset-content").html(str);
+                    var page = "";
+                    for (var j = 0; j < data.pageView.length; j++) {
+                        page += data.pageView[j];
+                    }
+                    $("#page").html(page);
+                }
+            });
+        }
+    }
+    function getHash(){
         $.ajax({
-            url: url,
+            url: ctx + "/hGetAll",
             data: {db: redisDb, key: key},
             type: "post",
             dataType: "json",
             success: function (data) {
-                var str = "";
+                var str = '<ul class="nav nav-tabs"><li role="presentation" class="active"><a href="javascript:void(0);">hash</a></li>' +
+                    '<li role="presentation"><a href="javascript:void(0);">生存时间</a></li> </ul> <div class="panel" id="type-content">' +
+                    '<table class="table table-bordered "><thead> <tr><th style="width: 87%;">key</th><th style="text-align: center">' +
+                    '操作</th> </tr> </thead> <tbody style="border: 1px solid #ddd;"> <tr> <td style="padding: 0;"><input type="text" disabled class="form-control" ' +
+                    'value="' + key + '"> </td><td> <a href="javascript:void(0);" class="btn btn-primary btn-xs" ' +
+                    'onclick="removeDisabled(event)">修改</a> <button type="button" class="btn btn-success btn-xs disabled" onclick="rename(this)">保存</button>' +
+                    '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delKey(this);" style="margin-left: 4px;">删除</a>' +
+                    '</td> </tr></tbody></table><table class="table table-bordered "><thead><tr><th style="width:39%;">field</th><th style="width:48%;">value</th><th style="text-align: center;">操作</th></tr></thead><tbody >';
+
+
+                for (var field in data) {
+                    str += '<tr><td style="padding: 0;"><input type="text"  class="form-control" oldField="' + field + '" value="' + field + '" "></td><td style="padding: 0;">' +
+                        '<input type="text" class="form-control"  value="' + data[field] + '"></td>' +
+                        '<td><button type="button" class="btn btn-success btn-xs " onclick="updateHash(this)">保存</button>' +
+                        '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delHash(this);" style="margin-left: 4px;">删除</a></td></tr>';
+                }
+                str += '</table></div>' + ttlStr;
+                $("#redisContent").html(str);
+            }
+        });
+    }
+    function getZSet() {
+        $.ajax({
+            url: ctx + "/getZSet",
+            data: {db: redisDb, pageNo: 1, key: key},
+            type: "post",
+            dataType: "json",
+            success: function (data) {
+                var str = '<ul class="nav nav-tabs"><li role="presentation" class="active"><a href="javascript:void(0);">zset</a></li>' +
+                    '<li role="presentation"><a href="javascript:void(0);">生存时间</a></li> </ul> <div class="panel" id="type-content">' +
+                    '<table class="table table-bordered "><thead> <tr><th style="width: 87%;">key</th><th style="text-align: center">' +
+                    '操作</th> </tr> </thead> <tbody style="border: 1px solid #ddd;"> <tr> <td style="padding: 0;"><input type="text" disabled class="form-control" ' +
+                    'value="' + key + '"> </td><td> <a href="javascript:void(0);" class="btn btn-primary btn-xs" ' +
+                    'onclick="removeDisabled(event)">修改</a> <button type="button" class="btn btn-success btn-xs disabled" onclick="rename(this)">保存</button>' +
+                    '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delKey(this);" style="margin-left: 4px;">删除</a>' +
+                    '</td> </tr></tbody></table><table class="table table-bordered "><thead><tr><th style="width:10%;">score</th><th style="width:77%;">value</th><th style="text-align: center;">操作</th></tr></thead><tbody id="zset-content">';
                 for (var i = 0; i < data.results.length; i++) {
-                    str += '<tr><td>' + ((data.pageNo - 1) * data.pageSize + i + 1) + '</td><td style="padding: 0;"><input type="text" class="form-control" value="' + data.results[i] + '"></td>' +
-                        '<td><button type="button" class="btn btn-success btn-xs " onclick="updateList(this)">保存</button>' +
-                        '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delList(this);" style="margin-left: 4px;">删除</a></td></tr>';
+                    str += '<tr><td style="padding: 0;"><input type="text" maxlength="50" class="form-control" value="' + data.results[i].score + '" onkeyup="checkDouble(this)"></td><td style="padding: 0;">' +
+                        '<input type="text" class="form-control" oldVal="' + data.results[i].element + '" value="' + data.results[i].element + '"></td>' +
+                        '<td><button type="button" class="btn btn-success btn-xs " onclick="updateZSet(this)">保存</button>' +
+                        '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delZSet(this);" style="margin-left: 4px;">删除</a></td></tr>';
                 }
-                $("#list-content").html(str);
-                var page = "";
+                str += '</table><div id="page">';
                 for (var j = 0; j < data.pageView.length; j++) {
-                    page += data.pageView[j];
+                    str += data.pageView[j];
                 }
-                listSize = data.totalRecord;
-                $("#page").html(page);
+                str += '</div></div>' + ttlStr;
+                $("#redisContent").html(str);
             }
         });
     }
@@ -708,6 +881,36 @@
                         '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delSet(this);" style="margin-left: 4px;">删除</a></td></tr>';
                 }
                 str += '</table></div>' + ttlStr;
+                $("#redisContent").html(str);
+            }
+        });
+    }
+    function getList() {
+        $.ajax({
+            url: ctx + "/getList",
+            data: {db: redisDb, key: key, pageNo: 1},
+            type: "post",
+            dataType: "json",
+            success: function (data) {
+                var str = '<ul class="nav nav-tabs"><li role="presentation" class="active"><a href="javascript:void(0);">list</a></li>' +
+                    '<li role="presentation"><a href="javascript:void(0);">生存时间</a></li> </ul> <div class="panel" id="type-content">' +
+                    '<table class="table table-bordered "><thead> <tr><th style="width: 87%;">key</th><th style="text-align: center">' +
+                    '操作</th> </tr> </thead> <tbody style="border: 1px solid #ddd;"> <tr> <td style="padding: 0;"><input type="text" disabled class="form-control" ' +
+                    'value="' + key + '"> </td><td> <a href="javascript:void(0);" class="btn btn-primary btn-xs" ' +
+                    'onclick="removeDisabled(event)">修改</a> <button type="button" class="btn btn-success btn-xs disabled" onclick="rename(this)">保存</button>' +
+                    '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delKey(this);" style="margin-left: 4px;">删除</a>' +
+                    '</td> </tr></tbody></table><table class="table table-bordered "><thead><tr><th style="width:3%;">row</th><th style="width:83%;">value</th><th style="text-align: center;">操作</th></tr></thead><tbody id="list-content">';
+                for (var i = 0; i < data.results.length; i++) {
+                    str += '<tr><td >' + ((data.pageNo - 1) * data.pageSize + i + 1) + '</td><td style="padding: 0;"><input type="text" class="form-control" value="' + data.results[i] + '"></td>' +
+                        '<td><button type="button" class="btn btn-success btn-xs " onclick="updateList(this)">保存</button>' +
+                        '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delList(this);" style="margin-left: 4px;">删除</a></td></tr>';
+                }
+                str += '</table><div id="page">';
+                for (var j = 0; j < data.pageView.length; j++) {
+                    str += data.pageView[j];
+                }
+                str += '</div></div>' + ttlStr;
+                listSize = data.totalRecord;
                 $("#redisContent").html(str);
             }
         });

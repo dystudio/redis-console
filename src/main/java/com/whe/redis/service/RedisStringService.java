@@ -1,13 +1,14 @@
 package com.whe.redis.service;
 
-import com.whe.redis.util.*;
+import com.whe.redis.util.JedisFactory;
+import com.whe.redis.util.RedisClusterUtils;
+import com.whe.redis.util.SerializeUtils;
+import com.whe.redis.util.ServerConstant;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisCluster;
-import redis.clients.jedis.JedisPool;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -19,7 +20,6 @@ import static java.util.stream.Collectors.toMap;
  */
 @Service
 public class RedisStringService {
-    private Set<String> stringKeys = new HashSet<>();
 
     /**
      * 获得所有string类型数据
@@ -85,8 +85,6 @@ public class RedisStringService {
         jedis.set(key, val);
         jedis.close();
     }
-
-
 
 
     /**
