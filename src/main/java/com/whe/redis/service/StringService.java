@@ -19,7 +19,7 @@ import static java.util.stream.Collectors.toMap;
  * RedisStringService
  */
 @Service
-public class RedisStringService {
+public class StringService {
 
     /**
      * 获得所有string类型数据
@@ -42,7 +42,6 @@ public class RedisStringService {
                     .stream()
                     .filter(entry -> JedisFactory.getRedisClusterNode().getMasterNodeInfoSet().contains(entry.getKey()))
                     .forEach(entry -> {
-                        if (JedisFactory.getRedisClusterNode().getMasterNodeInfoSet().contains(entry.getKey())) {
                             Jedis jedis = null;
                             try {
                                 jedis = entry.getValue().getResource();
@@ -51,7 +50,6 @@ public class RedisStringService {
                                 assert jedis != null;
                                 jedis.close();
                             }
-                        }
                     });
         }
         return allString;

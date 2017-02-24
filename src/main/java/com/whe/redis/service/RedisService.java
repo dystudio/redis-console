@@ -1,18 +1,14 @@
 package com.whe.redis.service;
 
 import com.whe.redis.util.JedisFactory;
-import com.whe.redis.util.RedisClusterUtils;
 import com.whe.redis.util.ServerConstant;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisCluster;
 import redis.clients.jedis.ScanParams;
 import redis.clients.jedis.ScanResult;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -37,21 +33,6 @@ public class RedisService {
         return scan;
     }
 
-    public void getValBykey(Integer db, String key) {
-        Optional.ofNullable(db).map(i -> {
-            Jedis jedis = JedisFactory.getJedisPool().getResource();
-            jedis.select(i);
-            String type = jedis.type(key);
-            if (type.equals(ServerConstant.REDIS_STRING)) {
-                jedis.get(key);
-                jedis.ttl(key);
-
-            }
-            jedis.close();
-            return "";
-        });
-    }
-
     /**
      * 更新key
      *
@@ -68,12 +49,11 @@ public class RedisService {
     }
 
     /**
-     *
-     * @param db db
+     * @param db  db
      * @param key key
      * @return long
      */
-    public long ttl(int db,String key){
+    public long ttl(int db, String key) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
         Long ttl = jedis.ttl(key);
@@ -94,11 +74,12 @@ public class RedisService {
         jedis.expire(key, seconds);
         jedis.close();
     }
-   /**
+
+    /**
      * 删除key
      *
-     * @param db      db
-     * @param key     key
+     * @param db  db
+     * @param key key
      */
     public void delKey(int db, String key) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
@@ -116,22 +97,13 @@ public class RedisService {
         return map;
     }
 
-    public Set<String> keys() {
-        Jedis jedis = JedisFactory.getJedisPool().getResource();
-        jedis.select(0);
-        Set<String> keys = jedis.keys("*");
-        jedis.close();
-        return keys;
-    }
-
     public Map<Integer, Long> getDataBases() {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         List<String> list = jedis.configGet(ServerConstant.DATABASES);
         int size = Integer.parseInt(list.get(1));
         Map<Integer, Long> map = IntStream.range(0, size).boxed().collect(Collectors.toMap(i -> i, i -> {
             jedis.select(i);
-            Long dbSize = jedis.dbSize();
-            return dbSize;
+            return jedis.dbSize();
         }));
         jedis.close();
         return map;
@@ -142,29 +114,9 @@ public class RedisService {
      * 删除所有数据
      */
     public void flushAll() {
-        if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            Jedis jedis = JedisFactory.getJedisPool().getResource();
-            jedis.flushAll();
-            jedis.close();
-        } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            JedisCluster jedisCluster = JedisFactory.getJedisCluster();
-            //检查集群节点是否发生变化
-            RedisClusterUtils.checkClusterChange(jedisCluster);
-            jedisCluster.getClusterNodes()
-                    .forEach((key, pool) -> {
-                        if (JedisFactory.getRedisClusterNode().getMasterNodeInfoSet().contains(key)) {
-                            Jedis jedis = null;
-                            try {
-                                jedis = pool.getResource();
-                                jedis.flushAll();
-                            } finally {
-                                assert jedis != null;
-                                jedis.close();
-                            }
-                        }
-                    });
-        }
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.flushAll();
+        jedis.close();
     }
-
 
 }

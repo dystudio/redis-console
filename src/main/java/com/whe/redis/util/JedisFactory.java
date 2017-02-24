@@ -44,13 +44,13 @@ public class JedisFactory {
             loadPro.load(in);
             standAlone = loadPro.getProperty("redis.stand.alone");
             redisCluster = loadPro.getProperty("redis.cluster");
+            GenericObjectPoolConfig poolConfig = RedisPoolConfig.getGenericObjectPoolConfig();
             if (StringUtils.isNotBlank(standAlone)) {
                 ServerConstant.REDIS_TYPE = ServerConstant.STAND_ALONE;
                 String[] split = standAlone.split(":");
                 if (split.length != 2) {
                     throw new RuntimeException("ip和端口格式不正确");
                 }
-                GenericObjectPoolConfig poolConfig = RedisPoolConfig.getGenericObjectPoolConfig();
 
                 String pass = loadPro.getProperty("redis.pass");
                 if (StringUtils.isNotBlank(pass)) {
@@ -58,7 +58,7 @@ public class JedisFactory {
                 } else {
                     jedisPool = new JedisPool(poolConfig, split[0], Integer.parseInt(split[1]));
                 }
-            } else {
+            } else if(StringUtils.isNotBlank(redisCluster)){
                 if (StringUtils.isNotBlank(redisCluster)) {
                     Set<HostAndPort> set = Stream.of(redisCluster)
                             .map(str -> str.split(";"))
@@ -68,11 +68,10 @@ public class JedisFactory {
                             .collect(Collectors.toSet());
                     String pass = loadPro.getProperty("redis.pass");
                     if (StringUtils.isNotBlank(pass)) {
-                        jedisCluster = new JedisCluster(set, 3000, 3000, 5, pass, new GenericObjectPoolConfig());
+                        jedisCluster = new JedisCluster(set, RedisPoolConfig.TIMEOUT, RedisPoolConfig.TIMEOUT, RedisPoolConfig.MAX_ATTEMPTS, pass, poolConfig);
                     } else {
-                        jedisCluster = new JedisCluster(set);
+                        jedisCluster = new JedisCluster(set,poolConfig);
                     }
-
                     //保存集群节点信息
                     Map<String, JedisPool> clusterNodes = jedisCluster.getClusterNodes();
                     for (Map.Entry<String, JedisPool> entry : clusterNodes.entrySet()) {

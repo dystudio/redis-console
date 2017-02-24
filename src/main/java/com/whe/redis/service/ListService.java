@@ -14,7 +14,7 @@ import static java.util.stream.Collectors.toMap;
  * RedisListService
  */
 @Service
-public class RedisListService {
+public class ListService {
 
     /**
      * 获得所有list数据

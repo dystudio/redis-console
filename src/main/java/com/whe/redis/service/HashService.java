@@ -19,7 +19,7 @@ import static java.util.stream.Collectors.toMap;
  * RedisHashService
  */
 @Service
-public class RedisHashService {
+public class HashService {
 
     /**
      * 获得所有hash数据

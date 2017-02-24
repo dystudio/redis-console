@@ -35,25 +35,22 @@ import java.util.stream.Stream;
  * @author wanghongen
  */
 @Controller
+@RequestMapping("/standalone")
 public class RedisController {
 
     @Autowired
     private RedisService redisService;
     @Autowired
-    private RedisStringService redisStringService;
+    private StringService stringService;
     @Autowired
-    private RedisListService redisListService;
+    private ListService listService;
     @Autowired
-    private RedisSetService redisSetService;
+    private SetService setService;
     @Autowired
-    private RedisZSetService redisZSetService;
+    private ZSetService ZSetService;
     @Autowired
-    private RedisHashService redisHashService;
+    private HashService hashService;
 
-    @RequestMapping("/keys")
-    public void keys() {
-        redisService.keys();
-    }
 
     /**
      * 入口 首页
@@ -61,9 +58,8 @@ public class RedisController {
      * @param model model
      * @return index
      */
-    @RequestMapping(value = {"/"})
+    @RequestMapping(value = {"/index"})
     public String index(Model model, @RequestParam(defaultValue = "0") String cursor, String pattern, HttpServletRequest request, HttpServletResponse response) {
-
         String treeJson = treeJson(cursor, request, response);
         model.addAttribute("tree", treeJson);
         Set<String> type = new HashSet<>();
@@ -85,7 +81,7 @@ public class RedisController {
     @RequestMapping(value = {"/getString"})
     @ResponseBody
     public String getString(Integer db, String key) {
-        return redisStringService.getString(db, key);
+        return stringService.getString(db, key);
     }
 
     /**
@@ -96,7 +92,7 @@ public class RedisController {
     @RequestMapping(value = {"/string"})
     @ResponseBody
     public Map<String, String> string(String pattern) {
-        return redisStringService.getAllString(pattern);
+        return stringService.getAllString(pattern);
     }
 
     /**
@@ -107,7 +103,7 @@ public class RedisController {
     @RequestMapping(value = {"/getList"})
     @ResponseBody
     public Page<List<String>> getList(int db, String key, int pageNo, HttpServletRequest request) {
-        Page<List<String>> page = redisListService.findListPageByKey(db, key, pageNo);
+        Page<List<String>> page = listService.findListPageByKey(db, key, pageNo);
         page.pageViewAjax(request.getContextPath() + "/getList", "");
         return page;
     }
@@ -120,7 +116,7 @@ public class RedisController {
     @RequestMapping(value = {"/list"})
     @ResponseBody
     public Map<String, List<String>> list() {
-        return redisListService.getAllList();
+        return listService.getAllList();
     }
 
     /**
@@ -131,7 +127,7 @@ public class RedisController {
     @RequestMapping(value = {"/getSet"})
     @ResponseBody
     public Set<String> getSet(int db, String key) {
-        return redisSetService.getSet(db, key);
+        return setService.getSet(db, key);
     }
 
     /**
@@ -142,7 +138,7 @@ public class RedisController {
     @RequestMapping(value = {"/getZSet"})
     @ResponseBody
     public Page<Set<Tuple>> getZSet(int db, int pageNo, String key) {
-        Page<Set<Tuple>> page = redisZSetService.findZSetPageByKey(db, pageNo, key);
+        Page<Set<Tuple>> page = ZSetService.findZSetPageByKey(db, pageNo, key);
         page.pageViewAjax("/getZSet", "");
         return page;
     }
@@ -155,20 +151,20 @@ public class RedisController {
     @RequestMapping(value = {"/zSet"})
     @ResponseBody
     public Map<String, Set<Tuple>> zSet() {
-        return redisZSetService.getAllZSet();
+        return ZSetService.getAllZSet();
     }
 
 
     @RequestMapping(value = {"/hash"})
     @ResponseBody
     public Map<String, Map<String, String>> hash() {
-        return redisHashService.getAllHash();
+        return hashService.getAllHash();
     }
 
     @RequestMapping(value = {"/hGetAll"})
     @ResponseBody
     public Map<String, String> hGetAll(int db, String key) {
-        return redisHashService.hGetAll(db, key);
+        return hashService.hGetAll(db, key);
     }
 
     /**
@@ -259,7 +255,7 @@ public class RedisController {
     @ResponseBody
     public String updateString(int db, String key, String val) {
         try {
-            redisStringService.updateVal(db, key, val);
+            stringService.updateVal(db, key, val);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
@@ -280,7 +276,7 @@ public class RedisController {
     @ResponseBody
     public String updateList(int db, int index, String key, String val) {
         try {
-            redisListService.lSet(db, index, key, val);
+            listService.lSet(db, index, key, val);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
@@ -301,11 +297,11 @@ public class RedisController {
     @ResponseBody
     public String delList(int db, int listSize, int index, String key) {
         try {
-            long lLen = redisListService.lLen(db, key);
+            long lLen = listService.lLen(db, key);
             if (listSize != lLen) {
                 return "2";
             }
-            redisListService.lRem(db, index, key);
+            listService.lRem(db, index, key);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
@@ -318,7 +314,7 @@ public class RedisController {
     @ResponseBody
     public String updateSet(int db, String key, String oldVal, String newVal) {
         try {
-            redisSetService.updateSet(db, key, oldVal, newVal);
+            setService.updateSet(db, key, oldVal, newVal);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
@@ -330,7 +326,7 @@ public class RedisController {
     @ResponseBody
     public String delSet(int db, String key, String val) {
         try {
-            redisSetService.delSet(db, key, val);
+            setService.delSet(db, key, val);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
@@ -342,7 +338,7 @@ public class RedisController {
     @ResponseBody
     public String updateZSet(int db, String key, String oldVal, String newVal, double score) {
         try {
-            redisZSetService.updateZSet(db, key, oldVal, newVal, score);
+            ZSetService.updateZSet(db, key, oldVal, newVal, score);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
@@ -354,7 +350,7 @@ public class RedisController {
     @ResponseBody
     public String delZSet(int db, String key, String val) {
         try {
-            redisZSetService.delZSet(db, key, val);
+            ZSetService.delZSet(db, key, val);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
@@ -366,7 +362,7 @@ public class RedisController {
     @ResponseBody
     public String hSet(int db, String key, String field, String val) {
         try {
-            redisHashService.hSet(db, key, field, val);
+            hashService.hSet(db, key, field, val);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
@@ -378,7 +374,7 @@ public class RedisController {
     @ResponseBody
     public String updateHash(int db, String key, String oldField, String newField, String val) {
         try {
-            redisHashService.updateHash(db, key, oldField, newField, val);
+            hashService.updateHash(db, key, oldField, newField, val);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
@@ -390,7 +386,7 @@ public class RedisController {
     @ResponseBody
     public String delHash(int db, String key, String field) {
         try {
-            redisHashService.delHash(db, key, field);
+            hashService.delHash(db, key, field);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
@@ -408,26 +404,26 @@ public class RedisController {
     @RequestMapping("/backup")
     public void backup(HttpServletRequest request, HttpServletResponse response) throws IOException {
         Map<String, Object> map = new HashMap<>();
-        Map<String, String> stringMap = redisStringService.getAllString("*");
+        Map<String, String> stringMap = stringService.getAllString("*");
         List<Object> list = new ArrayList<>();
         if (stringMap.size() > 0) {
             map.put(ServerConstant.REDIS_STRING, stringMap);
             list.add(map);
         }
         map = new HashMap<>();
-        Map<String, List<String>> listMap = redisListService.getAllList();
+        Map<String, List<String>> listMap = listService.getAllList();
         if (listMap.size() > 0) {
             map.put(ServerConstant.REDIS_LIST, listMap);
             list.add(map);
         }
         map = new HashMap<>();
-        Map<String, Set<String>> setMap = redisSetService.getAllSet();
+        Map<String, Set<String>> setMap = setService.getAllSet();
         if (setMap.size() > 0) {
             map.put(ServerConstant.REDIS_SET, setMap);
             list.add(map);
         }
         map = new HashMap<>();
-        Map<String, Set<Tuple>> tupleMap = redisZSetService.getAllZSet();
+        Map<String, Set<Tuple>> tupleMap = ZSetService.getAllZSet();
         if (tupleMap.size() > 0) {
             Map<String, Map<String, Double>> zSetMap = new HashMap<>();
             Map<String, Double> stringDoubleMap = new HashMap<>();
@@ -440,7 +436,7 @@ public class RedisController {
             list.add(map);
         }
         map = new HashMap<>();
-        Map<String, Map<String, String>> hashMap = redisHashService.getAllHash();
+        Map<String, Map<String, String>> hashMap = hashService.getAllHash();
         if (hashMap.size() > 0) {
             map.put(ServerConstant.REDIS_HASH, hashMap);
             list.add(map);
@@ -469,23 +465,23 @@ public class RedisController {
                 Map map = (Map) obj;
                 if (map.containsKey(ServerConstant.REDIS_STRING)) {
                     Map stringMap = (Map) map.get(ServerConstant.REDIS_STRING);
-                    redisStringService.saveAllString(stringMap);
+                    stringService.saveAllString(stringMap);
                 }
                 if (map.containsKey(ServerConstant.REDIS_LIST)) {
                     Map listMap = (Map) map.get(ServerConstant.REDIS_LIST);
-                    redisListService.saveAllList(listMap);
+                    listService.saveAllList(listMap);
                 }
                 if (map.containsKey(ServerConstant.REDIS_SET)) {
                     Map setMap = (Map) map.get(ServerConstant.REDIS_SET);
-                    redisSetService.saveAllSet(setMap);
+                    setService.saveAllSet(setMap);
                 }
                 if (map.containsKey(ServerConstant.REDIS_ZSET)) {
                     Map zSetMap = (Map) map.get(ServerConstant.REDIS_ZSET);
-                    redisZSetService.saveAllZSet(zSetMap);
+                    ZSetService.saveAllZSet(zSetMap);
                 }
                 if (map.containsKey(ServerConstant.REDIS_HASH)) {
                     Map hashMap = (Map) map.get(ServerConstant.REDIS_HASH);
-                    redisHashService.saveAllHash(hashMap);
+                    hashService.saveAllHash(hashMap);
                 }
             });
         } catch (Exception e) {
@@ -511,23 +507,23 @@ public class RedisController {
                 Map map = (Map) obj;
                 if (map.containsKey(ServerConstant.REDIS_STRING)) {
                     Map stringMap = (Map) map.get(ServerConstant.REDIS_STRING);
-                    redisStringService.saveAllStringSerialize(stringMap);
+                    stringService.saveAllStringSerialize(stringMap);
                 }
                 if (map.containsKey(ServerConstant.REDIS_LIST)) {
                     Map listMap = (Map) map.get(ServerConstant.REDIS_LIST);
-                    redisListService.saveAllListSerialize(listMap);
+                    listService.saveAllListSerialize(listMap);
                 }
                 if (map.containsKey(ServerConstant.REDIS_SET)) {
                     Map setMap = (Map) map.get(ServerConstant.REDIS_SET);
-                    redisSetService.saveAllSetSerialize(setMap);
+                    setService.saveAllSetSerialize(setMap);
                 }
                 if (map.containsKey(ServerConstant.REDIS_ZSET)) {
                     Map zSetMap = (Map) map.get(ServerConstant.REDIS_ZSET);
-                    redisZSetService.saveAllZSetSerialize(zSetMap);
+                    ZSetService.saveAllZSetSerialize(zSetMap);
                 }
                 if (map.containsKey(ServerConstant.REDIS_HASH)) {
                     Map hashMap = (Map) map.get(ServerConstant.REDIS_HASH);
-                    redisHashService.saveAllHashSerialize(hashMap);
+                    hashService.saveAllHashSerialize(hashMap);
                 }
             });
         } catch (Exception e) {

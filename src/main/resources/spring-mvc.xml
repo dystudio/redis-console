@@ -11,7 +11,7 @@
                         http://www.springframework.org/schema/mvc/spring-mvc-4.0.xsd">
     <!-- 自动扫描该包，使SpringMVC认为包下用了@controller注解的类是控制器 -->
     <context:component-scan base-package="com.whe"/>
-    <!-- springmvc自动加载最新注解映射器和适配器 -->
+    <!-- spring-mvc自动加载最新注解映射器和适配器 -->
     <mvc:annotation-driven>
         <mvc:message-converters register-defaults="true">
             <bean class="org.springframework.http.converter.StringHttpMessageConverter">
@@ -55,11 +55,10 @@
         <!-- 默认编码 -->
         <property name="defaultEncoding" value="utf-8"/>
         <!-- 文件大小最大值 -->
-        <property name="maxUploadSize" value="104857600"/>
+        <property name="maxUploadSize" value="1048576000"/>
         <!--resolveLazily属性启用是为了推迟文件解析，以便在UploadController 中捕获文件大小异常-->
         <property name="resolveLazily" value="true"/>
         <!-- 内存中的最大值 -->
         <property name="maxInMemorySize" value="40960"/>
     </bean>
-    <!--  <import resource="redis.xml"/>-->
 </beans>

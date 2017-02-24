@@ -17,7 +17,7 @@ import static java.util.stream.Collectors.toMap;
  * RedisZSetService
  */
 @Service
-public class RedisZSetService {
+public class ZSetService {
 
     /**
      * 获得所有zSet数据

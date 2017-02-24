@@ -413,7 +413,7 @@
     var hash = "hash";
     var nowNodeId;
     var listSize = 0;
-
+    var localUrl='';
     var ttlStr = '<div class="panel " style="display: none;" id="ttl-content"> <table class="table table-bordered ">' +
         '<thead><tr><th style="width: 87%;">过期时间(秒)</th><th style="text-align: center;">操作</th></tr></thead>' +
         '<tbody><tr><td style="padding: 0;"><input type="text" maxlength="10" class="form-control" disabled value="-1"  ' +
