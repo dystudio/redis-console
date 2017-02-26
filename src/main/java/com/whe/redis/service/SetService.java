@@ -25,30 +25,10 @@ public class SetService {
      * @return Map<String.Set>
      */
     public Map<String, Set<String>> getAllSet() {
-        final Map<String, Set<String>> allSet = new HashMap<>();
-        if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            Jedis jedis = JedisFactory.getJedisPool().getResource();
-            Map<String, Set<String>> setMap = getNodeSet(jedis);
-            jedis.close();
-            return setMap;
-        } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            JedisCluster jedisCluster = JedisFactory.getJedisCluster();
-            //检查集群节点是否发生变化
-            RedisClusterUtils.checkClusterChange(jedisCluster);
-            jedisCluster.getClusterNodes().forEach((key, pool) -> {
-                if (JedisFactory.getRedisClusterNode().getMasterNodeInfoSet().contains(key)) {
-                    Jedis jedis = null;
-                    try {
-                        jedis = pool.getResource();
-                        allSet.putAll(getNodeSet(jedis));
-                    } finally {
-                        assert jedis != null;
-                        jedis.close();
-                    }
-                }
-            });
-        }
-        return allSet;
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        Map<String, Set<String>> setMap = getNodeSet(jedis);
+        jedis.close();
+        return setMap;
     }
 
     /**
@@ -57,14 +37,11 @@ public class SetService {
      * @return Set<String>
      */
     public Set<String> getSet(int db, String key) {
-        if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            Jedis jedis = JedisFactory.getJedisPool().getResource();
-            jedis.select(db);
-            Set<String> set = jedis.smembers(key);
-            jedis.close();
-            return set;
-        }
-        return null;
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        Set<String> set = jedis.smembers(key);
+        jedis.close();
+        return set;
     }
 
     public void updateSet(int db, String key, String oldVal, String newVal) {

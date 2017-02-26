@@ -9,22 +9,22 @@ import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 class RedisPoolConfig {
     private static GenericObjectPoolConfig poolConfig = null;
     /**
-     * 最大重定向
+     * 最大尝试
      */
     final static int MAX_ATTEMPTS=5;
     /**
      * 连接超时
      */
-    final static int TIMEOUT = 3000;
+    final static int TIMEOUT = 2000;
 
     /**
      * 连接池中最大连接数。高版本：maxTotal，低版本：maxActive
      */
-    private final static int MAX_TOTAL = 20;
+    private final static int MAX_TOTAL = 30;
     /**
      * 连接池中最大空闲的连接数.
      */
-    private final static int MAX_IDLE = 5;
+    private final static int MAX_IDLE = 10;
     /**
      * 当连接池资源耗尽时，调用者最大阻塞的时间，超时将跑出异常。单位，毫秒数;默认为-1.表示永不超时。高版本：maxWaitMillis，低版本：maxWait
      */

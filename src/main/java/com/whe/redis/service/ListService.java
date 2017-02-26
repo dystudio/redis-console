@@ -1,11 +1,17 @@
 package com.whe.redis.service;
 
-import com.whe.redis.util.*;
+import com.whe.redis.util.JedisFactory;
+import com.whe.redis.util.Page;
+import com.whe.redis.util.SerializeUtils;
+import com.whe.redis.util.ServerConstant;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisCluster;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 
 import static java.util.stream.Collectors.toMap;
 
@@ -22,30 +28,10 @@ public class ListService {
      * @return Map<String, List<String>>
      */
     public Map<String, List<String>> getAllList() {
-        final Map<String, List<String>> allList = new HashMap<>();
-        if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            Jedis jedis = JedisFactory.getJedisPool().getResource();
-            Map<String, List<String>> listMap = getNodeList(jedis);
-            jedis.close();
-            return listMap;
-        } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            JedisCluster jedisCluster = JedisFactory.getJedisCluster();
-            //检查集群节点是否发生变化
-            RedisClusterUtils.checkClusterChange(jedisCluster);
-            jedisCluster.getClusterNodes().forEach((key, pool) -> {
-                if (JedisFactory.getRedisClusterNode().getMasterNodeInfoSet().contains(key)) {
-                    Jedis jedis = null;
-                    try {
-                        jedis = pool.getResource();
-                        allList.putAll(getNodeList(jedis));
-                    } finally {
-                        assert jedis != null;
-                        jedis.close();
-                    }
-                }
-            });
-        }
-        return allList;
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        Map<String, List<String>> listMap = getNodeList(jedis);
+        jedis.close();
+        return listMap;
     }
 
     /**
@@ -55,18 +41,15 @@ public class ListService {
      */
     public Page<List<String>> findListPageByKey(int db, String key, int pageNo) {
         Page<List<String>> page = new Page<>();
-        if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            Jedis jedis = JedisFactory.getJedisPool().getResource();
-            jedis.select(db);
-            List<String> list = jedis.lrange(key, (pageNo - 1) * ServerConstant.PAGE_NUM, pageNo * ServerConstant.PAGE_NUM);
-            //总数据
-            page.setTotalRecord(jedis.llen(key));
-            page.setPageNo(pageNo);
-            page.setResults(list);
-            jedis.close();
-            return page;
-        }
-        return null;
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        List<String> list = jedis.lrange(key, (pageNo - 1) * ServerConstant.PAGE_NUM, pageNo * ServerConstant.PAGE_NUM);
+        //总数据
+        page.setTotalRecord(jedis.llen(key));
+        page.setPageNo(pageNo);
+        page.setResults(list);
+        jedis.close();
+        return page;
     }
 
     /**

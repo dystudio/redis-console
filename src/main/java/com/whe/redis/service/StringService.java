@@ -27,32 +27,10 @@ public class StringService {
      * @return Map<String, String>
      */
     public Map<String, String> getAllString(String pattern) {
-        final Map<String, String> allString = new HashMap<>();
-        if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            Jedis jedis = JedisFactory.getJedisPool().getResource();
-            Map<String, String> stringMap = getNodeString(jedis, pattern);
-            jedis.close();
-            return stringMap;
-        } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            JedisCluster jedisCluster = JedisFactory.getJedisCluster();
-            //检查集群节点是否发生变化
-            RedisClusterUtils.checkClusterChange(jedisCluster);
-            jedisCluster.getClusterNodes()
-                    .entrySet()
-                    .stream()
-                    .filter(entry -> JedisFactory.getRedisClusterNode().getMasterNodeInfoSet().contains(entry.getKey()))
-                    .forEach(entry -> {
-                            Jedis jedis = null;
-                            try {
-                                jedis = entry.getValue().getResource();
-                                allString.putAll(getNodeString(jedis, pattern));
-                            } finally {
-                                assert jedis != null;
-                                jedis.close();
-                            }
-                    });
-        }
-        return allString;
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        Map<String, String> stringMap = getNodeString(jedis, pattern);
+        jedis.close();
+        return stringMap;
     }
 
     /**
@@ -98,17 +76,6 @@ public class StringService {
                 .stream()
                 .filter(key -> ServerConstant.REDIS_STRING.equalsIgnoreCase(jedis.type(key)))
                 .collect(toMap(key -> key, jedis::get));
-    }
-
-    /**
-     * 根据key查找string类型数据
-     *
-     * @param keys  Set<String> keys
-     * @param jedis Jedis
-     * @return Map<String, String>
-     */
-    private Map<String, String> findStringByKeys(Set<String> keys, Jedis jedis) {
-        return keys.stream().collect(toMap(key -> key, jedis::get));
     }
 
     /**

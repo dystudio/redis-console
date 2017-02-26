@@ -8,73 +8,51 @@ import java.util.Set;
  * RedisClusterNode
  */
 public class RedisClusterNode {
-    private Set<String> nodeInfoSet = new HashSet<>();
-    private Set<String> masterNodeInfoSet = new HashSet<>();
-    private Set<String> slaveNodeInfoSet = new HashSet<>();
-    private Set<String> clusterNodeSet = new HashSet<>();
-    private RedisClusterNode redisClusterNode = null;
+    private Set<String> masterNode = new HashSet<>();
+    private Set<String> slaveNode = new HashSet<>();
+    private Set<String> clusterNode = new HashSet<>();
+    private static final int HOST_AND_PORT_INDEX = 1;
+    private static final String MASTER = "master";
+    private static final String FAIL = "fail";
 
-    public RedisClusterNode(String clusterNodes) {
+    public RedisClusterNode(String nowNode, String clusterNodes) {
+        parse(nowNode, clusterNodes);
+
+    }
+
+    private void parse(String nowNode, String clusterNodes) {
         String[] split = clusterNodes.split("\\n");
         for (String nodeInfo : split) {
-            nodeInfoSet.add(nodeInfo);
             String[] node = nodeInfo.split(" ");
             if (node.length > 3) {
-                clusterNodeSet.add(node[1]);
                 String[] role = node[2].split(",");
                 boolean isMaster;
                 if (role.length >= 2) {
-                    isMaster = "master".equalsIgnoreCase(role[1]);
+                    isMaster = MASTER.equalsIgnoreCase(role[1]);
+                    if (FAIL.equalsIgnoreCase(role[1])) {
+                        continue;
+                    }
+                    node[1] = nowNode;
                 } else {
-                    isMaster = "master".equalsIgnoreCase(role[0]);
+                    isMaster = MASTER.equalsIgnoreCase(role[0]);
+
                 }
                 if (isMaster) {
-                    masterNodeInfoSet.add(node[1]);
+                    masterNode.add(node[HOST_AND_PORT_INDEX]);
                 } else {
-                    slaveNodeInfoSet.add(node[1]);
+                    slaveNode.add(node[HOST_AND_PORT_INDEX]);
                 }
+                clusterNode.add(node[1]);
             }
         }
-
     }
 
-    public Set<String> getClusterNodeSet() {
-        return clusterNodeSet;
+    public Set<String> getMasterNode() {
+        return masterNode;
     }
 
-    public void setClusterNodeSet(Set<String> clusterNodeSet) {
-        this.clusterNodeSet = clusterNodeSet;
+    public Set<String> getSlaveNode() {
+        return slaveNode;
     }
 
-    public RedisClusterNode getRedisClusterNode() {
-        return redisClusterNode;
-    }
-
-    public void setRedisClusterNode(RedisClusterNode redisClusterNode) {
-        this.redisClusterNode = redisClusterNode;
-    }
-
-    public Set<String> getMasterNodeInfoSet() {
-        return masterNodeInfoSet;
-    }
-
-    public void setMasterNodeInfoSet(Set<String> masterNodeInfoSet) {
-        this.masterNodeInfoSet = masterNodeInfoSet;
-    }
-
-    public Set<String> getNodeInfoSet() {
-        return nodeInfoSet;
-    }
-
-    public void setNodeInfoSet(Set<String> nodeInfoSet) {
-        this.nodeInfoSet = nodeInfoSet;
-    }
-
-    public Set<String> getSlaveNodeInfoSet() {
-        return slaveNodeInfoSet;
-    }
-
-    public void setSlaveNodeInfoSet(Set<String> slaveNodeInfoSet) {
-        this.slaveNodeInfoSet = slaveNodeInfoSet;
-    }
 }

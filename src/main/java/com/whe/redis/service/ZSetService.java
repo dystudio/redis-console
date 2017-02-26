@@ -1,12 +1,14 @@
 package com.whe.redis.service;
 
-import com.whe.redis.util.*;
+import com.whe.redis.util.JedisFactory;
+import com.whe.redis.util.Page;
+import com.whe.redis.util.SerializeUtils;
+import com.whe.redis.util.ServerConstant;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisCluster;
 import redis.clients.jedis.Tuple;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -25,31 +27,10 @@ public class ZSetService {
      * @return Map<String.Set>
      */
     public Map<String, Set<Tuple>> getAllZSet() {
-        final Map<String, Set<Tuple>> zSetMap = new HashMap<>();
-        if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            Jedis jedis = JedisFactory.getJedisPool().getResource();
-            Map<String, Set<Tuple>> map = getNodeZSet(jedis);
-            jedis.close();
-            return map;
-        } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            JedisCluster jedisCluster = JedisFactory.getJedisCluster();
-            //检查集群节点是否发生变化
-            RedisClusterUtils.checkClusterChange(jedisCluster);
-            jedisCluster.getClusterNodes()
-                    .forEach((key, pool) -> {
-                        if (JedisFactory.getRedisClusterNode().getMasterNodeInfoSet().contains(key)) {
-                            Jedis jedis = null;
-                            try {
-                                jedis = pool.getResource();
-                                zSetMap.putAll(getNodeZSet(jedis));
-                            } finally {
-                                assert jedis != null;
-                                jedis.close();
-                            }
-                        }
-                    });
-        }
-        return zSetMap;
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        Map<String, Set<Tuple>> map = getNodeZSet(jedis);
+        jedis.close();
+        return map;
     }
 
     /**
@@ -59,18 +40,15 @@ public class ZSetService {
      */
     public Page<Set<Tuple>> findZSetPageByKey(int db, int pageNo, String key) {
         Page<Set<Tuple>> page = new Page<>();
-        if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            Jedis jedis = JedisFactory.getJedisPool().getResource();
-            jedis.select(db);
-            Set<Tuple> tupleSet = jedis.zrangeByScoreWithScores(key, (pageNo - 1) * ServerConstant.PAGE_NUM, pageNo * ServerConstant.PAGE_NUM);
-            //总数据
-            page.setTotalRecord(jedis.zcard(key));
-            page.setPageNo(pageNo);
-            page.setResults(tupleSet);
-            jedis.close();
-            return page;
-        }
-        return null;
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        Set<Tuple> tupleSet = jedis.zrangeByScoreWithScores(key, (pageNo - 1) * ServerConstant.PAGE_NUM, pageNo * ServerConstant.PAGE_NUM);
+        //总数据
+        page.setTotalRecord(jedis.zcard(key));
+        page.setPageNo(pageNo);
+        page.setResults(tupleSet);
+        jedis.close();
+        return page;
     }
 
     public void updateZSet(int db, String key, String oldVal, String newVal, double score) {

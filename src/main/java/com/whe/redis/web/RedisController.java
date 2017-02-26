@@ -69,7 +69,7 @@ public class RedisController {
         type.add("zSet");
         type.add("hash");
         model.addAttribute("type", type);
-
+        model.addAttribute("server","/standalone");
         return "index";
     }
 
@@ -131,7 +131,7 @@ public class RedisController {
     }
 
     /**
-     * ajax加载所有set类型数据
+     * ajax加载zSet类型数据
      *
      * @return map
      */
@@ -494,7 +494,7 @@ public class RedisController {
     /**
      * 序列化恢复数据
      *
-     * @param file file
+     *
      * @return string
      */
     @RequestMapping("/serializeRecover")
@@ -567,7 +567,7 @@ public class RedisController {
             cookie.ifPresent(c -> {
                 String value = null;
                 try {
-                    value = URLDecoder.decode(c.getValue(), ServerConstant.ENCODING);
+                    value = URLDecoder.decode(c.getValue(), ServerConstant.CHARSET);
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
                 }
@@ -575,7 +575,7 @@ public class RedisController {
                 List<String> list = (List<String>) map.get(db);
                 list.add(cursor);
                 try {
-                    c.setValue(URLEncoder.encode(JSON.toJSONString(map), ServerConstant.ENCODING));
+                    c.setValue(URLEncoder.encode(JSON.toJSONString(map), ServerConstant.CHARSET));
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
                 }
@@ -593,7 +593,7 @@ public class RedisController {
         return Stream.of(cookies).filter(c -> c.getName().equals(ServerConstant.REDIS_CURSOR)).findAny().map(c -> {
             String value = null;
             try {
-                value = URLDecoder.decode(c.getValue(), ServerConstant.ENCODING);
+                value = URLDecoder.decode(c.getValue(), ServerConstant.CHARSET);
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
@@ -644,7 +644,7 @@ public class RedisController {
         String jsonString = JSON.toJSONString(map);
         String encode = null;
         try {
-            encode = URLEncoder.encode(jsonString, ServerConstant.ENCODING);
+            encode = URLEncoder.encode(jsonString, ServerConstant.CHARSET);
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }

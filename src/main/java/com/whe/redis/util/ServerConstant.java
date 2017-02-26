@@ -6,14 +6,15 @@ package com.whe.redis.util;
  */
 public class ServerConstant {
     public static String REDIS_TYPE;
-
     public final static String REDIS_CLUSTER = "redisCluster";
     public final static String STAND_ALONE = "standAlone";
     public final static Integer PAGE_NUM = 50;
     public final static String REDIS_CURSOR = "redisCursor";
+    public final static String CLUSTER_PAGE = "clusterPage";
     public final static String DEFAULT_CURSOR = "0";
     public final static String DEFAULT_MATCH = "*";
-    public final static String ENCODING = "UTF-8";
+    public final static String PONG = "PONG";
+    public final static String CHARSET = "UTF-8";
     public final static String REDIS_STRING = "string";
     public final static String REDIS_LIST = "list";
     public final static String REDIS_SET = "set";

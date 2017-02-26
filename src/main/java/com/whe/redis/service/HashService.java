@@ -1,14 +1,12 @@
 package com.whe.redis.service;
 
 import com.whe.redis.util.JedisFactory;
-import com.whe.redis.util.RedisClusterUtils;
 import com.whe.redis.util.SerializeUtils;
 import com.whe.redis.util.ServerConstant;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisCluster;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -27,31 +25,10 @@ public class HashService {
      * @return map
      */
     public Map<String, Map<String, String>> getAllHash() {
-        final Map<String, Map<String, String>> hashMap = new HashMap<>();
-        if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            Jedis jedis = JedisFactory.getJedisPool().getResource();
-            Map<String, Map<String, String>> nodeHash = getNodeHash(jedis);
-            jedis.close();
-            return nodeHash;
-        } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            JedisCluster jedisCluster = JedisFactory.getJedisCluster();
-            //检查集群节点是否发生变化
-            RedisClusterUtils.checkClusterChange(jedisCluster);
-            jedisCluster.getClusterNodes()
-                    .forEach((key, pool) -> {
-                        if (JedisFactory.getRedisClusterNode().getMasterNodeInfoSet().contains(key)) {
-                            Jedis jedis = null;
-                            try {
-                                jedis = pool.getResource();
-                                hashMap.putAll(getNodeHash(jedis));
-                            } finally {
-                                assert jedis != null;
-                                jedis.close();
-                            }
-                        }
-                    });
-        }
-        return hashMap;
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        Map<String, Map<String, String>> nodeHash = getNodeHash(jedis);
+        jedis.close();
+        return nodeHash;
     }
 
     public Map<String, String> hGetAll(int db, String key) {
@@ -62,23 +39,25 @@ public class HashService {
         return map;
     }
 
-    public void hSet(int db,String key,String field,String val){
+    public void hSet(int db, String key, String field, String val) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
-        jedis.hset(key,field,val);
+        jedis.hset(key, field, val);
         jedis.close();
     }
-    public void updateHash(int db,String key,String oldField,String newField,String val){
+
+    public void updateHash(int db, String key, String oldField, String newField, String val) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
-        jedis.hdel(key,oldField);
-        jedis.hset(key,newField,val);
+        jedis.hdel(key, oldField);
+        jedis.hset(key, newField, val);
         jedis.close();
     }
-    public void delHash(int db,String key,String field){
+
+    public void delHash(int db, String key, String field) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
-        jedis.hdel(key,field);
+        jedis.hdel(key, field);
         jedis.close();
     }
 
