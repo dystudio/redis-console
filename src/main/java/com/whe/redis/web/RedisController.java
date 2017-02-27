@@ -1,7 +1,6 @@
 package com.whe.redis.web;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
 import com.whe.redis.service.*;
 import com.whe.redis.util.JedisFactory;
 import com.whe.redis.util.Page;
@@ -23,8 +22,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -35,25 +33,22 @@ import java.util.stream.Stream;
  * @author wanghongen
  */
 @Controller
+@RequestMapping("/standalone")
 public class RedisController {
 
     @Autowired
     private RedisService redisService;
     @Autowired
-    private RedisStringService redisStringService;
+    private StringService stringService;
     @Autowired
-    private RedisListService redisListService;
+    private ListService listService;
     @Autowired
-    private RedisSetService redisSetService;
+    private SetService setService;
     @Autowired
-    private RedisZSetService redisZSetService;
+    private ZSetService ZSetService;
     @Autowired
-    private RedisHashService redisHashService;
+    private HashService hashService;
 
-    @RequestMapping("/keys")
-    public void keys() {
-        redisService.keys();
-    }
 
     /**
      * 入口 首页
@@ -61,19 +56,16 @@ public class RedisController {
      * @param model model
      * @return index
      */
-    @RequestMapping(value = {"/"})
-    public String index(Model model, @RequestParam(defaultValue = "0") String cursor, String pattern, HttpServletRequest request, HttpServletResponse response) {
-
-        String treeJson = treeJson(cursor, request, response);
-        model.addAttribute("tree", treeJson);
-        Set<String> type = new HashSet<>();
-        type.add("string");
-        type.add("list");
-        type.add("set");
-        type.add("zSet");
-        type.add("hash");
-        model.addAttribute("type", type);
-
+    @RequestMapping(value = {"/index"})
+    public String index(Model model, @RequestParam(defaultValue = "0") String cursor, String match, HttpServletRequest request, HttpServletResponse response) {
+        try {
+            String treeJson = treeJson(cursor, match, request, response);
+            model.addAttribute("tree", treeJson);
+            model.addAttribute("match", match);
+            model.addAttribute("server", "/standalone");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return "index";
     }
 
@@ -85,19 +77,9 @@ public class RedisController {
     @RequestMapping(value = {"/getString"})
     @ResponseBody
     public String getString(Integer db, String key) {
-        return redisStringService.getString(db, key);
+        return stringService.getString(db, key);
     }
 
-    /**
-     * ajax加载所有string类型数据
-     *
-     * @return map
-     */
-    @RequestMapping(value = {"/string"})
-    @ResponseBody
-    public Map<String, String> string(String pattern) {
-        return redisStringService.getAllString(pattern);
-    }
 
     /**
      * ajax分页加载list类型数据
@@ -107,68 +89,40 @@ public class RedisController {
     @RequestMapping(value = {"/getList"})
     @ResponseBody
     public Page<List<String>> getList(int db, String key, int pageNo, HttpServletRequest request) {
-        Page<List<String>> page = redisListService.findListPageByKey(db, key, pageNo);
+        Page<List<String>> page = listService.findListPageByKey(db, key, pageNo);
         page.pageViewAjax(request.getContextPath() + "/getList", "");
         return page;
     }
 
-    /**
-     * ajax加载所有list类型数据
-     *
-     * @return map
-     */
-    @RequestMapping(value = {"/list"})
-    @ResponseBody
-    public Map<String, List<String>> list() {
-        return redisListService.getAllList();
-    }
 
     /**
-     * ajax加载所有set类型数据
+     * ajax加载set类型数据
      *
      * @return map
      */
     @RequestMapping(value = {"/getSet"})
     @ResponseBody
     public Set<String> getSet(int db, String key) {
-        return redisSetService.getSet(db, key);
+        return setService.getSet(db, key);
     }
 
     /**
-     * ajax加载所有set类型数据
+     * ajax加载zSet类型数据
      *
      * @return map
      */
     @RequestMapping(value = {"/getZSet"})
     @ResponseBody
     public Page<Set<Tuple>> getZSet(int db, int pageNo, String key) {
-        Page<Set<Tuple>> page = redisZSetService.findZSetPageByKey(db, pageNo, key);
+        Page<Set<Tuple>> page = ZSetService.findZSetPageByKey(db, pageNo, key);
         page.pageViewAjax("/getZSet", "");
         return page;
-    }
-
-    /**
-     * ajax加载所有zSet类型数据
-     *
-     * @return map
-     */
-    @RequestMapping(value = {"/zSet"})
-    @ResponseBody
-    public Map<String, Set<Tuple>> zSet() {
-        return redisZSetService.getAllZSet();
-    }
-
-
-    @RequestMapping(value = {"/hash"})
-    @ResponseBody
-    public Map<String, Map<String, String>> hash() {
-        return redisHashService.getAllHash();
     }
 
     @RequestMapping(value = {"/hGetAll"})
     @ResponseBody
     public Map<String, String> hGetAll(int db, String key) {
-        return redisHashService.hGetAll(db, key);
+        return hashService.hGetAll(db, key);
     }
 
     /**
@@ -186,7 +140,7 @@ public class RedisController {
             return redisService.renameNx(db, oldKey, newKey) == 0 ? "2" : "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -224,7 +178,7 @@ public class RedisController {
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -243,7 +197,7 @@ public class RedisController {
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -259,11 +213,11 @@ public class RedisController {
     @ResponseBody
     public String updateString(int db, String key, String val) {
         try {
-            redisStringService.updateVal(db, key, val);
+            stringService.updateVal(db, key, val);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -280,11 +234,11 @@ public class RedisController {
     @ResponseBody
     public String updateList(int db, int index, String key, String val) {
         try {
-            redisListService.lSet(db, index, key, val);
+            listService.lSet(db, index, key, val);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -301,15 +255,15 @@ public class RedisController {
     @ResponseBody
     public String delList(int db, int listSize, int index, String key) {
         try {
-            long lLen = redisListService.lLen(db, key);
+            long lLen = listService.lLen(db, key);
             if (listSize != lLen) {
                 return "2";
             }
-            redisListService.lRem(db, index, key);
+            listService.lRem(db, index, key);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -318,11 +272,11 @@ public class RedisController {
     @ResponseBody
     public String updateSet(int db, String key, String oldVal, String newVal) {
         try {
-            redisSetService.updateSet(db, key, oldVal, newVal);
+            setService.updateSet(db, key, oldVal, newVal);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -330,11 +284,11 @@ public class RedisController {
     @ResponseBody
     public String delSet(int db, String key, String val) {
         try {
-            redisSetService.delSet(db, key, val);
+            setService.delSet(db, key, val);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -342,11 +296,11 @@ public class RedisController {
     @ResponseBody
     public String updateZSet(int db, String key, String oldVal, String newVal, double score) {
         try {
-            redisZSetService.updateZSet(db, key, oldVal, newVal, score);
+            ZSetService.updateZSet(db, key, oldVal, newVal, score);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -354,11 +308,11 @@ public class RedisController {
     @ResponseBody
     public String delZSet(int db, String key, String val) {
         try {
-            redisZSetService.delZSet(db, key, val);
+            ZSetService.delZSet(db, key, val);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -366,11 +320,11 @@ public class RedisController {
     @ResponseBody
     public String hSet(int db, String key, String field, String val) {
         try {
-            redisHashService.hSet(db, key, field, val);
+            hashService.hSet(db, key, field, val);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -378,11 +332,11 @@ public class RedisController {
     @ResponseBody
     public String updateHash(int db, String key, String oldField, String newField, String val) {
         try {
-            redisHashService.updateHash(db, key, oldField, newField, val);
+            hashService.updateHash(db, key, oldField, newField, val);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -390,11 +344,11 @@ public class RedisController {
     @ResponseBody
     public String delHash(int db, String key, String field) {
         try {
-            redisHashService.delHash(db, key, field);
+            hashService.delHash(db, key, field);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -407,49 +361,10 @@ public class RedisController {
      */
     @RequestMapping("/backup")
     public void backup(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        Map<String, Object> map = new HashMap<>();
-        Map<String, String> stringMap = redisStringService.getAllString("*");
-        List<Object> list = new ArrayList<>();
-        if (stringMap.size() > 0) {
-            map.put(ServerConstant.REDIS_STRING, stringMap);
-            list.add(map);
-        }
-        map = new HashMap<>();
-        Map<String, List<String>> listMap = redisListService.getAllList();
-        if (listMap.size() > 0) {
-            map.put(ServerConstant.REDIS_LIST, listMap);
-            list.add(map);
-        }
-        map = new HashMap<>();
-        Map<String, Set<String>> setMap = redisSetService.getAllSet();
-        if (setMap.size() > 0) {
-            map.put(ServerConstant.REDIS_SET, setMap);
-            list.add(map);
-        }
-        map = new HashMap<>();
-        Map<String, Set<Tuple>> tupleMap = redisZSetService.getAllZSet();
-        if (tupleMap.size() > 0) {
-            Map<String, Map<String, Double>> zSetMap = new HashMap<>();
-            Map<String, Double> stringDoubleMap = new HashMap<>();
-            tupleMap.forEach((key, set) -> {
-                set.forEach(t -> stringDoubleMap.put(t.getElement(), t.getScore()));
-                zSetMap.put(key, new HashMap<>(stringDoubleMap));
-                stringDoubleMap.clear();
-            });
-            map.put(ServerConstant.REDIS_ZSET, zSetMap);
-            list.add(map);
-        }
-        map = new HashMap<>();
-        Map<String, Map<String, String>> hashMap = redisHashService.getAllHash();
-        if (hashMap.size() > 0) {
-            map.put(ServerConstant.REDIS_HASH, hashMap);
-            list.add(map);
-        }
-        String str = JSON.toJSONString(list);
-        DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-        String format = df.format(new Date());
-        response.setContentType(request.getServletContext().getMimeType(format + ".redis"));//设置MIME类型
-        response.setHeader("Content-Disposition", "attachment; filename=" + format + ".redis");
+        String str = redisService.backup();
+        LocalDate data = LocalDate.now();
+        response.setContentType(request.getServletContext().getMimeType(data + "standalone.redis"));//设置MIME类型
+        response.setHeader("Content-Disposition", "attachment; filename=" + data + "standalone.redis");
         response.getWriter().write(str);
     }
 
@@ -463,34 +378,33 @@ public class RedisController {
     @ResponseBody
     public String recover(MultipartFile file) {
         try {
-            String data = new String(file.getBytes(), "UTF-8");
-            JSONArray jsonArray = JSON.parseArray(data);
-            jsonArray.stream().filter(obj -> obj instanceof Map).forEach(obj -> {
-                Map map = (Map) obj;
-                if (map.containsKey(ServerConstant.REDIS_STRING)) {
-                    Map stringMap = (Map) map.get(ServerConstant.REDIS_STRING);
-                    redisStringService.saveAllString(stringMap);
-                }
-                if (map.containsKey(ServerConstant.REDIS_LIST)) {
-                    Map listMap = (Map) map.get(ServerConstant.REDIS_LIST);
-                    redisListService.saveAllList(listMap);
-                }
-                if (map.containsKey(ServerConstant.REDIS_SET)) {
-                    Map setMap = (Map) map.get(ServerConstant.REDIS_SET);
-                    redisSetService.saveAllSet(setMap);
-                }
-                if (map.containsKey(ServerConstant.REDIS_ZSET)) {
-                    Map zSetMap = (Map) map.get(ServerConstant.REDIS_ZSET);
-                    redisZSetService.saveAllZSet(zSetMap);
-                }
-                if (map.containsKey(ServerConstant.REDIS_HASH)) {
-                    Map hashMap = (Map) map.get(ServerConstant.REDIS_HASH);
-                    redisHashService.saveAllHash(hashMap);
-                }
-            });
+            String data = new String(file.getBytes(), ServerConstant.CHARSET);
+            Object obj = JSON.parse(data);
+            if (obj instanceof Map) {
+                Map<String, Map<String, Map<String, Object>>> map = (Map) obj;
+                map.entrySet().forEach(entry -> {
+                    Map<String, Map<String, Object>> value = entry.getValue();
+                    if (value.containsKey(ServerConstant.REDIS_STRING)) {
+                        stringService.saveAllString(Integer.parseInt(entry.getKey()), (Map) value.get(ServerConstant.REDIS_STRING));
+                    }
+                    if (value.containsKey(ServerConstant.REDIS_LIST)) {
+                        listService.saveAllList(Integer.parseInt(entry.getKey()), (Map) value.get(ServerConstant.REDIS_LIST));
+                    }
+                    if (value.containsKey(ServerConstant.REDIS_SET)) {
+                        setService.saveAllSet(Integer.parseInt(entry.getKey()), (Map) value.get(ServerConstant.REDIS_SET));
+                    }
+                    if (value.containsKey(ServerConstant.REDIS_ZSET)) {
+                        ZSetService.saveAllZSet(Integer.parseInt(entry.getKey()), (Map) value.get(ServerConstant.REDIS_ZSET));
+                    }
+                    if (value.containsKey(ServerConstant.REDIS_HASH)) {
+                        hashService.saveAllHash(Integer.parseInt(entry.getKey()), (Map) value.get(ServerConstant.REDIS_HASH));
+                    }
+                });
+            }
+
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
         return "1";
     }
@@ -498,41 +412,38 @@ public class RedisController {
     /**
      * 序列化恢复数据
      *
-     * @param file file
      * @return string
      */
     @RequestMapping("/serializeRecover")
     @ResponseBody
     public String serializeRecover(MultipartFile file) {
         try {
-            String data = new String(file.getBytes(), "UTF-8");
-            JSONArray jsonArray = JSON.parseArray(data);
-            jsonArray.stream().filter(obj -> obj instanceof Map).forEach(obj -> {
-                Map map = (Map) obj;
-                if (map.containsKey(ServerConstant.REDIS_STRING)) {
-                    Map stringMap = (Map) map.get(ServerConstant.REDIS_STRING);
-                    redisStringService.saveAllStringSerialize(stringMap);
-                }
-                if (map.containsKey(ServerConstant.REDIS_LIST)) {
-                    Map listMap = (Map) map.get(ServerConstant.REDIS_LIST);
-                    redisListService.saveAllListSerialize(listMap);
-                }
-                if (map.containsKey(ServerConstant.REDIS_SET)) {
-                    Map setMap = (Map) map.get(ServerConstant.REDIS_SET);
-                    redisSetService.saveAllSetSerialize(setMap);
-                }
-                if (map.containsKey(ServerConstant.REDIS_ZSET)) {
-                    Map zSetMap = (Map) map.get(ServerConstant.REDIS_ZSET);
-                    redisZSetService.saveAllZSetSerialize(zSetMap);
-                }
-                if (map.containsKey(ServerConstant.REDIS_HASH)) {
-                    Map hashMap = (Map) map.get(ServerConstant.REDIS_HASH);
-                    redisHashService.saveAllHashSerialize(hashMap);
-                }
-            });
+            String data = new String(file.getBytes(), ServerConstant.CHARSET);
+            Object obj = JSON.parse(data);
+            if (obj instanceof Map) {
+                Map<String, Map<String, Map<String, Object>>> map = (Map) obj;
+                map.entrySet().forEach(entry -> {
+                    Map<String, Map<String, Object>> value = entry.getValue();
+                    if (value.containsKey(ServerConstant.REDIS_STRING)) {
+                        stringService.saveAllStringSerialize(Integer.parseInt(entry.getKey()), (Map) value.get(ServerConstant.REDIS_STRING));
+                    }
+                    if (value.containsKey(ServerConstant.REDIS_LIST)) {
+                        listService.saveAllListSerialize(Integer.parseInt(entry.getKey()), (Map) value.get(ServerConstant.REDIS_LIST));
+                    }
+                    if (value.containsKey(ServerConstant.REDIS_SET)) {
+                        setService.saveAllSetSerialize(Integer.parseInt(entry.getKey()), (Map) value.get(ServerConstant.REDIS_SET));
+                    }
+                    if (value.containsKey(ServerConstant.REDIS_ZSET)) {
+                        ZSetService.saveAllZSetSerialize(Integer.parseInt(entry.getKey()), (Map) value.get(ServerConstant.REDIS_ZSET));
+                    }
+                    if (value.containsKey(ServerConstant.REDIS_HASH)) {
+                        hashService.saveAllHashSerialize(Integer.parseInt(entry.getKey()), (Map) value.get(ServerConstant.REDIS_HASH));
+                    }
+                });
+            }
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
         return "1";
     }
@@ -550,28 +461,28 @@ public class RedisController {
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
     @RequestMapping("/upPage")
     @ResponseBody
-    public String upPage(Integer db, String cursor, HttpServletRequest request) {
+    public String upPage(Integer db, String cursor, String match, HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
         String upCursor = getUpCursorByCookie(cookies, db, cursor);
-        return dbJson(db, cursor, upCursor, request);
+        return dbJson(db, cursor, upCursor, match, request);
     }
 
     @RequestMapping("/nextPage")
     @ResponseBody
-    public String nextPage(Integer db, String cursor, HttpServletRequest request, HttpServletResponse response) {
+    public String nextPage(Integer db, String cursor, String match, HttpServletRequest request, HttpServletResponse response) {
         Cookie[] cookies = request.getCookies();
         if (cookies != null && cookies.length > 0) {
             Optional<Cookie> cookie = Stream.of(cookies).filter(c -> c.getName().equals(ServerConstant.REDIS_CURSOR)).findAny();
             cookie.ifPresent(c -> {
                 String value = null;
                 try {
-                    value = URLDecoder.decode(c.getValue(), ServerConstant.ENCODING);
+                    value = URLDecoder.decode(c.getValue(), ServerConstant.CHARSET);
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
                 }
@@ -579,7 +490,7 @@ public class RedisController {
                 List<String> list = (List<String>) map.get(db);
                 list.add(cursor);
                 try {
-                    c.setValue(URLEncoder.encode(JSON.toJSONString(map), ServerConstant.ENCODING));
+                    c.setValue(URLEncoder.encode(JSON.toJSONString(map), ServerConstant.CHARSET));
                 } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
                 }
@@ -587,7 +498,7 @@ public class RedisController {
             });
         }
         String upCursor = getUpCursorByCookie(cookies, db, cursor);
-        return dbJson(db, cursor, upCursor, request);
+        return dbJson(db, cursor, upCursor, match, request);
     }
 
     private String getUpCursorByCookie(Cookie[] cookies, Integer db, String cursor) {
@@ -597,7 +508,7 @@ public class RedisController {
         return Stream.of(cookies).filter(c -> c.getName().equals(ServerConstant.REDIS_CURSOR)).findAny().map(c -> {
             String value = null;
             try {
-                value = URLDecoder.decode(c.getValue(), ServerConstant.ENCODING);
+                value = URLDecoder.decode(c.getValue(), ServerConstant.CHARSET);
             } catch (UnsupportedEncodingException e) {
                 e.printStackTrace();
             }
@@ -612,7 +523,7 @@ public class RedisController {
         }).orElse(ServerConstant.DEFAULT_CURSOR);
     }
 
-    private String treeJson(String cursor, HttpServletRequest request, HttpServletResponse response) {
+    private String treeJson(String cursor, String match, HttpServletRequest request, HttpServletResponse response) {
         Map<Integer, Long> dataBases = redisService.getDataBases();
         StringBuilder sb = new StringBuilder();
         sb.append("[{");
@@ -621,10 +532,10 @@ public class RedisController {
         sb.append("nodes:").append("[");
         Map<Integer, List<String>> map = new HashMap<>();
         dataBases.entrySet().forEach(entry -> {
-            sb.append("{text:").append("'").append("DB-").append(entry.getKey()).append("',").append("icon:").append(request.getContextPath()).append("'/img/db.png',").append("tags:").append("['").append(entry.getValue()).append("']");
+            sb.append("{text:").append("'").append(ServerConstant.DB).append(entry.getKey()).append("',").append("icon:").append(request.getContextPath()).append("'/img/db.png',").append("tags:").append("['").append(entry.getValue()).append("']");
             Long dbSize = entry.getValue();
             if (dbSize > 0) {
-                ScanResult<String> scanResult = redisService.getKeysByDb(entry.getKey(), cursor);
+                ScanResult<String> scanResult = redisService.getKeysByDb(entry.getKey(), cursor, match);
                 sb.append(",");
                 sb.append("nodes:").append("[");
                 Map<String, String> typeMap = redisService.getType(entry.getKey(), scanResult.getResult());
@@ -648,7 +559,7 @@ public class RedisController {
         String jsonString = JSON.toJSONString(map);
         String encode = null;
         try {
-            encode = URLEncoder.encode(jsonString, ServerConstant.ENCODING);
+            encode = URLEncoder.encode(jsonString, ServerConstant.CHARSET);
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -659,9 +570,9 @@ public class RedisController {
         return sb.toString();
     }
 
-    private String dbJson(Integer db, String cursor, String upCursor, HttpServletRequest request) {
+    private String dbJson(Integer db, String cursor, String upCursor, String match, HttpServletRequest request) {
         StringBuilder sb = new StringBuilder();
-        ScanResult<String> scanResult = redisService.getKeysByDb(db, cursor);
+        ScanResult<String> scanResult = redisService.getKeysByDb(db, cursor, match);
         sb.append("[");
         Map<String, String> typeMap = redisService.getType(db, scanResult.getResult());
         typeMap.forEach((key, type) -> sb.append("{text:").append("'").append(key).append("',icon:'").append(request.getContextPath()).append("/img/").append(type).append(".png").append("',type:'").append(type).append("'},"));
