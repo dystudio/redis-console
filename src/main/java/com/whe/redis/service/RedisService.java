@@ -3,6 +3,7 @@ package com.whe.redis.service;
 import com.alibaba.fastjson.JSON;
 import com.whe.redis.util.JedisFactory;
 import com.whe.redis.util.ServerConstant;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.ScanParams;
@@ -79,12 +80,17 @@ public class RedisService {
         return JSON.toJSONString(dbKeys);
     }
 
-    public ScanResult<String> getKeysByDb(int db, String cursor) {
+    public ScanResult<String> getKeysByDb(int db, String cursor, String match) {
+        if (StringUtils.isBlank(match)) {
+            match = ServerConstant.DEFAULT_MATCH;
+        }else{
+            match="*"+match+"*";
+        }
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
         ScanParams scanParams = new ScanParams();
         scanParams.count(ServerConstant.PAGE_NUM);
-        scanParams.match(ServerConstant.DEFAULT_MATCH);
+        scanParams.match(match);
         if (cursor == null) {
             cursor = ServerConstant.DEFAULT_CURSOR;
         }

@@ -7,6 +7,7 @@ import com.whe.redis.util.SerializeUtils;
 import com.whe.redis.util.ServerConstant;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.*;
+import redis.clients.util.JedisClusterCRC16;
 
 import java.util.*;
 
@@ -314,7 +315,8 @@ public class RedisClusterService {
         return jedisCluster.ttl(key);
     }
 
-    public Map<String, ScanResult<String>> scan(Map<String, String> nodeCursor) {
+    public Map<String, ScanResult<String>> scan(Map<String, String> nodeCursor, String match) {
+        scanParams.match(match);
         Map<String, ScanResult<String>> nodeScan = new HashMap<>(ServerConstant.PAGE_NUM * JedisFactory.getRedisClusterNode().getMasterNode().size());
         int count = ServerConstant.PAGE_NUM / JedisFactory.getRedisClusterNode().getMasterNode().size();
         jedisCluster.getClusterNodes().entrySet().stream().filter(entry -> JedisFactory.getRedisClusterNode().getMasterNode().contains(entry.getKey())).forEach(entry -> {

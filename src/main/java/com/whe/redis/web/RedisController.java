@@ -1,7 +1,6 @@
 package com.whe.redis.web;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
 import com.whe.redis.service.*;
 import com.whe.redis.util.JedisFactory;
 import com.whe.redis.util.Page;
@@ -58,17 +57,15 @@ public class RedisController {
      * @return index
      */
     @RequestMapping(value = {"/index"})
-    public String index(Model model, @RequestParam(defaultValue = "0") String cursor, String pattern, HttpServletRequest request, HttpServletResponse response) {
-        String treeJson = treeJson(cursor, request, response);
-        model.addAttribute("tree", treeJson);
-        Set<String> type = new HashSet<>();
-        type.add("string");
-        type.add("list");
-        type.add("set");
-        type.add("zSet");
-        type.add("hash");
-        model.addAttribute("type", type);
-        model.addAttribute("server", "/standalone");
+    public String index(Model model, @RequestParam(defaultValue = "0") String cursor, String match, HttpServletRequest request, HttpServletResponse response) {
+        try {
+            String treeJson = treeJson(cursor, match, request, response);
+            model.addAttribute("tree", treeJson);
+            model.addAttribute("match", match);
+            model.addAttribute("server", "/standalone");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
         return "index";
     }
 
@@ -143,7 +140,7 @@ public class RedisController {
             return redisService.renameNx(db, oldKey, newKey) == 0 ? "2" : "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -181,7 +178,7 @@ public class RedisController {
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -200,7 +197,7 @@ public class RedisController {
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -220,7 +217,7 @@ public class RedisController {
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -241,7 +238,7 @@ public class RedisController {
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -266,7 +263,7 @@ public class RedisController {
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -279,7 +276,7 @@ public class RedisController {
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -291,7 +288,7 @@ public class RedisController {
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -303,7 +300,7 @@ public class RedisController {
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -315,7 +312,7 @@ public class RedisController {
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -327,7 +324,7 @@ public class RedisController {
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -339,7 +336,7 @@ public class RedisController {
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -351,7 +348,7 @@ public class RedisController {
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -407,7 +404,7 @@ public class RedisController {
 
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
         return "1";
     }
@@ -446,7 +443,7 @@ public class RedisController {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
         return "1";
     }
@@ -464,21 +461,21 @@ public class RedisController {
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
     @RequestMapping("/upPage")
     @ResponseBody
-    public String upPage(Integer db, String cursor, HttpServletRequest request) {
+    public String upPage(Integer db, String cursor, String match, HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
         String upCursor = getUpCursorByCookie(cookies, db, cursor);
-        return dbJson(db, cursor, upCursor, request);
+        return dbJson(db, cursor, upCursor, match, request);
     }
 
     @RequestMapping("/nextPage")
     @ResponseBody
-    public String nextPage(Integer db, String cursor, HttpServletRequest request, HttpServletResponse response) {
+    public String nextPage(Integer db, String cursor, String match, HttpServletRequest request, HttpServletResponse response) {
         Cookie[] cookies = request.getCookies();
         if (cookies != null && cookies.length > 0) {
             Optional<Cookie> cookie = Stream.of(cookies).filter(c -> c.getName().equals(ServerConstant.REDIS_CURSOR)).findAny();
@@ -501,7 +498,7 @@ public class RedisController {
             });
         }
         String upCursor = getUpCursorByCookie(cookies, db, cursor);
-        return dbJson(db, cursor, upCursor, request);
+        return dbJson(db, cursor, upCursor, match, request);
     }
 
     private String getUpCursorByCookie(Cookie[] cookies, Integer db, String cursor) {
@@ -526,7 +523,7 @@ public class RedisController {
         }).orElse(ServerConstant.DEFAULT_CURSOR);
     }
 
-    private String treeJson(String cursor, HttpServletRequest request, HttpServletResponse response) {
+    private String treeJson(String cursor, String match, HttpServletRequest request, HttpServletResponse response) {
         Map<Integer, Long> dataBases = redisService.getDataBases();
         StringBuilder sb = new StringBuilder();
         sb.append("[{");
@@ -538,7 +535,7 @@ public class RedisController {
             sb.append("{text:").append("'").append(ServerConstant.DB).append(entry.getKey()).append("',").append("icon:").append(request.getContextPath()).append("'/img/db.png',").append("tags:").append("['").append(entry.getValue()).append("']");
             Long dbSize = entry.getValue();
             if (dbSize > 0) {
-                ScanResult<String> scanResult = redisService.getKeysByDb(entry.getKey(), cursor);
+                ScanResult<String> scanResult = redisService.getKeysByDb(entry.getKey(), cursor, match);
                 sb.append(",");
                 sb.append("nodes:").append("[");
                 Map<String, String> typeMap = redisService.getType(entry.getKey(), scanResult.getResult());
@@ -573,9 +570,9 @@ public class RedisController {
         return sb.toString();
     }
 
-    private String dbJson(Integer db, String cursor, String upCursor, HttpServletRequest request) {
+    private String dbJson(Integer db, String cursor, String upCursor, String match, HttpServletRequest request) {
         StringBuilder sb = new StringBuilder();
-        ScanResult<String> scanResult = redisService.getKeysByDb(db, cursor);
+        ScanResult<String> scanResult = redisService.getKeysByDb(db, cursor, match);
         sb.append("[");
         Map<String, String> typeMap = redisService.getType(db, scanResult.getResult());
         typeMap.forEach((key, type) -> sb.append("{text:").append("'").append(key).append("',icon:'").append(request.getContextPath()).append("/img/").append(type).append(".png").append("',type:'").append(type).append("'},"));

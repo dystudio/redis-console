@@ -44,16 +44,16 @@
         <div class="navbar-collapse collapse">
             <ul class="nav navbar-nav">
                 <li class="active dropdown redisAll">
-                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">Server<span class="caret"></span></a>
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">${server=="/cluster"?"Cluster":"Standalone"}<span class="caret"></span></a>
                     <ul class="dropdown-menu">
                         <li><a href="${ctx}/standalone/index">Standalone</a></li>
                         <li><a href="${ctx}/cluster/index">Cluster</a></li>
                     </ul>
                 </li>
-                <li><a href="javascript:void(0);">Info</a></li>
-                <li><a href="javascript:void(0);">Config</a></li>
+                <li><a href="javascript:void(0);" class="noExploit">Info</a></li>
+                <li><a href="javascript:void(0);" class="noExploit">Config</a></li>
                 <li class="dropdown ">
-                    <a href="javascript:void(0);">Offset</a>
+                    <a href="javascript:void(0);" class="noExploit">Offset</a>
                 </li>
             </ul>
         </div>
@@ -117,13 +117,13 @@
                 </form>
             </span>
             <button type="button" class="btn btn-danger" data-toggle="modal" data-target="#myModal">全部删除</button>
-            <form class="form-inline" action="${ctx}/index"
+            <form class="form-inline" action="${ctx}${server}/index"
                   method="post" style="display: inline">
                 <div class="form-group">
                     <label>key</label>
-                    <input type="text" class="form-control" id="parrent" value="" name="parrent">
+                    <input type="text" class="form-control" id="match" value="${match}" name="match">
                 </div>
-                <div class="form-group">
+              <%--  <div class="form-group">
                     <label for="customerFrom">类型</label>
                     <select class="form-control" id="customerFrom" name="custSource">
                         <option value="">--请选择--</option>
@@ -131,7 +131,7 @@
                             <option value="${item}">${item}</option>
                         </c:forEach>
                     </select>
-                </div>
+                </div>--%>
                 <button type="submit" class="btn btn-primary">查询</button>
             </form>
         </div>
@@ -152,6 +152,7 @@
 <script type="text/javascript">
     var defaultData = ${tree};
     var server = '${server}';
+    var match='${match}';
     $("#tree").initTree(defaultData);
 </script>
 </html>

@@ -1,10 +1,10 @@
 package com.whe.redis.web;
 
 import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
 import com.whe.redis.service.RedisClusterService;
 import com.whe.redis.util.Page;
 import com.whe.redis.util.ServerConstant;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -39,35 +39,40 @@ public class RedisClusterController {
     private String contextPath = null;
 
     @RequestMapping("/index")
-    public String index(Model model, HttpServletRequest request, HttpServletResponse response) {
+    public String index(String match, Model model, HttpServletRequest request, HttpServletResponse response) {
         if (contextPath == null) {
             contextPath = request.getContextPath();
         }
-        StringBuilder sb = new StringBuilder();
-        sb.append("[{");
-        sb.append("text:").append("'").append("redisCluster").append("',");
-        sb.append("icon:").append(request.getContextPath()).append("'/img/redis.png',").append("expanded:").append(true).append(",");
-        sb.append("nodes:").append("[");
-        sb.append("{text:").append("'").append("data").append("',").append("icon:").append(contextPath).append("'/img/db.png',");
-        sb.append("nodes:");
-        Map<Integer, Map<String, String>> map = new HashMap<>();
-        Map<String, String> nodeCursor = new HashMap<>();
-        map.put(1, nodeCursor);
-        sb.append(dataTree(1, nodeCursor, map));
-        sb.append("}]}]");
-        model.addAttribute("tree", sb.toString());
-        String jsonString = JSON.toJSONString(map);
-        String encode = null;
         try {
-            encode = URLEncoder.encode(jsonString, ServerConstant.CHARSET);
-        } catch (UnsupportedEncodingException e) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("[{");
+            sb.append("text:").append("'").append("redisCluster").append("',");
+            sb.append("icon:").append(request.getContextPath()).append("'/img/redis.png',").append("expanded:").append(true).append(",");
+            sb.append("nodes:").append("[");
+            sb.append("{text:").append("'").append("data").append("',").append("icon:").append(contextPath).append("'/img/db.png',");
+            sb.append("nodes:");
+            Map<Integer, Map<String, String>> map = new HashMap<>();
+            Map<String, String> nodeCursor = new HashMap<>();
+            map.put(1, nodeCursor);
+            sb.append(dataTree(1, match, nodeCursor, map));
+            sb.append("}]}]");
+            model.addAttribute("tree", sb.toString());
+            String jsonString = JSON.toJSONString(map);
+            String encode = null;
+            try {
+                encode = URLEncoder.encode(jsonString, ServerConstant.CHARSET);
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
+            Cookie cookie = new Cookie(ServerConstant.CLUSTER_PAGE, encode);
+            cookie.setPath("/");
+            cookie.setMaxAge(-1);
+            response.addCookie(cookie);
+            model.addAttribute("match", match);
+            model.addAttribute("server", "/cluster");
+        } catch (Exception e) {
             e.printStackTrace();
         }
-        Cookie cookie = new Cookie(ServerConstant.CLUSTER_PAGE, encode);
-        cookie.setPath("/");
-        cookie.setMaxAge(-1);
-        response.addCookie(cookie);
-        model.addAttribute("server", "/cluster");
         return "index";
     }
 
@@ -102,7 +107,7 @@ public class RedisClusterController {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
         return "1";
     }
@@ -139,7 +144,7 @@ public class RedisClusterController {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
         return "1";
     }
@@ -167,7 +172,7 @@ public class RedisClusterController {
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -179,7 +184,7 @@ public class RedisClusterController {
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -191,7 +196,7 @@ public class RedisClusterController {
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -210,7 +215,7 @@ public class RedisClusterController {
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -222,7 +227,7 @@ public class RedisClusterController {
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -247,7 +252,7 @@ public class RedisClusterController {
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -259,7 +264,7 @@ public class RedisClusterController {
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -294,7 +299,7 @@ public class RedisClusterController {
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -314,7 +319,7 @@ public class RedisClusterController {
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -340,7 +345,7 @@ public class RedisClusterController {
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -357,7 +362,7 @@ public class RedisClusterController {
             return redisClusterService.del(key) == 1 ? "1" : "0";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -368,7 +373,7 @@ public class RedisClusterController {
             return redisClusterService.renameNx(oldKey, newKey) == 0 ? "2" : "1";
         } catch (Exception e) {
             e.printStackTrace();
-            return "0";
+            return e.getMessage();
         }
     }
 
@@ -386,14 +391,14 @@ public class RedisClusterController {
 
     @RequestMapping("/upPage")
     @ResponseBody
-    public String upPage(Integer pageNo, HttpServletRequest request, HttpServletResponse response) {
-        return page(pageNo, request, response);
+    public String upPage(Integer pageNo, String match, HttpServletRequest request, HttpServletResponse response) {
+        return page(pageNo, match, request, response);
     }
 
     @RequestMapping("/nextPage")
     @ResponseBody
-    public String nextPage(Integer pageNo, HttpServletRequest request, HttpServletResponse response) {
-        return page(pageNo, request, response);
+    public String nextPage(Integer pageNo, String match, HttpServletRequest request, HttpServletResponse response) {
+        return page(pageNo, match, request, response);
     }
 
 
@@ -414,7 +419,7 @@ public class RedisClusterController {
         return "1";
     }
 
-    private String page(Integer pageNo, HttpServletRequest request, HttpServletResponse response) {
+    private String page(Integer pageNo, String match, HttpServletRequest request, HttpServletResponse response) {
         Cookie[] cookies = request.getCookies();
         String data = null;
         if (cookies != null && cookies.length > 0) {
@@ -429,7 +434,7 @@ public class RedisClusterController {
                 }
                 Map<Integer, Map<String, String>> map = JSON.parseObject(value, Map.class);
                 Map<String, String> nodeCursor = map.get(pageNo);
-                data = dataTree(pageNo, nodeCursor, map);
+                data = dataTree(pageNo, match, nodeCursor, map);
                 try {
                     cookie.setValue(URLEncoder.encode(JSON.toJSONString(map), ServerConstant.CHARSET));
                 } catch (UnsupportedEncodingException e) {
@@ -441,8 +446,13 @@ public class RedisClusterController {
         return data;
     }
 
-    private String dataTree(int pageNo, Map<String, String> nodeCursor, Map<Integer, Map<String, String>> map) {
-        Map<String, ScanResult<String>> nodeScan = redisClusterService.scan(nodeCursor);
+    private String dataTree(int pageNo, String match, Map<String, String> nodeCursor, Map<Integer, Map<String, String>> map) {
+        if (StringUtils.isBlank(match)) {
+            match = ServerConstant.DEFAULT_MATCH;
+        } else {
+            match = "*" + match + "*";
+        }
+        Map<String, ScanResult<String>> nodeScan = redisClusterService.scan(nodeCursor, match);
         StringBuilder sb = new StringBuilder();
         sb.append("[");
         Map<String, String> nextNodeCursor = nodeScan.entrySet().stream().filter(entry -> {

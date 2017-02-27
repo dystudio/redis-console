@@ -31,7 +31,7 @@ $(function () {
         var options = {
             url: ctx + server + "/recover",
             type: "post",
-            dataType: "json",
+            dataType: "text",
             success: function (data) {
                 if (data == '1') {
                     document.location.reload();//当前页面
@@ -54,7 +54,7 @@ $(function () {
         var options = {
             url: ctx + server + "/serializeRecover",
             type: "post",
-            dataType: "json",
+            dataType: "text",
             success: function (data) {
                 if (data == "1") {
                     document.location.reload();//当前页面
@@ -71,7 +71,7 @@ $(function () {
         $.ajax({
             url: ctx + server + "/flushAll",
             type: "post",
-            dataType: "json",
+            dataType: "text",
             success: function (data) {
                 if (data == '1') {
                     document.location.reload();//当前页面
@@ -87,7 +87,12 @@ $(function () {
             }
         })
     });
-
+    $(".noExploit").on('click',function () {
+        $("#promptTitle").html("提示");
+        $("#promptContent").html("<p>此功能待开发,感谢您对作者的支持 wang</p>");
+        $("#promptBtn").removeClass("btn-danger").addClass("btn-success");
+        $("#prompt").modal("show");
+    })
 });
 /**
  * 重命名key
@@ -101,7 +106,7 @@ function rename(th) {
         url: ctx + server + "/renameNx",
         data: {db: redisDb, oldKey: key, newKey: newKey},
         type: "post",
-        dataType: "json",
+        dataType: "text",
         success: function (data) {
             if (data == "1") {
                 key = newKey;
@@ -123,7 +128,7 @@ function setExpire(th) {
             url: ctx + server + "/setExpire",
             data: {db: redisDb, key: key, seconds: seconds},
             type: "post",
-            dataType: "json",
+            dataType: "text",
             success: function (data) {
                 showModel(data);
             }
@@ -136,7 +141,7 @@ function delKey(th) {
         url: ctx + server + "/delKey",
         data: {db: redisDb, key: key},
         type: "post",
-        dataType: "json",
+        dataType: "text",
         success: function (data) {
             showModel(data);
             if (data == "1") {
@@ -158,7 +163,7 @@ function updateString(th) {
         url: ctx + server + "/updateString",
         data: {db: redisDb, key: key, val: val},
         type: "post",
-        dataType: "json",
+        dataType: "text",
         success: function (data) {
             showModel(data);
         }
@@ -172,7 +177,7 @@ function updateList(th) {
         url: ctx + server + "/updateList",
         data: {db: redisDb, index: index, key: key, val: val},
         type: "post",
-        dataType: "json",
+        dataType: "text",
         success: function (data) {
             showModel(data);
         }
@@ -194,7 +199,7 @@ function delList(th) {
         url: ctx + server + "/delList",
         data: {db: redisDb, index: index, listSize: listSize, key: key},
         type: "post",
-        dataType: "json",
+        dataType: "text",
         success: function (data) {
             if (data == "2") {
                 alert("不能从list删除行,因为行已经改变了。重载值并再试一次");
@@ -215,7 +220,7 @@ function updateSet(th) {
         url: ctx + server + "/updateSet",
         data: {db: redisDb, key: key, oldVal: oldVal, newVal: val},
         type: "post",
-        dataType: "json",
+        dataType: "text",
         success: function (data) {
             if (data == "1") {
                 node.attr("oldVal", val);
@@ -230,7 +235,7 @@ function delSet(th) {
         url: ctx + server + "/delSet",
         data: {db: redisDb, key: key, val: val},
         type: "post",
-        dataType: "json",
+        dataType: "text",
         success: function (data) {
             $(th).closest("tr").remove();
             if (data == "1") {
@@ -249,7 +254,7 @@ function updateZSet(th) {
         url: ctx + server + "/updateZSet",
         data: {db: redisDb, key: key, oldVal: oldVal, newVal: newVal, score: score},
         type: "post",
-        dataType: "json",
+        dataType: "text",
         success: function (data) {
             if (data == "1") {
                 node.attr("oldVal", newVal);
@@ -265,7 +270,7 @@ function delZSet(th) {
         url: ctx + server + "/delZSet",
         data: {db: redisDb, key: key, val: val},
         type: "post",
-        dataType: "json",
+        dataType: "text",
         success: function (data) {
             $(th).closest("tr").remove();
             if (data == "1") {
@@ -285,7 +290,7 @@ function updateHash(th) {
             url: ctx + server + "/hSet",
             data: {db: redisDb, key: key, field: oldField, val: val},
             type: "post",
-            dataType: "json",
+            dataType: "text",
             success: function (data) {
                 showModel(data);
             }
@@ -295,7 +300,7 @@ function updateHash(th) {
             url: ctx + server + "/updateHash",
             data: {db: redisDb, key: key, oldField: oldField, newField: newField, val: val},
             type: "post",
-            dataType: "json",
+            dataType: "text",
             success: function (data) {
                 if (data == "1") {
                     node.attr("oldField", newField);
@@ -311,7 +316,7 @@ function delHash(th) {
         url: ctx + server + "/delHash",
         data: {db: redisDb, key: key, field: field},
         type: "post",
-        dataType: "json",
+        dataType: "text",
         success: function (data) {
             $(th).closest("tr").remove();
             if (data == "1") {
@@ -610,7 +615,7 @@ function clusterUpPage(pageNo, event) {
     var obj = event.srcElement ? event.srcElement : event.target;
     $.ajax({
         url: ctx + server + "/upPage",
-        data: {pageNo: pageNo},
+        data: {pageNo: pageNo,match:match},
         type: "post",
         dataType: "text",
         success: function (data) {
@@ -625,7 +630,7 @@ function clusterNextPage(pageNo, event) {
     var obj = event.srcElement ? event.srcElement : event.target;
     $.ajax({
         url: ctx + server + "/nextPage",
-        data: {pageNo: pageNo},
+        data: {pageNo: pageNo,match:match},
         type: "post",
         dataType: "text",
         success: function (data) {
@@ -639,7 +644,7 @@ function nextPage(db, cursor, event) {
     var obj = event.srcElement ? event.srcElement : event.target;
     $.ajax({
         url: ctx + server + "/nextPage",
-        data: {db: db, cursor: cursor},
+        data: {db: db, cursor: cursor,match:match},
         type: "post",
         dataType: "text",
         success: function (data) {
@@ -654,7 +659,7 @@ function upPage(db, cursor, event) {
     var obj = event.srcElement ? event.srcElement : event.target;
     $.ajax({
         url: ctx + server + "/upPage",
-        data: {db: db, cursor: cursor},
+        data: {db: db, cursor: cursor,match:match},
         type: "post",
         dataType: "text",
         success: function (data) {
@@ -675,7 +680,7 @@ function showModel(data) {
         $("#promptBtn").removeClass("btn-success").addClass("btn-danger");
     } else {
         $("#promptTitle").html("失败提示");
-        $("#promptContent").html("<p>修改失败</p>");
+        $("#promptContent").html("<p>"+data+"</p>");
         $("#promptBtn").removeClass("btn-success").addClass("btn-danger");
     }
     $("#prompt").modal("show");
