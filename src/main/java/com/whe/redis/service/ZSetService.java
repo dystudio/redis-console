@@ -6,13 +6,10 @@ import com.whe.redis.util.SerializeUtils;
 import com.whe.redis.util.ServerConstant;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisCluster;
 import redis.clients.jedis.Tuple;
 
 import java.util.Map;
 import java.util.Set;
-
-import static java.util.stream.Collectors.toMap;
 
 /**
  * Created by trustme on 2017/2/12.
@@ -20,18 +17,6 @@ import static java.util.stream.Collectors.toMap;
  */
 @Service
 public class ZSetService {
-
-    /**
-     * 获得所有zSet数据
-     *
-     * @return Map<String.Set>
-     */
-    public Map<String, Set<Tuple>> getAllZSet() {
-        Jedis jedis = JedisFactory.getJedisPool().getResource();
-        Map<String, Set<Tuple>> map = getNodeZSet(jedis);
-        jedis.close();
-        return map;
-    }
 
     /**
      * 根据key分页查询zSet类型数据
@@ -66,44 +51,17 @@ public class ZSetService {
         jedis.close();
     }
 
-    /**
-     * 获得当前节点所有zSet
-     *
-     * @param jedis jedis
-     * @return Map
-     */
-    private Map<String, Set<Tuple>> getNodeZSet(Jedis jedis) {
-        return jedis.keys("*")
-                .stream()
-                .filter(key -> ServerConstant.REDIS_ZSET.equalsIgnoreCase(jedis.type(key)))
-                .collect(toMap(key -> key, key -> jedis.zrangeWithScores(key, 0, -1)));
-    }
-
-    /**
-     * 根据key查找zSet类型数据
-     *
-     * @param keys  Set<String> keys
-     * @param jedis Jedis
-     * @return Map<String, Set<Tuple>>
-     */
-    private Map<String, Set<Tuple>> findZSetByKeys(Set<String> keys, Jedis jedis) {
-        return keys.stream().collect(toMap(key -> key, key -> jedis.zrangeWithScores(key, 0, -1)));
-    }
 
     /**
      * 保存所有zSet数据
      *
      * @param zSetMap map
      */
-    public void saveAllZSet(Map<String, Map<String, Number>> zSetMap) {
-        if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            Jedis jedis = JedisFactory.getJedisPool().getResource();
-            zSetMap.forEach((key, map) -> map.forEach((elem, score) -> jedis.zadd(key, score.doubleValue(), elem)));
-            jedis.close();
-        } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            JedisCluster jedisCluster = JedisFactory.getJedisCluster();
-            zSetMap.forEach((key, map) -> map.forEach((elem, score) -> jedisCluster.zadd(key, score.doubleValue(), elem)));
-        }
+    public void saveAllZSet(int db, Map<String, Map<String, Number>> zSetMap) {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        zSetMap.forEach((key, map) -> map.forEach((elem, score) -> jedis.zadd(key, score.doubleValue(), elem)));
+        jedis.close();
     }
 
     /**
@@ -111,15 +69,11 @@ public class ZSetService {
      *
      * @param zSetMap map
      */
-    public void saveAllZSetSerialize(Map<String, Map<String, Number>> zSetMap) {
-        if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            Jedis jedis = JedisFactory.getJedisPool().getResource();
-            zSetMap.forEach((key, map) -> map.forEach((elem, score) -> jedis.zadd(key.getBytes(), score.doubleValue(), SerializeUtils.serialize(elem))));
-            jedis.close();
-        } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            JedisCluster jedisCluster = JedisFactory.getJedisCluster();
-            zSetMap.forEach((key, map) -> map.forEach((elem, score) -> jedisCluster.zadd(key.getBytes(), score.doubleValue(), SerializeUtils.serialize(elem))));
-        }
+    public void saveAllZSetSerialize(int db,Map<String, Map<String, Number>> zSetMap) {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        zSetMap.forEach((key, map) -> map.forEach((elem, score) -> jedis.zadd(key.getBytes(), score.doubleValue(), SerializeUtils.serialize(elem))));
+        jedis.close();
     }
 
 

@@ -34,6 +34,7 @@ $(function () {
             dataType: "json",
             success: function (data) {
                 if (data == '1') {
+                    document.location.reload();//当前页面
                     $("#promptTitle").html("成功提示");
                     $("#promptContent").html("<p>恢复成功</p>");
                     $("#promptBtn").removeClass("btn-danger").addClass("btn-success");
@@ -55,6 +56,9 @@ $(function () {
             type: "post",
             dataType: "json",
             success: function (data) {
+                if (data == "1") {
+                    document.location.reload();//当前页面
+                }
                 showModel(data);
             }
         };
@@ -69,7 +73,17 @@ $(function () {
             type: "post",
             dataType: "json",
             success: function (data) {
-               showModel(data);
+                if (data == '1') {
+                    document.location.reload();//当前页面
+                    $("#promptTitle").html("成功提示");
+                    $("#promptContent").html("<p>删除成功</p>");
+                    $("#promptBtn").removeClass("btn-danger").addClass("btn-success");
+                } else {
+                    $("#promptTitle").html("失败提示");
+                    $("#promptContent").html("<p>删除失败</p>");
+                    $("#promptBtn").removeClass("btn-success").addClass("btn-danger");
+                }
+                $("#prompt").modal("show");
             }
         })
     });
@@ -386,9 +400,9 @@ $(function () {
         if ($result.length > 0) {
             return;
         }
-        var db = $(this).parent().closest(".child_ul").siblings(".node-div").find(".text").html().toUpperCase();
-        var indexOf = db.indexOf("DB-");
-        redisDb = db.substring(indexOf + 3);
+        var db = $(this).parent().closest(".child_ul").siblings(".node-div").find(".text").html();
+        var indexOf = db.indexOf("db");
+        redisDb = db.substring(indexOf + 2);
         var text = $(this).find(".text");
         key = text.html();
         var type = text.attr("type");

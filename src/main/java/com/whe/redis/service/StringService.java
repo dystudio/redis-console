@@ -1,18 +1,11 @@
 package com.whe.redis.service;
 
 import com.whe.redis.util.JedisFactory;
-import com.whe.redis.util.RedisClusterUtils;
 import com.whe.redis.util.SerializeUtils;
-import com.whe.redis.util.ServerConstant;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisCluster;
 
-import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-
-import static java.util.stream.Collectors.toMap;
 
 /**
  * Created by trustme on 2017/2/12.
@@ -21,17 +14,6 @@ import static java.util.stream.Collectors.toMap;
 @Service
 public class StringService {
 
-    /**
-     * 获得所有string类型数据
-     *
-     * @return Map<String, String>
-     */
-    public Map<String, String> getAllString(String pattern) {
-        Jedis jedis = JedisFactory.getJedisPool().getResource();
-        Map<String, String> stringMap = getNodeString(jedis, pattern);
-        jedis.close();
-        return stringMap;
-    }
 
     /**
      * 根据数据库和key获得val
@@ -64,34 +46,15 @@ public class StringService {
 
 
     /**
-     * 获得当前节点所有String
-     *
-     * @param jedis jedis
-     * @return Map
-     */
-    private Map<String, String> getNodeString(Jedis jedis, String pattern) {
-        if (pattern == null) pattern = "*";
-        jedis.select(0);
-        return jedis.keys(pattern)
-                .stream()
-                .filter(key -> ServerConstant.REDIS_STRING.equalsIgnoreCase(jedis.type(key)))
-                .collect(toMap(key -> key, jedis::get));
-    }
-
-    /**
      * 保存所有string数据
      *
      * @param stringMap map
      */
-    public void saveAllString(Map<String, String> stringMap) {
-        if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            Jedis jedis = JedisFactory.getJedisPool().getResource();
-            stringMap.forEach(jedis::set);
-            jedis.close();
-        } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            JedisCluster jedisCluster = JedisFactory.getJedisCluster();
-            stringMap.forEach(jedisCluster::set);
-        }
+    public void saveAllString(int db,Map<String, String> stringMap) {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        stringMap.forEach(jedis::set);
+        jedis.close();
     }
 
     /**
@@ -99,15 +62,11 @@ public class StringService {
      *
      * @param stringMap map
      */
-    public void saveAllStringSerialize(Map<String, String> stringMap) {
-        if (ServerConstant.STAND_ALONE.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            Jedis jedis = JedisFactory.getJedisPool().getResource();
-            stringMap.forEach((key, val) -> jedis.set(key.getBytes(), SerializeUtils.serialize(val)));
-            jedis.close();
-        } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(ServerConstant.REDIS_TYPE)) {
-            JedisCluster jedisCluster = JedisFactory.getJedisCluster();
-            stringMap.forEach((key, val) -> jedisCluster.set(key.getBytes(), SerializeUtils.serialize(val)));
-        }
+    public void saveAllStringSerialize(int db,Map<String, String> stringMap) {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        stringMap.forEach((key, val) -> jedis.set(key.getBytes(), SerializeUtils.serialize(val)));
+        jedis.close();
     }
 
 }

@@ -13,6 +13,9 @@ public class ServerConstant {
     public final static String CLUSTER_PAGE = "clusterPage";
     public final static String DEFAULT_CURSOR = "0";
     public final static String DEFAULT_MATCH = "*";
+    public final static String DB = "db";
+
+
     public final static String PONG = "PONG";
     public final static String CHARSET = "UTF-8";
     public final static String REDIS_STRING = "string";

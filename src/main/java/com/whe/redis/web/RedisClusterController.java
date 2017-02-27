@@ -1,6 +1,7 @@
 package com.whe.redis.web;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.whe.redis.service.RedisClusterService;
 import com.whe.redis.util.Page;
 import com.whe.redis.util.ServerConstant;
@@ -9,15 +10,18 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
 import redis.clients.jedis.ScanResult;
 import redis.clients.jedis.Tuple;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
+import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -67,56 +71,94 @@ public class RedisClusterController {
         return "index";
     }
 
+    /**
+     * 序列化恢复数据
+     *
+     * @return string
+     */
+    @RequestMapping("/serializeRecover")
+    @ResponseBody
+    public String serializeRecover(MultipartFile file) {
+        try {
+            String data = new String(file.getBytes(), ServerConstant.CHARSET);
+            Object obj = JSON.parse(data);
+            if (obj instanceof Map) {
+                Map map = (Map) obj;
+                if (map.containsKey(ServerConstant.REDIS_STRING)) {
+                    redisClusterService.saveAllStringSerialize((Map) map.get(ServerConstant.REDIS_STRING));
+                }
+                if (map.containsKey(ServerConstant.REDIS_LIST)) {
+                    redisClusterService.saveAllListSerialize((Map) map.get(ServerConstant.REDIS_LIST));
+                }
+                if (map.containsKey(ServerConstant.REDIS_SET)) {
+                    redisClusterService.saveAllSetSerialize((Map) map.get(ServerConstant.REDIS_SET));
+                }
+                if (map.containsKey(ServerConstant.REDIS_ZSET)) {
+                    redisClusterService.saveAllZSetSerialize((Map) map.get(ServerConstant.REDIS_ZSET));
+                }
+                if (map.containsKey(ServerConstant.REDIS_HASH)) {
+                    redisClusterService.saveAllHashSerialize((Map) map.get(ServerConstant.REDIS_HASH));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "0";
+        }
+        return "1";
+    }
 
-    /*  @RequestMapping("/backup")
-      public void backup(HttpServletRequest request, HttpServletResponse response) throws IOException {
-          Map<String, Object> map = new HashMap<>();
-          Map<String, String> stringMap = stringService.getAllString("*");
-          List<Object> list = new ArrayList<>();
-          if (stringMap.size() > 0) {
-              map.put(ServerConstant.REDIS_STRING, stringMap);
-              list.add(map);
-          }
-          map = new HashMap<>();
-          Map<String, List<String>> listMap = listService.getAllList();
-          if (listMap.size() > 0) {
-              map.put(ServerConstant.REDIS_LIST, listMap);
-              list.add(map);
-          }
-          map = new HashMap<>();
-          Map<String, Set<String>> setMap = setService.getAllSet();
-          if (setMap.size() > 0) {
-              map.put(ServerConstant.REDIS_SET, setMap);
-              list.add(map);
-          }
-          map = new HashMap<>();
-          Map<String, Set<Tuple>> tupleMap = ZSetService.getAllZSet();
-          if (tupleMap.size() > 0) {
-              Map<String, Map<String, Double>> zSetMap = new HashMap<>();
-              Map<String, Double> stringDoubleMap = new HashMap<>();
-              tupleMap.forEach((key, set) -> {
-                  set.forEach(t -> stringDoubleMap.put(t.getElement(), t.getScore()));
-                  zSetMap.put(key, new HashMap<>(stringDoubleMap));
-                  stringDoubleMap.clear();
-              });
-              map.put(ServerConstant.REDIS_ZSET, zSetMap);
-              list.add(map);
-          }
-          map = new HashMap<>();
-          Map<String, Map<String, String>> hashMap = hashService.getAllHash();
-          if (hashMap.size() > 0) {
-              map.put(ServerConstant.REDIS_HASH, hashMap);
-              list.add(map);
-          }
-          String str = JSON.toJSONString(list);
-          DateFormat df = new SimpleDateFormat("yyyy-MM-dd");
-          String format = df.format(new Date());
-          response.setContentType(request.getServletContext().getMimeType(format + ".redis"));//设置MIME类型
-          response.setHeader("Content-Disposition", "attachment; filename=" + format + ".redis");
-          response.getWriter().write(str);
-      }
+    /**
+     * 恢复数据
+     *
+     * @param file file
+     * @return string
+     */
+    @RequestMapping("/recover")
+    @ResponseBody
+    public String recover(MultipartFile file) {
+        try {
+            String data = new String(file.getBytes(), ServerConstant.CHARSET);
+            Object obj = JSON.parse(data);
+            if (obj instanceof Map) {
+                Map map = (Map) obj;
+                if (map.containsKey(ServerConstant.REDIS_STRING)) {
+                    redisClusterService.saveAllString((Map<String, String>) map.get(ServerConstant.REDIS_STRING));
+                }
+                if (map.containsKey(ServerConstant.REDIS_LIST)) {
+                    redisClusterService.saveAllList((Map) map.get(ServerConstant.REDIS_LIST));
+                }
+                if (map.containsKey(ServerConstant.REDIS_SET)) {
+                    redisClusterService.saveAllSet((Map) map.get(ServerConstant.REDIS_SET));
+                }
+                if (map.containsKey(ServerConstant.REDIS_ZSET)) {
+                    redisClusterService.saveAllZSet((Map) map.get(ServerConstant.REDIS_ZSET));
+                }
+                if (map.containsKey(ServerConstant.REDIS_HASH)) {
+                    redisClusterService.saveAllHash((Map) map.get(ServerConstant.REDIS_HASH));
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "0";
+        }
+        return "1";
+    }
 
-  */
+    /**
+     * 备份数据
+     *
+     * @param request  request
+     * @param response response
+     * @throws IOException IOException
+     */
+    @RequestMapping("/backup")
+    public void backup(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        LocalDate date = LocalDate.now();
+        response.setContentType(request.getServletContext().getMimeType(date + "cluster.redis"));//设置MIME类型
+        response.setHeader("Content-Disposition", "attachment; filename=" + date + "cluster.redis");
+        response.getWriter().write(redisClusterService.getAll());
+    }
+
     @RequestMapping(value = {"/hSet"})
     @ResponseBody
     public String hSet(String key, String field, String val) {
@@ -403,12 +445,11 @@ public class RedisClusterController {
         Map<String, ScanResult<String>> nodeScan = redisClusterService.scan(nodeCursor);
         StringBuilder sb = new StringBuilder();
         sb.append("[");
-        Map<String, String> nextNodeCursor = nodeScan.entrySet().stream()
-                .filter(entry -> {
-                    Map<String, String> typeMap = redisClusterService.getType(entry.getValue().getResult());
-                    typeMap.forEach((key, type) -> sb.append("{text:").append("'").append(key).append("',icon:'").append(contextPath).append("/img/").append(type).append(".png").append("',type:'").append(type).append("'},"));
-                    return !ServerConstant.DEFAULT_CURSOR.equalsIgnoreCase(entry.getValue().getStringCursor());
-                }).collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getStringCursor()));
+        Map<String, String> nextNodeCursor = nodeScan.entrySet().stream().filter(entry -> {
+            Map<String, String> typeMap = redisClusterService.getType(entry.getValue().getResult());
+            typeMap.forEach((key, type) -> sb.append("{text:").append("'").append(key).append("',icon:'").append(contextPath).append("/img/").append(type).append(".png").append("',type:'").append(type).append("'},"));
+            return !ServerConstant.DEFAULT_CURSOR.equalsIgnoreCase(entry.getValue().getStringCursor());
+        }).collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getStringCursor()));
 
         sb.append("{page:").append("'<ul class=\"pagination\" style=\"margin:0px\"> <li ");
         if (pageNo == 1) {
