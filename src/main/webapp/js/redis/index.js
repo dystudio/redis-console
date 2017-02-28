@@ -155,7 +155,7 @@ function delKey(th) {
  * string更新值
  * */
 function updateString(th) {
-    var val = $(th).closest("tr").find("input").val();
+    var val = $(th).closest("tr").find("textarea").val();
     if (val.trim() == '') {
         return;
     }
@@ -170,7 +170,7 @@ function updateString(th) {
     });
 }
 function updateList(th) {
-    var val = $(th).closest("tr").find("input").val();
+    var val = $(th).closest("tr").find("textarea").val();
     var index = $(th).closest("tr").find("td").first().html();
     --index;
     $.ajax({
@@ -213,7 +213,7 @@ function delList(th) {
 }
 
 function updateSet(th) {
-    var node = $(th).closest("tr").find("input");
+    var node = $(th).closest("tr").find("textarea");
     var val = node.val();
     var oldVal = node.attr("oldVal");
     $.ajax({
@@ -230,7 +230,7 @@ function updateSet(th) {
     });
 }
 function delSet(th) {
-    var val = $(th).closest("tr").find("input").attr("oldVal");
+    var val = $(th).closest("tr").find("textarea").attr("oldVal");
     $.ajax({
         url: ctx + server + "/delSet",
         data: {db: redisDb, key: key, val: val},
@@ -246,7 +246,7 @@ function delSet(th) {
     });
 }
 function updateZSet(th) {
-    var node = $(th).closest("td").prev("td").find("input");
+    var node = $(th).closest("td").prev("td").find("textarea");
     var oldVal = node.attr("oldVal");
     var newVal = node.val();
     var score = $(th).closest("tr").find("input").val();
@@ -265,7 +265,7 @@ function updateZSet(th) {
 
 }
 function delZSet(th) {
-    var val = $(th).closest("td").prev("td").find("input").attr("oldVal");
+    var val = $(th).closest("td").prev("td").find("textarea").attr("oldVal");
     $.ajax({
         url: ctx + server + "/delZSet",
         data: {db: redisDb, key: key, val: val},
@@ -281,8 +281,8 @@ function delZSet(th) {
     });
 }
 function updateHash(th) {
-    var val = $(th).closest("td").prev("td").find("input").val();
-    var node = $(th).closest("tr").find("input");
+    var val = $(th).closest("td").prev("td").find("textarea").val();
+    var node = $(th).closest("tr").find("textarea");
     var oldField = node.attr("oldField");
     var newField = node.val();
     if (oldField == newField) {
@@ -311,7 +311,7 @@ function updateHash(th) {
     }
 }
 function delHash(th) {
-    var field = $(th).closest("tr").find("input").attr("oldField");
+    var field = $(th).closest("tr").find("textarea").attr("oldField");
     $.ajax({
         url: ctx + server + "/delHash",
         data: {db: redisDb, key: key, field: field},
@@ -493,8 +493,8 @@ function getHash() {
 
 
             for (var field in data) {
-                str += '<tr><td style="padding: 0;"><input type="text"  class="form-control" oldField="' + field + '" value="' + field + '" "></td><td style="padding: 0;">' +
-                    '<input type="text" class="form-control"  value="' + data[field] + '"></td>' +
+                str += '<tr><td style="padding: 0;"><textarea class="form-control" oldField=\'' + field + '\'>' + field + '</textarea></td><td style="padding: 0;">' +
+                    '<textarea class="form-control">' + data[field] + '</textarea></td>' +
                     '<td><button type="button" class="btn btn-success btn-xs " onclick="updateHash(this)">保存</button>' +
                     '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delHash(this);" style="margin-left: 4px;">删除</a></td></tr>';
             }
@@ -520,7 +520,7 @@ function getZSet() {
                 '</td> </tr></tbody></table><table class="table table-bordered "><thead><tr><th style="width:10%;">score</th><th style="width:77%;">value</th><th style="text-align: center;">操作</th></tr></thead><tbody id="zset-content">';
             for (var i = 0; i < data.results.length; i++) {
                 str += '<tr><td style="padding: 0;"><input type="text" maxlength="50" class="form-control" value="' + data.results[i].score + '" onkeyup="checkDouble(this)"></td><td style="padding: 0;">' +
-                    '<input type="text" class="form-control" oldVal="' + data.results[i].element + '" value="' + data.results[i].element + '"></td>' +
+                    '<textarea class="form-control" oldVal="' + data.results[i].element + '" >' + data.results[i].element + '</textarea></td>' +
                     '<td><button type="button" class="btn btn-success btn-xs " onclick="updateZSet(this)">保存</button>' +
                     '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delZSet(this);" style="margin-left: 4px;">删除</a></td></tr>';
             }
@@ -549,7 +549,7 @@ function getSet() {
                 '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delKey(this);" style="margin-left: 4px;">删除</a>' +
                 '</td> </tr></tbody></table><table class="table table-bordered "><thead><tr><th style="width:87%;">value</th><th style="text-align: center;">操作</th></tr></thead><tbody id="list-content">';
             for (var i = 0; i < data.length; i++) {
-                str += '<tr><td style="padding: 0;"><input type="text" class="form-control" oldVal="' + data[i] + '" value="' + data[i] + '"></td>' +
+                str += '<tr><td style="padding: 0;"><textarea class="form-control" oldVal="' + data[i] + '">' + data[i] + '</textarea></td>' +
                     '<td><button type="button" class="btn btn-success btn-xs " onclick="updateSet(this)">保存</button>' +
                     '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delSet(this);" style="margin-left: 4px;">删除</a></td></tr>';
             }
@@ -574,7 +574,7 @@ function getList() {
                 '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delKey(this);" style="margin-left: 4px;">删除</a>' +
                 '</td> </tr></tbody></table><table class="table table-bordered "><thead><tr><th style="width:3%;">row</th><th style="width:83%;">value</th><th style="text-align: center;">操作</th></tr></thead><tbody id="list-content">';
             for (var i = 0; i < data.results.length; i++) {
-                str += '<tr><td >' + ((data.pageNo - 1) * data.pageSize + i + 1) + '</td><td style="padding: 0;"><input type="text" class="form-control" value="' + data.results[i] + '"></td>' +
+                str += '<tr><td >' + ((data.pageNo - 1) * data.pageSize + i + 1) + '</td><td style="padding: 0;"><textarea class="form-control">' + data.results[i] + '</textarea></td>' +
                     '<td><button type="button" class="btn btn-success btn-xs " onclick="updateList(this)">保存</button>' +
                     '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delList(this);" style="margin-left: 4px;">删除</a></td></tr>';
             }
@@ -603,7 +603,7 @@ function getString() {
                 'onclick="removeDisabled(event)">修改</a> <button type="button" class="btn btn-success btn-xs disabled" onclick="rename(this)">保存</button>' +
                 '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delKey(this);" style="margin-left: 4px;">删除</a>' +
                 '</td> </tr></tbody><thead><tr><th>value</th><th style="text-align: center;">操作</th></tr></thead>' +
-                '<tbody><tr><td style="padding: 0;"><input type="text" class="form-control" value="' + data + '"></td>' +
+                '<tbody><tr><td style="padding: 0;"><textarea class="form-control">' + data + '</textarea></td>' +
                 '<td><button type="button" class="btn btn-success btn-xs " onclick="updateString(this)">保存</button></td></tr></table>' +
                 '</table> </div>' + ttlStr;
             $("#redisContent").html(str);

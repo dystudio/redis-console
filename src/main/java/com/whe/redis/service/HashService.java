@@ -29,12 +29,17 @@ public class HashService {
         jedis.close();
     }
 
-    public void updateHash(int db, String key, String oldField, String newField, String val) {
+    public boolean updateHash(int db, String key, String oldField, String newField, String val) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
+        Boolean hExists = jedis.hexists(key, oldField);
+        if (hExists) {
+            return false;
+        }
         jedis.hdel(key, oldField);
         jedis.hset(key, newField, val);
         jedis.close();
+        return true;
     }
 
     public void delHash(int db, String key, String field) {

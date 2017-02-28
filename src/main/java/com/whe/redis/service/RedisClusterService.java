@@ -195,8 +195,13 @@ public class RedisClusterService {
         return JSON.toJSONString(map);
     }
 
-    public void hSet(String key, String field, String val) {
+    public boolean hSet(String key, String field, String val) {
+        Boolean hExists = jedisCluster.hexists(key, field);
+        if (hExists) {
+            return false;
+        }
         jedisCluster.hset(key, field, val);
+        return true;
     }
 
     public void updateHash(String key, String oldField, String newField, String val) {

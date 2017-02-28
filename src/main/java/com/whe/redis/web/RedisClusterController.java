@@ -49,7 +49,7 @@ public class RedisClusterController {
             sb.append("text:").append("'").append("redisCluster").append("',");
             sb.append("icon:").append(request.getContextPath()).append("'/img/redis.png',").append("expanded:").append(true).append(",");
             sb.append("nodes:").append("[");
-            sb.append("{text:").append("'").append("data").append("',").append("icon:").append(contextPath).append("'/img/db.png',");
+            sb.append("{text:").append("'").append("data").append("',").append("icon:").append(contextPath).append("'/img/db.png',").append("expanded:").append(true).append(",");
             sb.append("nodes:");
             Map<Integer, Map<String, String>> map = new HashMap<>();
             Map<String, String> nodeCursor = new HashMap<>();
@@ -168,8 +168,8 @@ public class RedisClusterController {
     @ResponseBody
     public String hSet(String key, String field, String val) {
         try {
-            redisClusterService.hSet(key, field, val);
-            return "1";
+
+            return redisClusterService.hSet(key, field, val)?"1":"2";
         } catch (Exception e) {
             e.printStackTrace();
             return e.getMessage();
