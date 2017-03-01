@@ -87,7 +87,7 @@ $(function () {
             }
         })
     });
-    $(".noExploit").on('click',function () {
+    $(".noExploit").on('click', function () {
         $("#promptTitle").html("提示");
         $("#promptContent").html("<p>此功能待开发,感谢您对作者的支持 wang</p>");
         $("#promptBtn").removeClass("btn-danger").addClass("btn-success");
@@ -326,12 +326,6 @@ function delHash(th) {
         }
     });
 }
-function removeDisabled(event) {
-    event = event || window.event;
-    var obj = event.srcElement ? event.srcElement : event.target;
-    $(obj).next("button").removeClass("disabled");
-    $(obj).closest("tr").find("input").removeAttr("disabled");
-}
 
 /**
  * 检查是否是数字不包含小数点 包含负数
@@ -486,8 +480,7 @@ function getHash() {
                 '<li role="presentation"><a href="javascript:void(0);">生存时间</a></li> </ul> <div class="panel" id="type-content">' +
                 '<table class="table table-bordered "><thead> <tr><th style="width: 87%;">key</th><th style="text-align: center">' +
                 '操作</th> </tr> </thead> <tbody style="border: 1px solid #ddd;"> <tr> <td style="padding: 0;"><input type="text" disabled class="form-control" ' +
-                'value="' + key + '"> </td><td> <a href="javascript:void(0);" class="btn btn-primary btn-xs" ' +
-                'onclick="removeDisabled(event)">修改</a> <button type="button" class="btn btn-success btn-xs disabled" onclick="rename(this)">保存</button>' +
+                'value="' + key + '"> </td><td><button type="button" class="btn btn-success btn-xs " onclick="rename(this)">保存</button>' +
                 '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delKey(this);" style="margin-left: 4px;">删除</a>' +
                 '</td> </tr></tbody></table><table class="table table-bordered "><thead><tr><th style="width:39%;">field</th><th style="width:48%;">value</th><th style="text-align: center;">操作</th></tr></thead><tbody >';
 
@@ -514,8 +507,7 @@ function getZSet() {
                 '<li role="presentation"><a href="javascript:void(0);">生存时间</a></li> </ul> <div class="panel" id="type-content">' +
                 '<table class="table table-bordered "><thead> <tr><th style="width: 87%;">key</th><th style="text-align: center">' +
                 '操作</th> </tr> </thead> <tbody style="border: 1px solid #ddd;"> <tr> <td style="padding: 0;"><input type="text" disabled class="form-control" ' +
-                'value="' + key + '"> </td><td> <a href="javascript:void(0);" class="btn btn-primary btn-xs" ' +
-                'onclick="removeDisabled(event)">修改</a> <button type="button" class="btn btn-success btn-xs disabled" onclick="rename(this)">保存</button>' +
+                'value="' + key + '"> </td><td><button type="button" class="btn btn-success btn-xs " onclick="rename(this)">保存</button>' +
                 '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delKey(this);" style="margin-left: 4px;">删除</a>' +
                 '</td> </tr></tbody></table><table class="table table-bordered "><thead><tr><th style="width:10%;">score</th><th style="width:77%;">value</th><th style="text-align: center;">操作</th></tr></thead><tbody id="zset-content">';
             for (var i = 0; i < data.results.length; i++) {
@@ -544,8 +536,7 @@ function getSet() {
                 '<li role="presentation"><a href="javascript:void(0);">生存时间</a></li> </ul> <div class="panel" id="type-content">' +
                 '<table class="table table-bordered "><thead><tr><th style="width: 87%;">key</th><th style="text-align: center">' +
                 '操作</th></tr></thead> <tbody style="border:1px solid #ddd;"><tr><td style="padding: 0;"><input type="text" disabled class="form-control" ' +
-                'value="' + key + '"> </td><td> <a href="javascript:void(0);" class="btn btn-primary btn-xs" ' +
-                'onclick="removeDisabled(event)">修改</a> <button type="button" class="btn btn-success btn-xs disabled" onclick="rename(this)">保存</button>' +
+                'value="' + key + '"> </td><td><button type="button" class="btn btn-success btn-xs " onclick="rename(this)">保存</button>' +
                 '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delKey(this);" style="margin-left: 4px;">删除</a>' +
                 '</td> </tr></tbody></table><table class="table table-bordered "><thead><tr><th style="width:87%;">value</th><th style="text-align: center;">操作</th></tr></thead><tbody id="list-content">';
             for (var i = 0; i < data.length; i++) {
@@ -568,9 +559,8 @@ function getList() {
             var str = '<ul class="nav nav-tabs"><li role="presentation" class="active"><a href="javascript:void(0);">list</a></li>' +
                 '<li role="presentation"><a href="javascript:void(0);">生存时间</a></li> </ul> <div class="panel" id="type-content">' +
                 '<table class="table table-bordered "><thead> <tr><th style="width: 87%;">key</th><th style="text-align: center">' +
-                '操作</th> </tr> </thead> <tbody style="border: 1px solid #ddd;"> <tr> <td style="padding: 0;"><input type="text" disabled class="form-control" ' +
-                'value="' + key + '"> </td><td> <a href="javascript:void(0);" class="btn btn-primary btn-xs" ' +
-                'onclick="removeDisabled(event)">修改</a> <button type="button" class="btn btn-success btn-xs disabled" onclick="rename(this)">保存</button>' +
+                '操作</th> </tr> </thead> <tbody style="border: 1px solid #ddd;"> <tr> <td style="padding: 0;"><input type="text" class="form-control" ' +
+                'value="' + key + '"> </td><td><button type="button" class="btn btn-success btn-xs " onclick="rename(this)">保存</button>' +
                 '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delKey(this);" style="margin-left: 4px;">删除</a>' +
                 '</td> </tr></tbody></table><table class="table table-bordered "><thead><tr><th style="width:3%;">row</th><th style="width:83%;">value</th><th style="text-align: center;">操作</th></tr></thead><tbody id="list-content">';
             for (var i = 0; i < data.results.length; i++) {
@@ -599,8 +589,7 @@ function getString() {
                 '<li role="presentation"><a href="javascript:void(0);">生存时间</a></li> </ul> <div class="panel panel-default" id="type-content">' +
                 '<table class="table table-bordered "><thead> <tr><th style="width: 87%;">key</th><th style="text-align: center">' +
                 '操作</th> </tr> </thead> <tbody> <tr> <td style="padding: 0;"><input type="text" disabled class="form-control" ' +
-                'value="' + key + '"> </td><td> <a href="javascript:void(0);" class="btn btn-primary btn-xs" ' +
-                'onclick="removeDisabled(event)">修改</a> <button type="button" class="btn btn-success btn-xs disabled" onclick="rename(this)">保存</button>' +
+                'value="' + key + '"> </td><td><button type="button" class="btn btn-success btn-xs " onclick="rename(this)">保存</button>' +
                 '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delKey(this);" style="margin-left: 4px;">删除</a>' +
                 '</td> </tr></tbody><thead><tr><th>value</th><th style="text-align: center;">操作</th></tr></thead>' +
                 '<tbody><tr><td style="padding: 0;"><input type="text" class="form-control" value="' + data + '"></td>' +
@@ -615,7 +604,7 @@ function clusterUpPage(pageNo, event) {
     var obj = event.srcElement ? event.srcElement : event.target;
     $.ajax({
         url: ctx + server + "/upPage",
-        data: {pageNo: pageNo,match:match},
+        data: {pageNo: pageNo, match: match},
         type: "post",
         dataType: "text",
         success: function (data) {
@@ -630,7 +619,7 @@ function clusterNextPage(pageNo, event) {
     var obj = event.srcElement ? event.srcElement : event.target;
     $.ajax({
         url: ctx + server + "/nextPage",
-        data: {pageNo: pageNo,match:match},
+        data: {pageNo: pageNo, match: match},
         type: "post",
         dataType: "text",
         success: function (data) {
@@ -644,7 +633,7 @@ function nextPage(db, cursor, event) {
     var obj = event.srcElement ? event.srcElement : event.target;
     $.ajax({
         url: ctx + server + "/nextPage",
-        data: {db: db, cursor: cursor,match:match},
+        data: {db: db, cursor: cursor, match: match},
         type: "post",
         dataType: "text",
         success: function (data) {
@@ -659,7 +648,7 @@ function upPage(db, cursor, event) {
     var obj = event.srcElement ? event.srcElement : event.target;
     $.ajax({
         url: ctx + server + "/upPage",
-        data: {db: db, cursor: cursor,match:match},
+        data: {db: db, cursor: cursor, match: match},
         type: "post",
         dataType: "text",
         success: function (data) {
@@ -680,7 +669,7 @@ function showModel(data) {
         $("#promptBtn").removeClass("btn-success").addClass("btn-danger");
     } else {
         $("#promptTitle").html("失败提示");
-        $("#promptContent").html("<p>"+data+"</p>");
+        $("#promptContent").html("<p>" + data + "</p>");
         $("#promptBtn").removeClass("btn-success").addClass("btn-danger");
     }
     $("#prompt").modal("show");
