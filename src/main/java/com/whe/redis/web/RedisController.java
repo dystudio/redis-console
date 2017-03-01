@@ -332,8 +332,7 @@ public class RedisController {
     @ResponseBody
     public String updateHash(int db, String key, String oldField, String newField, String val) {
         try {
-            hashService.updateHash(db, key, oldField, newField, val);
-            return "1";
+            return hashService.updateHash(db, key, oldField, newField, val) ? "1" : "2";
         } catch (Exception e) {
             e.printStackTrace();
             return e.getMessage();
