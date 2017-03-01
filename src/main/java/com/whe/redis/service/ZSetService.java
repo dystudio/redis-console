@@ -17,7 +17,17 @@ import java.util.Set;
  */
 @Service
 public class ZSetService {
-
+    public Long save(int db, String key, double score,String value) {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        Boolean exists = jedis.exists(key);
+        if (exists) {
+            return 2L;
+        }
+        jedis.zadd(key,score,value);
+        jedis.close();
+        return 1L;
+    }
     /**
      * 根据key分页查询zSet类型数据
      *

@@ -44,7 +44,9 @@
         <div class="navbar-collapse collapse">
             <ul class="nav navbar-nav">
                 <li class="active dropdown redisAll">
-                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">${server=="/cluster"?"Cluster":"Standalone"}<span class="caret"></span></a>
+                    <a href="#" class="dropdown-toggle"
+                       data-toggle="dropdown">${server=="/cluster"?"Cluster":"Standalone"}<span
+                            class="caret"></span></a>
                     <ul class="dropdown-menu">
                         <li><a href="${ctx}/standalone/index">Standalone</a></li>
                         <li><a href="${ctx}/cluster/index">Cluster</a></li>
@@ -103,6 +105,7 @@
     <!-- /.row -->
     <div class="panel panel-default">
         <div class="panel-body">
+            <button type="button" id="addRedis" class="btn btn-success navbar-btn">添加</button>
             <button type="button" id="backup" class="btn btn-primary navbar-btn">备份</button>
             <span class="btn btn-success btn-file"> 恢复
                 <span class="glyphicon" aria-hidden="true"></span>
@@ -123,20 +126,92 @@
                     <label>key</label>
                     <input type="text" class="form-control" id="match" value="${match}" name="match">
                 </div>
-              <%--  <div class="form-group">
-                    <label for="customerFrom">类型</label>
-                    <select class="form-control" id="customerFrom" name="custSource">
-                        <option value="">--请选择--</option>
-                        <c:forEach items="${type}" var="item">
-                            <option value="${item}">${item}</option>
-                        </c:forEach>
-                    </select>
-                </div>--%>
+                <%--  <div class="form-group">
+                      <label for="customerFrom">类型</label>
+                      <select class="form-control" id="customerFrom" name="custSource">
+                          <option value="">--请选择--</option>
+                          <c:forEach items="${type}" var="item">
+                              <option value="${item}">${item}</option>
+                          </c:forEach>
+                      </select>
+                  </div>--%>
                 <button type="submit" class="btn btn-primary">查询</button>
             </form>
         </div>
     </div>
     <div id="redisContent">
+    </div>
+</div>
+<!-- 客户编辑对话框 -->
+<div class="modal fade" id="redis_add_dialog" tabindex="-1" role="dialog"
+     aria-labelledby="myModalLabel">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+                <h4 class="modal-title" id="myModalLabel">添加数据</h4>
+            </div>
+            <div class="modal-body">
+                <form class="form-horizontal" id="add_redis_form">
+                    <div class="form-group">
+                        <label for="redis_key" class="col-sm-2 control-label">key</label>
+                        <div class="col-sm-10">
+                            <input type="text" class="form-control" id="redis_key" placeholder="key"
+                                   name="redis_key">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="redis_type" style="float:left;padding:10px 15px 0 27px;">数据类型</label>
+                        <div class="col-sm-10">
+                            <select class="form-control" id="redis_type" name="redis_type">
+                                <option value="string" selected>string</option>
+                                <option value="list">list</option>
+                                <option value="set">set</option>
+                                <option value="zset">zset</option>
+                                <option value="hash">hash</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="redis_serializable" style="float:left;padding:10px 14px 0 41px;">序列化</label>
+                        <div class="col-sm-10">
+                            <select class="form-control" id="redis_serializable" name="redis_serializable">
+                                <option value="0" selected>否</option>
+                                <option value="1">JDK序列化</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group" id="zSet_score" style="display: none">
+                        <label for="redis_score" class="col-sm-2 control-label">score</label>
+                        <div class="col-sm-10">
+                            <input type="text" maxlength="50" id="redis_score" name="redis_score" class="form-control"
+                                   value="0" onkeyup="checkDouble(this)">
+                        </div>
+                    </div>
+                    <div class="form-group" id="hash_field" style="display: none">
+                        <label for="redis_field" class="col-sm-2 control-label">field</label>
+                        <div class="col-sm-10">
+                            <textarea class="form-control" id="redis_field"
+                                      name="redis_field"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="redis_value" class="col-sm-2 control-label">value</label>
+                        <div class="col-sm-10">
+                            <textarea class="form-control" id="redis_value"
+                                      name="redis_value"></textarea>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-success" data-dismiss="modal" id="redis_save">保存</button>
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+            </div>
+        </div>
     </div>
 </div>
 <!-- /#page-wrapper -->
@@ -152,7 +227,64 @@
 <script type="text/javascript">
     var defaultData = ${tree};
     var server = '${server}';
-    var match='${match}';
+    var match = '${match}';
     $("#tree").initTree(defaultData);
+    $("#addRedis").on('click', function () {
+        $("#redis_add_dialog").modal("show");
+    });
+    $("#redis_type").on('change', function () {
+        if (this.selectedIndex == 4) {
+            $("#hash_field").css("display", "");
+        } else if (this.selectedIndex == 3) {
+            $("#zSet_score").css("display", "");
+        } else {
+            $("#hash_field").css("display", "none");
+            $("#zSet_score").css("display", "none");
+        }
+    })
+    ;
+    $("#redis_save").on('click', function () {
+        var key = $("#redis_key").val().trim();
+        var checkFlag = true;
+        if (key == "") {
+            $("#redis_key").closest(".form-group").addClass("has-error");
+            checkFlag = false;
+        } else {
+            $("#redis_key").closest(".form-group").removeClass("has-error");
+        }
+        var type = $("#redis_type  option:selected").html();
+        if (type == hash) {
+            var field = $("#redis_field").val().trim();
+            if (field == "") {
+                $("#redis_field").closest(".form-group").addClass("has-error");
+                checkFlag = false;
+            } else {
+                $("#redis_field").closest(".form-group").removeClass("has-error");
+            }
+        }
+        var val = $("#redis_value").val().trim();
+        if (val == "") {
+            $("#redis_value").closest(".form-group").addClass("has-error");
+            checkFlag = false;
+        } else {
+            $("#redis_value").closest(".form-group").removeClass("has-error");
+        }
+        if (!checkFlag) {
+            return;
+        }
+        var options = {
+            url: ctx + server + "/save",
+            type: "post",
+            dataType: "text",
+            success: function (data) {
+                if (data == "1") {
+                    document.location.reload();//当前页面
+                }
+                showModel(data);
+            }
+        };
+
+        $("#add_redis_form").ajaxSubmit(options);
+    })
 </script>
 </html>

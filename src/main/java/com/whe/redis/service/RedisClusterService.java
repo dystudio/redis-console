@@ -7,7 +7,6 @@ import com.whe.redis.util.SerializeUtils;
 import com.whe.redis.util.ServerConstant;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.*;
-import redis.clients.util.JedisClusterCRC16;
 
 import java.util.*;
 
@@ -195,18 +194,18 @@ public class RedisClusterService {
         return JSON.toJSONString(map);
     }
 
-    public boolean hSet(String key, String field, String val) {
-        Boolean hExists = jedisCluster.hexists(key, field);
+    public void hSet(String key, String field, String val) {
+        jedisCluster.hset(key, field, val);
+    }
+
+    public Boolean updateHash(String key, String oldField, String newField, String val) {
+        Boolean hExists = jedisCluster.hexists(key, newField);
         if (hExists) {
             return false;
         }
-        jedisCluster.hset(key, field, val);
-        return true;
-    }
-
-    public void updateHash(String key, String oldField, String newField, String val) {
         jedisCluster.hdel(key, oldField);
         jedisCluster.hset(key, newField, val);
+        return true;
     }
 
     public void delHash(String key, String field) {

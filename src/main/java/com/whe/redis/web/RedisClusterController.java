@@ -168,8 +168,8 @@ public class RedisClusterController {
     @ResponseBody
     public String hSet(String key, String field, String val) {
         try {
-
-            return redisClusterService.hSet(key, field, val)?"1":"2";
+            redisClusterService.hSet(key, field, val);
+            return "1";
         } catch (Exception e) {
             e.printStackTrace();
             return e.getMessage();
@@ -180,8 +180,7 @@ public class RedisClusterController {
     @ResponseBody
     public String updateHash(String key, String oldField, String newField, String val) {
         try {
-            redisClusterService.updateHash(key, oldField, newField, val);
-            return "1";
+            return redisClusterService.updateHash(key, oldField, newField, val) ? "1" : "2";
         } catch (Exception e) {
             e.printStackTrace();
             return e.getMessage();

@@ -17,7 +17,13 @@ import java.util.UUID;
  */
 @Service
 public class ListService {
-
+    public Long save(int db, String key, String value) {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        Long nx = jedis.lpushx(key, value);
+        jedis.close();
+        return nx;
+    }
     /**
      * 根据key分页查询list类型数据
      *

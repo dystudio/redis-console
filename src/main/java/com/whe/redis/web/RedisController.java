@@ -45,7 +45,7 @@ public class RedisController {
     @Autowired
     private SetService setService;
     @Autowired
-    private ZSetService ZSetService;
+    private ZSetService zSetService;
     @Autowired
     private HashService hashService;
 
@@ -67,6 +67,29 @@ public class RedisController {
             e.printStackTrace();
         }
         return "index";
+    }
+
+    @RequestMapping("/save")
+    @ResponseBody
+    public String save(String redis_key, String redis_type, Double redis_score, String redis_field, String redis_value, String redis_serializable) {
+        try {
+            switch (redis_type) {
+                case ServerConstant.REDIS_STRING:
+                    return stringService.save(0, redis_key, redis_value) == 1 ? "1" : "2";
+                case ServerConstant.REDIS_LIST:
+                    return listService.save(0, redis_key, redis_value) == 1 ? "1" : "2";
+                case ServerConstant.REDIS_SET:
+                    return setService.save(0, redis_key, redis_value) == 1 ? "1" : "2";
+                case ServerConstant.REDIS_ZSET:
+                    return zSetService.save(0, redis_key, redis_score, redis_value) == 1 ? "1" : "2";
+                case ServerConstant.REDIS_HASH:
+                    return hashService.save(0, redis_key, redis_field, redis_value) == 1 ? "1" : "2";
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return e.getMessage();
+        }
+        return "0";
     }
 
     /**
@@ -114,7 +137,7 @@ public class RedisController {
     @RequestMapping(value = {"/getZSet"})
     @ResponseBody
     public Page<Set<Tuple>> getZSet(int db, int pageNo, String key) {
-        Page<Set<Tuple>> page = ZSetService.findZSetPageByKey(db, pageNo, key);
+        Page<Set<Tuple>> page = zSetService.findZSetPageByKey(db, pageNo, key);
         page.pageViewAjax("/getZSet", "");
         return page;
     }
@@ -296,7 +319,7 @@ public class RedisController {
     @ResponseBody
     public String updateZSet(int db, String key, String oldVal, String newVal, double score) {
         try {
-            ZSetService.updateZSet(db, key, oldVal, newVal, score);
+            zSetService.updateZSet(db, key, oldVal, newVal, score);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
@@ -308,7 +331,7 @@ public class RedisController {
     @ResponseBody
     public String delZSet(int db, String key, String val) {
         try {
-            ZSetService.delZSet(db, key, val);
+            zSetService.delZSet(db, key, val);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
@@ -393,7 +416,7 @@ public class RedisController {
                         setService.saveAllSet(Integer.parseInt(entry.getKey()), (Map) value.get(ServerConstant.REDIS_SET));
                     }
                     if (value.containsKey(ServerConstant.REDIS_ZSET)) {
-                        ZSetService.saveAllZSet(Integer.parseInt(entry.getKey()), (Map) value.get(ServerConstant.REDIS_ZSET));
+                        zSetService.saveAllZSet(Integer.parseInt(entry.getKey()), (Map) value.get(ServerConstant.REDIS_ZSET));
                     }
                     if (value.containsKey(ServerConstant.REDIS_HASH)) {
                         hashService.saveAllHash(Integer.parseInt(entry.getKey()), (Map) value.get(ServerConstant.REDIS_HASH));
@@ -433,7 +456,7 @@ public class RedisController {
                         setService.saveAllSetSerialize(Integer.parseInt(entry.getKey()), (Map) value.get(ServerConstant.REDIS_SET));
                     }
                     if (value.containsKey(ServerConstant.REDIS_ZSET)) {
-                        ZSetService.saveAllZSetSerialize(Integer.parseInt(entry.getKey()), (Map) value.get(ServerConstant.REDIS_ZSET));
+                        zSetService.saveAllZSetSerialize(Integer.parseInt(entry.getKey()), (Map) value.get(ServerConstant.REDIS_ZSET));
                     }
                     if (value.containsKey(ServerConstant.REDIS_HASH)) {
                         hashService.saveAllHashSerialize(Integer.parseInt(entry.getKey()), (Map) value.get(ServerConstant.REDIS_HASH));

@@ -14,6 +14,13 @@ import java.util.Map;
 @Service
 public class StringService {
 
+    public Long save(int db, String key, String value) {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        Long nx = jedis.setnx(key, value);
+        jedis.close();
+        return nx;
+    }
 
     /**
      * 根据数据库和key获得val
@@ -50,7 +57,7 @@ public class StringService {
      *
      * @param stringMap map
      */
-    public void saveAllString(int db,Map<String, String> stringMap) {
+    public void saveAllString(int db, Map<String, String> stringMap) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
         stringMap.forEach(jedis::set);
@@ -62,7 +69,7 @@ public class StringService {
      *
      * @param stringMap map
      */
-    public void saveAllStringSerialize(int db,Map<String, String> stringMap) {
+    public void saveAllStringSerialize(int db, Map<String, String> stringMap) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
         stringMap.forEach((key, val) -> jedis.set(key.getBytes(), SerializeUtils.serialize(val)));

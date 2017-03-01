@@ -13,6 +13,17 @@ import java.util.Map;
  */
 @Service
 public class HashService {
+    public Long save(int db, String key, String field, String value) {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        Boolean exists = jedis.exists(key);
+        if (exists) {
+            return 2L;
+        }
+        Long l = jedis.hsetnx(key, field, value);
+        jedis.close();
+        return l;
+    }
 
     public Map<String, String> hGetAll(int db, String key) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();

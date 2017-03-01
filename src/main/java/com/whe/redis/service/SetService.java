@@ -17,6 +17,17 @@ import java.util.Set;
 @Service
 public class SetService {
 
+    public Long save(int db, String key, String value) {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        Boolean exists = jedis.exists(key);
+        if (exists) {
+            return 2L;
+        }
+        jedis.sadd(key, value);
+        jedis.close();
+        return 1L;
+    }
 
     /**
      * 查询set类型数据
@@ -63,7 +74,7 @@ public class SetService {
      *
      * @param setMap map
      */
-    public void saveAllSetSerialize(int db,Map<String, List<String>> setMap) {
+    public void saveAllSetSerialize(int db, Map<String, List<String>> setMap) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
         setMap.forEach((key, list) -> new HashSet<>(list).forEach(val -> jedis.sadd(key.getBytes(), SerializeUtils.serialize(val))));

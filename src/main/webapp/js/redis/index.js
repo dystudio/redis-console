@@ -15,11 +15,14 @@ var zset = "zset";
 var hash = "hash";
 var nowNodeId;
 var listSize = 0;
+var zSetArr;
+var hashArr;
+var setArr;
+
 var ttlStr = '<div class="panel " style="display: none;" id="ttl-content"> <table class="table table-bordered ">' +
     '<thead><tr><th style="width: 87%;">过期时间(秒)</th><th style="text-align: center;">操作</th></tr></thead>' +
     '<tbody><tr><td style="padding: 0;"><input type="text" maxlength="10" class="form-control" disabled value="-1"  ' +
-    'onkeyup="checkNumber(this)"/></td><td><a href="javascript:void(0);" class="btn btn-primary btn-xs"' +
-    'onclick="removeDisabled(event)">修改</a><button type="button" class="btn btn-success btn-xs disabled" style="margin-left: 5px;" onclick="setExpire(this)">保存</button>' +
+    'onkeyup="checkNumber(this)"/></td><td><button type="button" class="btn btn-success btn-xs " style="margin-left: 5px;" onclick="setExpire(this)">保存</button>' +
     '</td></tr></tbody></table></div>';
 $(function () {
     //备份
@@ -98,8 +101,8 @@ $(function () {
  * 重命名key
  **/
 function rename(th) {
-    var newKey = $(th).closest("tr").find("input").val();
-    if (newKey.trim() == '' || newKey == key) {
+    var newKey = $(th).closest("tr").find("input").val().trim();
+    if (newKey == '' || newKey == key) {
         return;
     }
     $.ajax({
@@ -156,7 +159,8 @@ function delKey(th) {
  * */
 function updateString(th) {
     var val = $(th).closest("tr").find("textarea").val();
-    if (val.trim() == '') {
+    val = val.trim();
+    if (val == '') {
         return;
     }
     $.ajax({
@@ -170,7 +174,10 @@ function updateString(th) {
     });
 }
 function updateList(th) {
-    var val = $(th).closest("tr").find("textarea").val();
+    var val = $(th).closest("tr").find("textarea").val().trim();
+    if (val == '') {
+        return;
+    }
     var index = $(th).closest("tr").find("td").first().html();
     --index;
     $.ajax({
@@ -214,8 +221,12 @@ function delList(th) {
 
 function updateSet(th) {
     var node = $(th).closest("tr").find("textarea");
-    var val = node.val();
-    var oldVal = node.attr("oldVal");
+    var val = node.val().trim();
+    if (val == '') {
+        return;
+    }
+    var i = node.attr("oldVal");
+    var oldVal = setArr[i];
     $.ajax({
         url: ctx + server + "/updateSet",
         data: {db: redisDb, key: key, oldVal: oldVal, newVal: val},
@@ -230,7 +241,8 @@ function updateSet(th) {
     });
 }
 function delSet(th) {
-    var val = $(th).closest("tr").find("textarea").attr("oldVal");
+    var i = $(th).closest("tr").find("textarea").attr("oldVal");
+    var val = setArr[i];
     $.ajax({
         url: ctx + server + "/delSet",
         data: {db: redisDb, key: key, val: val},
@@ -247,8 +259,12 @@ function delSet(th) {
 }
 function updateZSet(th) {
     var node = $(th).closest("td").prev("td").find("textarea");
-    var oldVal = node.attr("oldVal");
-    var newVal = node.val();
+    var i = node.attr("oldVal");
+    var oldVal = zSetArr[i];
+    var newVal = node.val().trim();
+    if (newVal == '') {
+        return;
+    }
     var score = $(th).closest("tr").find("input").val();
     $.ajax({
         url: ctx + server + "/updateZSet",
@@ -265,7 +281,8 @@ function updateZSet(th) {
 
 }
 function delZSet(th) {
-    var val = $(th).closest("td").prev("td").find("textarea").attr("oldVal");
+    var i = $(th).closest("td").prev("td").find("textarea").attr("oldVal");
+    var oldVal = zSetArr[i];
     $.ajax({
         url: ctx + server + "/delZSet",
         data: {db: redisDb, key: key, val: val},
@@ -281,11 +298,17 @@ function delZSet(th) {
     });
 }
 function updateHash(th) {
-    var val = $(th).closest("td").prev("td").find("textarea").val();
+    var val = $(th).closest("td").prev("td").find("textarea").val().trim();
+    if (val == "") {
+        return;
+    }
     var node = $(th).closest("tr").find("textarea");
     var i = node.attr("oldField");
-    var oldField = arr[i];
-    var newField = node.val();
+    var oldField = hashArr[i];
+    var newField = node.val().trim();
+    if (newField == "") {
+        return;
+    }
     if (oldField == newField) {
         $.ajax({
             url: ctx + server + "/hSet",
@@ -312,7 +335,8 @@ function updateHash(th) {
     }
 }
 function delHash(th) {
-    var field = $(th).closest("tr").find("textarea").attr("oldField");
+    var i = $(th).closest("tr").find("textarea").attr("oldField");
+    var field = hashArr[i];
     $.ajax({
         url: ctx + server + "/delHash",
         data: {db: redisDb, key: key, field: field},
@@ -454,9 +478,11 @@ function pageViewAjax(url, th) {
             dataType: "json",
             success: function (data) {
                 var str = "";
+                zSetArr = [];
                 for (var i = 0; i < data.results.length; i++) {
+                    zSetArr[i] = data.results.element;
                     str += '<tr><td style="padding: 0;"><input type="text" maxlength="50" class="form-control" value="' + data.results[i].score + '" onkeyup="checkDouble(this)">' +
-                        '</td><td style="padding: 0;"><input type="text" class="form-control"  oldVal="' + data.results[i].element + '" value="' + data.results[i].element + '"></td>' +
+                        '</td><td style="padding: 0;"><input type="text" class="form-control"  oldVal="' + i + '" value="' + data.results[i].element + '"></td>' +
                         '<td><button type="button" class="btn btn-success btn-xs " onclick="updateZSet(this)">保存</button>' +
                         '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delZSet(this);" style="margin-left: 4px;">删除</a></td></tr>';
                 }
@@ -470,7 +496,6 @@ function pageViewAjax(url, th) {
         });
     }
 }
-var arr = new Array();
 function getHash() {
     $.ajax({
         url: ctx + server + "/hGetAll",
@@ -485,10 +510,10 @@ function getHash() {
                 'value="' + key + '"> </td><td><button type="button" class="btn btn-success btn-xs " onclick="rename(this)">保存</button>' +
                 '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delKey(this);" style="margin-left: 4px;">删除</a>' +
                 '</td> </tr></tbody></table><table class="table table-bordered "><thead><tr><th style="width:39%;">field</th><th style="width:48%;">value</th><th style="text-align: center;">操作</th></tr></thead><tbody >';
-            arr = new Array();
+            hashArr = [];
             var i = 0;
             for (var field in data) {
-                arr.push(field);
+                hashArr.push(field);
                 str += '<tr><td style="padding: 0;"><textarea class="form-control" oldField=\'' + i++ + '\'>' + field + '</textarea></td><td style="padding: 0;">' +
                     '<textarea class="form-control">' + data[field] + '</textarea></td>' +
                     '<td><button type="button" class="btn btn-success btn-xs " onclick="updateHash(this)">保存</button>' +
@@ -513,9 +538,11 @@ function getZSet() {
                 'value="' + key + '"> </td><td><button type="button" class="btn btn-success btn-xs " onclick="rename(this)">保存</button>' +
                 '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delKey(this);" style="margin-left: 4px;">删除</a>' +
                 '</td> </tr></tbody></table><table class="table table-bordered "><thead><tr><th style="width:10%;">score</th><th style="width:77%;">value</th><th style="text-align: center;">操作</th></tr></thead><tbody id="zset-content">';
+            zSetArr = [];
             for (var i = 0; i < data.results.length; i++) {
+                zSetArr[i] = data.results.element;
                 str += '<tr><td style="padding: 0;"><input type="text" maxlength="50" class="form-control" value="' + data.results[i].score + '" onkeyup="checkDouble(this)"></td><td style="padding: 0;">' +
-                    '<textarea class="form-control" oldVal="' + data.results[i].element + '" >' + data.results[i].element + '</textarea></td>' +
+                    '<textarea class="form-control" oldVal="' + i + '" >' + data.results[i].element + '</textarea></td>' +
                     '<td><button type="button" class="btn btn-success btn-xs " onclick="updateZSet(this)">保存</button>' +
                     '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delZSet(this);" style="margin-left: 4px;">删除</a></td></tr>';
             }
@@ -542,8 +569,10 @@ function getSet() {
                 'value="' + key + '"> </td><td><button type="button" class="btn btn-success btn-xs " onclick="rename(this)">保存</button>' +
                 '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delKey(this);" style="margin-left: 4px;">删除</a>' +
                 '</td> </tr></tbody></table><table class="table table-bordered "><thead><tr><th style="width:87%;">value</th><th style="text-align: center;">操作</th></tr></thead><tbody id="list-content">';
+            setArr = [];
             for (var i = 0; i < data.length; i++) {
-                str += '<tr><td style="padding: 0;"><textarea class="form-control" oldVal="' + data[i] + '">' + data[i] + '</textarea></td>' +
+                setArr[i] = data[i];
+                str += '<tr><td style="padding: 0;"><textarea class="form-control" oldVal="' + i + '">' + data[i] + '</textarea></td>' +
                     '<td><button type="button" class="btn btn-success btn-xs " onclick="updateSet(this)">保存</button>' +
                     '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delSet(this);" style="margin-left: 4px;">删除</a></td></tr>';
             }
