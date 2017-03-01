@@ -8,7 +8,7 @@ public class ServerConstant {
     public static String REDIS_TYPE;
     public final static String REDIS_CLUSTER = "redisCluster";
     public final static String STAND_ALONE = "standAlone";
-    public final static Integer PAGE_NUM = 1000;
+    public final static Integer PAGE_NUM = 500;
     public final static String REDIS_CURSOR = "redisCursor";
     public final static String CLUSTER_PAGE = "clusterPage";
     public final static String DEFAULT_CURSOR = "0";

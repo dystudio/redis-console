@@ -2,12 +2,6 @@ package com.whe.test;
 
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.junit.Test;
-import org.springframework.data.redis.connection.RedisClusterConfiguration;
-import org.springframework.data.redis.connection.RedisClusterNode;
-import org.springframework.data.redis.connection.RedisConnectionFactory;
-import org.springframework.data.redis.connection.RedisNode;
-import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
-import org.springframework.data.redis.core.RedisTemplate;
 import redis.clients.jedis.*;
 
 import java.util.HashSet;
@@ -39,19 +33,7 @@ public class RedisTest {
         });
         System.out.println("插入耗时:" + (System.currentTimeMillis() - l));
     }
-    @Test
-    public void clusterTest2(){
-        Set<RedisNode> set=new HashSet<>();
-        for(int i=6380;i<6386;i++){
-            set.add(new RedisNode("192.168.88.128",i));
-        }
-        RedisClusterConfiguration redisClusterConfiguration=new RedisClusterConfiguration();
-        redisClusterConfiguration.setClusterNodes(set);
-        JedisConnectionFactory jedisConnectionFactory=new JedisConnectionFactory(redisClusterConfiguration);
 
-        RedisTemplate redisTemplate=new RedisTemplate();
-        redisTemplate.setConnectionFactory( jedisConnectionFactory);
-    }
     @Test
     public void clusterTest(){
         GenericObjectPoolConfig poolConfig = new GenericObjectPoolConfig();

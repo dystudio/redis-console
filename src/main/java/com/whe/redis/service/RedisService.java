@@ -5,10 +5,7 @@ import com.whe.redis.util.JedisFactory;
 import com.whe.redis.util.ServerConstant;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.ScanParams;
-import redis.clients.jedis.ScanResult;
-import redis.clients.jedis.Tuple;
+import redis.clients.jedis.*;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -83,8 +80,8 @@ public class RedisService {
     public ScanResult<String> getKeysByDb(int db, String cursor, String match) {
         if (StringUtils.isBlank(match)) {
             match = ServerConstant.DEFAULT_MATCH;
-        }else{
-            match="*"+match+"*";
+        } else {
+            match = "*" + match + "*";
         }
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
@@ -156,11 +153,18 @@ public class RedisService {
 
 
     public Map<String, String> getType(int db, List<String> keys) {
-        Jedis jedis = JedisFactory.getJedisPool().getResource();
-        jedis.select(db);
-        Map<String, String> map = keys.stream().collect(Collectors.toMap(key -> key, jedis::type));
-        jedis.close();
-        return map;
+        JedisPool jedisPool = JedisFactory.getJedisPool();
+        long l = System.currentTimeMillis();
+        //Map<String, String> map = keys.stream().collect(Collectors.toMap(key -> key, jedis::type));
+        Map<String, String> collect = keys.parallelStream().collect(Collectors.toMap(key -> key, key -> {
+            Jedis jedis = jedisPool.getResource();
+            jedis.select(db);
+            String type = jedis.type(key);
+            jedis.close();
+            return type;
+        }));
+        System.out.println((System.currentTimeMillis() - l));
+        return collect;
     }
 
     public Map<Integer, Long> getDataBases() {

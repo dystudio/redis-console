@@ -32,7 +32,7 @@ public class HashService {
     public boolean updateHash(int db, String key, String oldField, String newField, String val) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
-        Boolean hExists = jedis.hexists(key, oldField);
+        Boolean hExists = jedis.hexists(key, newField);
         if (hExists) {
             return false;
         }

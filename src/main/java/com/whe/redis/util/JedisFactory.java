@@ -50,7 +50,7 @@ public class JedisFactory {
                     throw new RuntimeException("ip和端口格式不正确");
                 }
 
-                String pass = loadPro.getProperty("redis.pass");
+                String pass = loadPro.getProperty("redis.stand.pass");
                 if (StringUtils.isNotBlank(pass)) {
                     jedisPool = new JedisPool(poolConfig, split[0], Integer.parseInt(split[1]), RedisPoolConfig.TIMEOUT, pass);
                 } else {
@@ -67,7 +67,7 @@ public class JedisFactory {
                         .map(str -> str.split(":"))
                         .map(str -> new HostAndPort(str[0], Integer.parseInt(str[1])))
                         .collect(Collectors.toSet());
-                String pass = loadPro.getProperty("redis.pass");
+                String pass = loadPro.getProperty("redis.cluster.pass");
                 if (StringUtils.isNotBlank(pass)) {
                     jedisCluster = new JedisCluster(set, RedisPoolConfig.TIMEOUT, RedisPoolConfig.TIMEOUT, RedisPoolConfig.MAX_ATTEMPTS, pass, poolConfig);
                 } else {

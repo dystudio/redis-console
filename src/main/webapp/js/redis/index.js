@@ -283,7 +283,8 @@ function delZSet(th) {
 function updateHash(th) {
     var val = $(th).closest("td").prev("td").find("textarea").val();
     var node = $(th).closest("tr").find("textarea");
-    var oldField = node.attr("oldField");
+    var i = node.attr("oldField");
+    var oldField = arr[i];
     var newField = node.val();
     if (oldField == newField) {
         $.ajax({
@@ -469,6 +470,7 @@ function pageViewAjax(url, th) {
         });
     }
 }
+var arr = new Array();
 function getHash() {
     $.ajax({
         url: ctx + server + "/hGetAll",
@@ -483,10 +485,11 @@ function getHash() {
                 'value="' + key + '"> </td><td><button type="button" class="btn btn-success btn-xs " onclick="rename(this)">保存</button>' +
                 '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delKey(this);" style="margin-left: 4px;">删除</a>' +
                 '</td> </tr></tbody></table><table class="table table-bordered "><thead><tr><th style="width:39%;">field</th><th style="width:48%;">value</th><th style="text-align: center;">操作</th></tr></thead><tbody >';
-
-
+            arr = new Array();
+            var i = 0;
             for (var field in data) {
-                str += '<tr><td style="padding: 0;"><textarea class="form-control" oldField=\'' + field + '\'>' + field + '</textarea></td><td style="padding: 0;">' +
+                arr.push(field);
+                str += '<tr><td style="padding: 0;"><textarea class="form-control" oldField=\'' + i++ + '\'>' + field + '</textarea></td><td style="padding: 0;">' +
                     '<textarea class="form-control">' + data[field] + '</textarea></td>' +
                     '<td><button type="button" class="btn btn-success btn-xs " onclick="updateHash(this)">保存</button>' +
                     '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delHash(this);" style="margin-left: 4px;">删除</a></td></tr>';
