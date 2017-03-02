@@ -117,3 +117,7 @@
 #list-content{
     border-bottom: 1px solid #ddd;
 }
+.detail-div{
+    border-bottom: 1px solid #ddd;
+    height: 40px;
+}

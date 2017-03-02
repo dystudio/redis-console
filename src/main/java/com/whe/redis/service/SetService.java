@@ -16,6 +16,17 @@ import java.util.Set;
  */
 @Service
 public class SetService {
+    public Long saveSerialize(int db, String key, String value) {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        Boolean exists = jedis.exists(key);
+        if (exists) {
+            return 2L;
+        }
+        jedis.sadd(key.getBytes(), SerializeUtils.serialize(value));
+        jedis.close();
+        return 1L;
+    }
 
     public Long save(int db, String key, String value) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();

@@ -15,8 +15,6 @@ public class ServerConstant {
     public final static String DEFAULT_MATCH = "*";
     public final static String DB = "db";
 
-
-    public final static String PONG = "PONG";
     public final static String CHARSET = "UTF-8";
     public final static String REDIS_STRING = "string";
     public final static String REDIS_LIST = "list";

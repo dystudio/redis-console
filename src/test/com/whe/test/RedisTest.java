@@ -18,15 +18,13 @@ public class RedisTest {
         poolConfig.setMaxIdle(20);
         poolConfig.setMaxTotal(20);
         poolConfig.setMinIdle(10);
-        JedisPool jedisPool = new JedisPool(poolConfig, "192.168.88.128", 6379, 2000);
+        JedisPool jedisPool = new JedisPool(poolConfig, "172.16.63.104", 6379, 2000, "yhtest");
 
         long l = System.currentTimeMillis();
 
-        IntStream.rangeClosed(0, 2000).parallel().forEach(i -> {
+        IntStream.rangeClosed(0,10000).parallel().forEach(i -> {
             Jedis jedis = jedisPool.getResource();
-            jedis.select(1);
-            jedis.zadd("zSet",i,"val"+i);
-            // jedis.del("key" + i);
+            jedis.del("yhPush_key" + i);
 //            jedis.set("key" + i, "val" + i);
             System.out.println(i);
             jedis.close();
@@ -35,23 +33,24 @@ public class RedisTest {
     }
 
     @Test
-    public void clusterTest(){
+    public void clusterTest() {
         GenericObjectPoolConfig poolConfig = new GenericObjectPoolConfig();
         poolConfig.setMaxIdle(20);
         poolConfig.setMaxTotal(20);
         poolConfig.setMinIdle(10);
-        Set<HostAndPort> set=new HashSet<>();
-        for(int i=6385;i<6386;i++){
-            set.add(new HostAndPort("192.168.88.128",i));
+        Set<HostAndPort> set = new HashSet<>();
+        for (int i = 6385; i < 6386; i++) {
+            set.add(new HostAndPort("192.168.88.128", i));
         }
-        JedisCluster jedisCluster=new JedisCluster(set,poolConfig);
-        IntStream.rangeClosed(0, 100).forEach(i -> {
-           jedisCluster.zadd("zSet",i,"val"+i);
-           // jedisCluster.del("key" + i);
-         //  jedisCluster.set("key" + i, "val" + i);
+        JedisCluster jedisCluster = new JedisCluster(set, poolConfig);
+        IntStream.rangeClosed(10000, 20000).forEach(i -> {
+            jedisCluster.zadd("zSet", i, "val" + i);
+            // jedisCluster.del("key" + i);
+            //  jedisCluster.set("key" + i, "val" + i);
             System.out.println(i);
         });
     }
+
     @Test
     public void test1() {
         GenericObjectPoolConfig poolConfig = new GenericObjectPoolConfig();

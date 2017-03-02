@@ -61,12 +61,7 @@ public class JedisFactory {
             if (StringUtils.isNotBlank(redisCluster)) {
                 ServerConstant.REDIS_TYPE = ServerConstant.REDIS_CLUSTER;
 
-                Set<HostAndPort> set = Stream.of(redisCluster)
-                        .map(str -> str.split(";"))
-                        .flatMap(Arrays::stream)
-                        .map(str -> str.split(":"))
-                        .map(str -> new HostAndPort(str[0], Integer.parseInt(str[1])))
-                        .collect(Collectors.toSet());
+                Set<HostAndPort> set = Stream.of(redisCluster).map(str -> str.split(";")).flatMap(Arrays::stream).map(str -> str.split(":")).map(str -> new HostAndPort(str[0], Integer.parseInt(str[1]))).collect(Collectors.toSet());
                 String pass = loadPro.getProperty("redis.cluster.pass");
                 if (StringUtils.isNotBlank(pass)) {
                     jedisCluster = new JedisCluster(set, RedisPoolConfig.TIMEOUT, RedisPoolConfig.TIMEOUT, RedisPoolConfig.MAX_ATTEMPTS, pass, poolConfig);
@@ -76,13 +71,19 @@ public class JedisFactory {
                 //保存集群节点信息
                 Map<String, JedisPool> clusterNodes = jedisCluster.getClusterNodes();
                 for (Map.Entry<String, JedisPool> entry : clusterNodes.entrySet()) {
-                    Jedis jedis = entry.getValue().getResource();
-                    if (ServerConstant.PONG.equalsIgnoreCase(jedis.ping())) {
+                    Jedis jedis = null;
+                    try {
+                        jedis = entry.getValue().getResource();
                         redisClusterNode = new RedisClusterNode(jedis.getClient().getHost() + ":" + jedis.getClient().getPort(), jedis.clusterNodes());
                         jedis.close();
                         break;
+                    } catch (Exception ignored) {
+                        // try next nodes
+                    } finally {
+                        if (jedis != null) {
+                            jedis.close();
+                        }
                     }
-                    jedis.close();
                 }
             }
         } catch (Exception e) {

@@ -21,7 +21,7 @@ var setArr;
 
 var ttlStr = '<div class="panel " style="display: none;" id="ttl-content"> <table class="table table-bordered ">' +
     '<thead><tr><th style="width: 87%;">过期时间(秒)</th><th style="text-align: center;">操作</th></tr></thead>' +
-    '<tbody><tr><td style="padding: 0;"><input type="text" maxlength="10" class="form-control" disabled value="-1"  ' +
+    '<tbody><tr><td style="padding: 0;"><input type="text" maxlength="10" class="form-control"  value="-1"  ' +
     'onkeyup="checkNumber(this)"/></td><td><button type="button" class="btn btn-success btn-xs " style="margin-left: 5px;" onclick="setExpire(this)">保存</button>' +
     '</td></tr></tbody></table></div>';
 $(function () {
@@ -125,6 +125,18 @@ function setExpire(th) {
     if (!isNaN(seconds)) {
         if (2147483648 < seconds) {
             alert("超过int最大范围!");
+            return;
+        }
+        if (screen == '') {
+            $.ajax({
+                url: ctx + server + "/persist",
+                data: {db: redisDb, key: key},
+                type: "post",
+                dataType: "text",
+                success: function (data) {
+                    showModel(data);
+                }
+            });
             return;
         }
         $.ajax({
@@ -447,6 +459,53 @@ $(function () {
     })
 
 });
+/* 格式化JSON源码(对象转换为JSON文本) */
+function format(txt, compress/*是否为压缩模式*/) {
+    var indentChar = '    ';
+    if (/^\s*$/.test(txt)) {
+        return;
+    }
+    try {
+        var data = eval('(' + txt + ')');
+    }
+    catch (e) {
+        return txt;
+    }
+    var draw = [], last = false, This = this, line = compress ? '' : '\n', nodeCount = 0, maxDepth = 0;
+
+    var notify = function (name, value, isLast, indent/*缩进*/, formObj) {
+        nodeCount++;
+        /*节点计数*/
+        for (var i = 0, tab = ''; i < indent; i++)tab += indentChar;
+        /* 缩进HTML */
+        tab = compress ? '' : tab;
+        /*压缩模式忽略缩进*/
+        maxDepth = ++indent;
+        /*缩进递增并记录*/
+        if (value && value.constructor == Array) {/*处理数组*/
+            draw.push(tab + (formObj ? ('"' + name + '":') : '') + '[' + line);
+            /*缩进'[' 然后换行*/
+            for (var i = 0; i < value.length; i++)
+                notify(i, value[i], i == value.length - 1, indent, false);
+            draw.push(tab + ']' + (isLast ? line : (',' + line)));
+            /*缩进']'换行,若非尾元素则添加逗号*/
+        } else if (value && typeof value == 'object') {/*处理对象*/
+            draw.push(tab + (formObj ? ('"' + name + '":') : '') + '{' + line);
+            /*缩进'{' 然后换行*/
+            var len = 0, i = 0;
+            for (var key in value)len++;
+            for (var key in value)notify(key, value[key], ++i == len, indent, true);
+            draw.push(tab + '}' + (isLast ? line : (',' + line)));
+            /*缩进'}'换行,若非尾元素则添加逗号*/
+        } else {
+            if (typeof value == 'string') value = '"' + value + '"';
+            draw.push(tab + (formObj ? ('"' + name + '":') : '') + value + (isLast ? '' : ',') + line);
+        }
+    };
+    var isLast = true, indent = 0;
+    notify('', data, isLast, indent, false);
+    return draw.join('');
+}
 function pageViewAjax(url, th) {
     if (redisType == list) {
         $.ajax({
@@ -505,11 +564,11 @@ function getHash() {
         success: function (data) {
             var str = '<ul class="nav nav-tabs"><li role="presentation" class="active"><a href="javascript:void(0);">hash</a></li>' +
                 '<li role="presentation"><a href="javascript:void(0);">生存时间</a></li> </ul> <div class="panel" id="type-content">' +
-                '<table class="table table-bordered "><thead> <tr><th style="width: 87%;">key</th><th style="text-align: center">' +
-                '操作</th> </tr> </thead> <tbody style="border: 1px solid #ddd;"> <tr> <td style="padding: 0;"><input type="text" disabled class="form-control" ' +
+                '<table class="table table-bordered "><thead><tr><th style="width: 87%;">key</th><th style="text-align: center">' +
+                '操作</th></tr></thead><tbody style="border: 1px solid #ddd;"><tr><td style="padding: 0;"><input type="text"  class="form-control" ' +
                 'value="' + key + '"> </td><td><button type="button" class="btn btn-success btn-xs " onclick="rename(this)">保存</button>' +
                 '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delKey(this);" style="margin-left: 4px;">删除</a>' +
-                '</td> </tr></tbody></table><table class="table table-bordered "><thead><tr><th style="width:39%;">field</th><th style="width:48%;">value</th><th style="text-align: center;">操作</th></tr></thead><tbody >';
+                '</td></tr></tbody></table><table class="table table-bordered "><thead><tr><th style="width:39%;">field</th><th style="width:48%;">value</th><th style="text-align: center;">操作</th></tr></thead><tbody >';
             hashArr = [];
             var i = 0;
             for (var field in data) {
@@ -534,7 +593,7 @@ function getZSet() {
             var str = '<ul class="nav nav-tabs"><li role="presentation" class="active"><a href="javascript:void(0);">zset</a></li>' +
                 '<li role="presentation"><a href="javascript:void(0);">生存时间</a></li> </ul> <div class="panel" id="type-content">' +
                 '<table class="table table-bordered "><thead> <tr><th style="width: 87%;">key</th><th style="text-align: center">' +
-                '操作</th> </tr> </thead> <tbody style="border: 1px solid #ddd;"> <tr> <td style="padding: 0;"><input type="text" disabled class="form-control" ' +
+                '操作</th> </tr> </thead> <tbody style="border: 1px solid #ddd;"> <tr> <td style="padding: 0;"><input type="text"  class="form-control" ' +
                 'value="' + key + '"> </td><td><button type="button" class="btn btn-success btn-xs " onclick="rename(this)">保存</button>' +
                 '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delKey(this);" style="margin-left: 4px;">删除</a>' +
                 '</td> </tr></tbody></table><table class="table table-bordered "><thead><tr><th style="width:10%;">score</th><th style="width:77%;">value</th><th style="text-align: center;">操作</th></tr></thead><tbody id="zset-content">';
@@ -565,7 +624,7 @@ function getSet() {
             var str = '<ul class="nav nav-tabs"><li role="presentation" class="active"><a href="javascript:void(0);">set</a></li>' +
                 '<li role="presentation"><a href="javascript:void(0);">生存时间</a></li> </ul> <div class="panel" id="type-content">' +
                 '<table class="table table-bordered "><thead><tr><th style="width: 87%;">key</th><th style="text-align: center">' +
-                '操作</th></tr></thead> <tbody style="border:1px solid #ddd;"><tr><td style="padding: 0;"><input type="text" disabled class="form-control" ' +
+                '操作</th></tr></thead> <tbody style="border:1px solid #ddd;"><tr><td style="padding: 0;"><input type="text"  class="form-control" ' +
                 'value="' + key + '"> </td><td><button type="button" class="btn btn-success btn-xs " onclick="rename(this)">保存</button>' +
                 '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delKey(this);" style="margin-left: 4px;">删除</a>' +
                 '</td> </tr></tbody></table><table class="table table-bordered "><thead><tr><th style="width:87%;">value</th><th style="text-align: center;">操作</th></tr></thead><tbody id="list-content">';
@@ -594,7 +653,13 @@ function getList() {
                 '操作</th> </tr> </thead> <tbody style="border: 1px solid #ddd;"> <tr> <td style="padding: 0;"><input type="text" class="form-control" ' +
                 'value="' + key + '"> </td><td><button type="button" class="btn btn-success btn-xs " onclick="rename(this)">保存</button>' +
                 '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delKey(this);" style="margin-left: 4px;">删除</a>' +
-                '</td> </tr></tbody></table><table class="table table-bordered "><thead><tr><th style="width:3%;">row</th><th style="width:83%;">value</th><th style="text-align: center;">操作</th></tr></thead><tbody id="list-content">';
+                '</td> </tr></tbody></table><div class="detail-div"><label style="padding-left: 8px;">size:' + data.totalRecord + '</label> ' +
+                ' <label for="redis_serializable" style="padding:10px 8px 0 41px;">视图:</label> ' +
+                ' <select style="width: auto;display: inline;" class="form-control" id="redis_serializable" name="redis_serializable">' +
+                ' <option value="0" selected>Plain Text</option> <option value="1">JSON</option> </select> ' +
+                '</div><table class="table table-bordered "><thead><tr><th style="width:3%;">' +
+                'row</th><th style="width:83%;">value</th><th style="text-align: center;">操作</th></tr>' +
+                '</thead><tbody id="list-content">';
             for (var i = 0; i < data.results.length; i++) {
                 str += '<tr><td >' + ((data.pageNo - 1) * data.pageSize + i + 1) + '</td><td style="padding: 0;"><textarea class="form-control">' + data.results[i] + '</textarea></td>' +
                     '<td><button type="button" class="btn btn-success btn-xs " onclick="updateList(this)">保存</button>' +
@@ -619,12 +684,15 @@ function getString() {
         success: function (data) {
             var str = '<ul class="nav nav-tabs"><li role="presentation" class="active"><a href="javascript:void(0);">string</a></li>' +
                 '<li role="presentation"><a href="javascript:void(0);">生存时间</a></li> </ul> <div class="panel panel-default" id="type-content">' +
-                '<table class="table table-bordered "><thead> <tr><th style="width: 87%;">key</th><th style="text-align: center">' +
-                '操作</th> </tr> </thead> <tbody> <tr> <td style="padding: 0;"><input type="text" disabled class="form-control" ' +
-                'value="' + key + '"> </td><td><button type="button" class="btn btn-success btn-xs " onclick="rename(this)">保存</button>' +
+                '<table class="table table-bordered "><thead><tr><th style="width:87%;">key</th><th style="text-align: center">' +
+                '操作</th></tr></thead><tbody><tr><td style="padding:0;"><input type="text"  class="form-control" ' +
+                'value="' + key + '"></td><td><button type="button" class="btn btn-success btn-xs " onclick="rename(this)">保存</button>' +
                 '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delKey(this);" style="margin-left: 4px;">删除</a>' +
-                '</td> </tr></tbody><thead><tr><th>value</th><th style="text-align: center;">操作</th></tr></thead>' +
-                '<tbody><tr><td style="padding: 0;"><textarea class="form-control">' + data + '</textarea></td>' +
+                '</td></tr></tbody><div class="detail-div"><label for="redis_view" style="padding:10px 5px 0 8px;">视图:</label> ' +
+                ' <select style="width: auto;display: inline;" class="form-control" id="redis_view">' +
+                ' <option value="text" >Plain Text</option> <option value="json" selected>JSON</option> </select> ' +
+                '</div><thead><tr><th>value</th><th style="text-align:center;">操作</th></tr></thead>' +
+                '<tbody><tr><td style="padding: 0;"><textarea class="form-control">' + format(data) + '</textarea></td>' +
                 '<td><button type="button" class="btn btn-success btn-xs " onclick="updateString(this)">保存</button></td></tr></table>' +
                 '</table> </div>' + ttlStr;
             $("#redisContent").html(str);

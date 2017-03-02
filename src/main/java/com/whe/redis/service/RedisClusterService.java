@@ -7,6 +7,7 @@ import com.whe.redis.util.SerializeUtils;
 import com.whe.redis.util.ServerConstant;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.*;
+import redis.clients.jedis.exceptions.JedisConnectionException;
 
 import java.util.*;
 
@@ -28,6 +29,83 @@ public class RedisClusterService {
         jedisCluster = JedisFactory.getJedisCluster();
     }
 
+    public Long hSetNxSerialize(String key, String field, String value) {
+        Boolean exists = jedisCluster.exists(key);
+        if (exists) {
+            return 2L;
+        }
+        return jedisCluster.hsetnx(key.getBytes(), SerializeUtils.serialize(field), SerializeUtils.serialize(value));
+    }
+
+    public Long hSetNx(String key, String field, String value) {
+        Boolean exists = jedisCluster.exists(key);
+        if (exists) {
+            return 2L;
+        }
+        return jedisCluster.hsetnx(key, field, value);
+    }
+
+    public Long zAddSerialize(String key, Double score, String member) {
+        Boolean exists = jedisCluster.exists(key);
+        if (exists) {
+            return 2L;
+        }
+        jedisCluster.zadd(key.getBytes(), score, SerializeUtils.serialize(member));
+        return 1L;
+    }
+
+    public Long zAdd(String key, Double score, String member) {
+        Boolean exists = jedisCluster.exists(key);
+        if (exists) {
+            return 2L;
+        }
+        jedisCluster.zadd(key, score, member);
+        return 1L;
+    }
+
+    public Long sAddSerialize(String key, String value) {
+        Boolean exists = jedisCluster.exists(key);
+        if (exists) {
+            return 2L;
+        }
+        jedisCluster.sadd(key.getBytes(), SerializeUtils.serialize(value));
+        return 1L;
+    }
+
+    public Long sAdd(String key, String value) {
+        Boolean exists = jedisCluster.exists(key);
+        if (exists) {
+            return 2L;
+        }
+        jedisCluster.sadd(key, value);
+        return 1L;
+    }
+
+    public Long lPushSerialize(String key, String value) {
+        Boolean exists = jedisCluster.exists(key);
+        if (exists) {
+            return 2L;
+        }
+        jedisCluster.lpush(key.getBytes(), SerializeUtils.serialize(value));
+        return 1L;
+    }
+
+    public Long lPush(String key, String value) {
+        Boolean exists = jedisCluster.exists(key);
+        if (exists) {
+            return 2L;
+        }
+        jedisCluster.lpush(key, value);
+        return 1L;
+    }
+
+    public Long setNxSerialize(String key, String value) {
+        return jedisCluster.setnx(key.getBytes(), SerializeUtils.serialize(value));
+    }
+
+    public Long setNx(String key, String value) {
+        return jedisCluster.setnx(key, value);
+    }
 
     /**
      * 序列化保存所有hash数据
@@ -71,7 +149,7 @@ public class RedisClusterService {
      * @param stringMap map
      */
     public void saveAllStringSerialize(Map<String, String> stringMap) {
-        stringMap.forEach((key, val) -> jedisCluster.set(key.getBytes(), SerializeUtils.serialize(val)));
+        stringMap.forEach(this::setNxSerialize);
     }
 
     /**
@@ -315,6 +393,10 @@ public class RedisClusterService {
         return jedisCluster.expire(key, seconds);
     }
 
+    public void persist(String key) {
+        jedisCluster.persist(key);
+    }
+
     public long ttl(String key) {
         return jedisCluster.ttl(key);
     }
@@ -327,34 +409,32 @@ public class RedisClusterService {
             Jedis jedis = null;
             try {
                 jedis = entry.getValue().getResource();
-                if (ServerConstant.PONG.equalsIgnoreCase(jedis.ping())) {
-                    String cursor = nodeCursor.get(entry.getKey());
-                    if (cursor == null) {
-                        nodeCursor.put(entry.getKey(), ServerConstant.DEFAULT_CURSOR);
-                        cursor = nodeCursor.get(entry.getKey());
-                    }
-                    ScanResult<String> scan = jedis.scan(cursor, scanParams);
-                    if (scan.getResult().size() < count) {
-                        scanParams.count(count - scan.getResult().size() + count);
-                    } else {
-                        scanParams.count(count);
-                    }
-                    nodeScan.put(entry.getKey(), jedis.scan(cursor, scanParams));
+                String cursor = nodeCursor.get(entry.getKey());
+                if (cursor == null) {
+                    nodeCursor.put(entry.getKey(), ServerConstant.DEFAULT_CURSOR);
+                    cursor = nodeCursor.get(entry.getKey());
+                }
+                ScanResult<String> scan = jedis.scan(cursor, scanParams);
+                if (scan.getResult().size() < count) {
+                    scanParams.count(count - scan.getResult().size() + count);
                 } else {
-                    Set<String> slaveNode = JedisFactory.getRedisClusterNode().getSlaveNode();
-                    for (String node : slaveNode) {
-                        String[] split = node.split(":");
-                        Jedis j = null;
-                        try {
-                            j = new Jedis(split[0], Integer.parseInt(split[0]));
-                            if (ServerConstant.PONG.equalsIgnoreCase(j.ping())) {
-                                JedisFactory.setRedisClusterNode(new com.whe.redis.util.RedisClusterNode(node, j.clusterNodes()));
-                                break;
-                            }
-                        } finally {
-                            if (j != null) {
-                                j.close();
-                            }
+                    scanParams.count(count);
+                }
+                nodeScan.put(entry.getKey(), jedis.scan(cursor, scanParams));
+            } catch (JedisConnectionException e) {
+                Set<String> slaveNode = JedisFactory.getRedisClusterNode().getSlaveNode();
+                for (String node : slaveNode) {
+                    String[] split = node.split(":");
+                    Jedis j = null;
+                    try {
+                        j = new Jedis(split[0], Integer.parseInt(split[1]));
+                        JedisFactory.setRedisClusterNode(new com.whe.redis.util.RedisClusterNode(node, j.clusterNodes()));
+                        break;
+                    } catch (Exception ignored) {
+                        // try next nodes
+                    } finally {
+                        if (j != null) {
+                            j.close();
                         }
                     }
                 }

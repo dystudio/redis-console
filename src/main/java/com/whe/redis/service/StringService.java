@@ -13,6 +13,13 @@ import java.util.Map;
  */
 @Service
 public class StringService {
+    public Long saveSerialize(int db, String key, String value) {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        Long nx = jedis.setnx(key.getBytes(), SerializeUtils.serialize(value));
+        jedis.close();
+        return nx;
+    }
 
     public Long save(int db, String key, String value) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();

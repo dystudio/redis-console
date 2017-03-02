@@ -17,17 +17,30 @@ import java.util.Set;
  */
 @Service
 public class ZSetService {
-    public Long save(int db, String key, double score,String value) {
+    public Long saveSerialize(int db, String key, double score, String value) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
         Boolean exists = jedis.exists(key);
         if (exists) {
             return 2L;
         }
-        jedis.zadd(key,score,value);
+        jedis.zadd(key.getBytes(), score, SerializeUtils.serialize(value));
         jedis.close();
         return 1L;
     }
+
+    public Long save(int db, String key, double score, String value) {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        Boolean exists = jedis.exists(key);
+        if (exists) {
+            return 2L;
+        }
+        jedis.zadd(key, score, value);
+        jedis.close();
+        return 1L;
+    }
+
     /**
      * 根据key分页查询zSet类型数据
      *
@@ -79,7 +92,7 @@ public class ZSetService {
      *
      * @param zSetMap map
      */
-    public void saveAllZSetSerialize(int db,Map<String, Map<String, Number>> zSetMap) {
+    public void saveAllZSetSerialize(int db, Map<String, Map<String, Number>> zSetMap) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
         zSetMap.forEach((key, map) -> map.forEach((elem, score) -> jedis.zadd(key.getBytes(), score.doubleValue(), SerializeUtils.serialize(elem))));

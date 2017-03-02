@@ -60,6 +60,9 @@ public class RedisController {
     public String index(Model model, @RequestParam(defaultValue = "0") String cursor, String match, HttpServletRequest request, HttpServletResponse response) {
         try {
             String treeJson = treeJson(cursor, match, request, response);
+            Set<String> redisDb = new HashSet<>();
+            Integer size = redisService.getDataBasesSize();
+            model.addAttribute("dataSize", size);
             model.addAttribute("tree", treeJson);
             model.addAttribute("match", match);
             model.addAttribute("server", "/standalone");
@@ -71,19 +74,34 @@ public class RedisController {
 
     @RequestMapping("/save")
     @ResponseBody
-    public String save(String redis_key, String redis_type, Double redis_score, String redis_field, String redis_value, String redis_serializable) {
+    public String save(String redis_key, Integer redis_data_size, String redis_type, Double redis_score, String redis_field, String redis_value, String redis_serializable) {
         try {
-            switch (redis_type) {
-                case ServerConstant.REDIS_STRING:
-                    return stringService.save(0, redis_key, redis_value) == 1 ? "1" : "2";
-                case ServerConstant.REDIS_LIST:
-                    return listService.save(0, redis_key, redis_value) == 1 ? "1" : "2";
-                case ServerConstant.REDIS_SET:
-                    return setService.save(0, redis_key, redis_value) == 1 ? "1" : "2";
-                case ServerConstant.REDIS_ZSET:
-                    return zSetService.save(0, redis_key, redis_score, redis_value) == 1 ? "1" : "2";
-                case ServerConstant.REDIS_HASH:
-                    return hashService.save(0, redis_key, redis_field, redis_value) == 1 ? "1" : "2";
+            if ("1".equals(redis_serializable)) {
+                switch (redis_type) {
+                    case ServerConstant.REDIS_STRING:
+                        return stringService.saveSerialize(redis_data_size, redis_key, redis_value) == 1 ? "1" : "2";
+                    case ServerConstant.REDIS_LIST:
+                        return listService.saveSerialize(redis_data_size, redis_key, redis_value) == 1 ? "1" : "2";
+                    case ServerConstant.REDIS_SET:
+                        return setService.saveSerialize(redis_data_size, redis_key, redis_value) == 1 ? "1" : "2";
+                    case ServerConstant.REDIS_ZSET:
+                        return zSetService.saveSerialize(redis_data_size, redis_key, redis_score, redis_value) == 1 ? "1" : "2";
+                    case ServerConstant.REDIS_HASH:
+                        return hashService.saveSerialize(redis_data_size, redis_key, redis_field, redis_value) == 1 ? "1" : "2";
+                }
+            } else {
+                switch (redis_type) {
+                    case ServerConstant.REDIS_STRING:
+                        return stringService.save(redis_data_size, redis_key, redis_value) == 1 ? "1" : "2";
+                    case ServerConstant.REDIS_LIST:
+                        return listService.save(redis_data_size, redis_key, redis_value) == 1 ? "1" : "2";
+                    case ServerConstant.REDIS_SET:
+                        return setService.save(redis_data_size, redis_key, redis_value) == 1 ? "1" : "2";
+                    case ServerConstant.REDIS_ZSET:
+                        return zSetService.save(redis_data_size, redis_key, redis_score, redis_value) == 1 ? "1" : "2";
+                    case ServerConstant.REDIS_HASH:
+                        return hashService.save(redis_data_size, redis_key, redis_field, redis_value) == 1 ? "1" : "2";
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -198,6 +216,25 @@ public class RedisController {
     public String setExpire(int db, String key, int seconds) {
         try {
             redisService.setExpire(db, key, seconds);
+            return "1";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return e.getMessage();
+        }
+    }
+
+    /**
+     * 移除 key 的生存时间
+     *
+     * @param db  db
+     * @param key key
+     * @return 1:成功;0:失败
+     */
+    @RequestMapping(value = {"/persist"})
+    @ResponseBody
+    public String persist(int db, String key) {
+        try {
+            redisService.persist(db, key);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
@@ -558,7 +595,7 @@ public class RedisController {
             Long dbSize = entry.getValue();
             if (dbSize > 0) {
                 ScanResult<String> scanResult = redisService.getKeysByDb(entry.getKey(), cursor, match);
-                sb.append(",");
+                sb.append(",").append("expanded:").append(true).append(",");
                 sb.append("nodes:").append("[");
                 Map<String, String> typeMap = redisService.getType(entry.getKey(), scanResult.getResult());
                 typeMap.forEach((key, type) -> sb.append("{text:").append("'").append(key).append("',icon:'").append(request.getContextPath()).append("/img/").append(type).append(".png").append("',type:'").append(type).append("'},"));

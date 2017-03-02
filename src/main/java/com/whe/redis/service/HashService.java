@@ -13,6 +13,18 @@ import java.util.Map;
  */
 @Service
 public class HashService {
+    public Long saveSerialize(int db, String key, String field, String value) {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        Boolean exists = jedis.exists(key);
+        if (exists) {
+            return 2L;
+        }
+        Long l = jedis.hsetnx(key.getBytes(), SerializeUtils.serialize(field), SerializeUtils.serialize(value));
+        jedis.close();
+        return l;
+    }
+
     public Long save(int db, String key, String field, String value) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);

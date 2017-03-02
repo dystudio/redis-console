@@ -76,6 +76,19 @@ public class RedisService {
         }
         return JSON.toJSONString(dbKeys);
     }
+    public void persist(int db,String key){
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        jedis.persist(key);
+        jedis.close();
+    }
+    public Integer getDataBasesSize() {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        List<String> list = jedis.configGet(ServerConstant.DATABASES);
+        int size = Integer.parseInt(list.get(1));
+        jedis.close();
+        return size;
+    }
 
     public ScanResult<String> getKeysByDb(int db, String cursor, String match) {
         if (StringUtils.isBlank(match)) {

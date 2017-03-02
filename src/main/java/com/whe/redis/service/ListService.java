@@ -17,13 +17,26 @@ import java.util.UUID;
  */
 @Service
 public class ListService {
-    public Long save(int db, String key, String value) {
+    public Long saveSerialize(int db, String key, String value) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
-        Long nx = jedis.lpushx(key, value);
+        Long nx = jedis.lpushx(key.getBytes(), SerializeUtils.serialize(value));
         jedis.close();
         return nx;
     }
+
+    public Long save(int db, String key, String value) {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        Boolean exists = jedis.exists(key);
+        if (exists) {
+            return 2L;
+        }
+        jedis.lpush(key, value);
+        jedis.close();
+        return 1L;
+    }
+
     /**
      * 根据key分页查询list类型数据
      *
@@ -93,7 +106,7 @@ public class ListService {
      *
      * @param listMap map
      */
-    public void saveAllListSerialize(int db,Map<String, List<String>> listMap) {
+    public void saveAllListSerialize(int db, Map<String, List<String>> listMap) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
         listMap.forEach((key, list) -> list.forEach(val -> jedis.lpush(key.getBytes(), SerializeUtils.serialize(val))));

@@ -76,6 +76,44 @@ public class RedisClusterController {
         return "index";
     }
 
+    @RequestMapping("/save")
+    @ResponseBody
+    public String save(String redis_key, String redis_type, Double redis_score, String redis_field, String redis_value, String redis_serializable) {
+        try {
+            if ("1".equals(redis_serializable)) {
+                switch (redis_type) {
+                    case ServerConstant.REDIS_STRING:
+                        return redisClusterService.setNxSerialize(redis_key, redis_value) == 1 ? "1" : "2";
+                    case ServerConstant.REDIS_LIST:
+                        return redisClusterService.lPushSerialize(redis_key, redis_value) == 1 ? "1" : "2";
+                    case ServerConstant.REDIS_SET:
+                        return redisClusterService.sAddSerialize(redis_key, redis_value) == 1 ? "1" : "2";
+                    case ServerConstant.REDIS_ZSET:
+                        return redisClusterService.zAddSerialize(redis_key, redis_score, redis_value) == 1 ? "1" : "2";
+                    case ServerConstant.REDIS_HASH:
+                        return redisClusterService.hSetNxSerialize(redis_key, redis_field, redis_value) == 1 ? "1" : "2";
+                }
+            } else {
+                switch (redis_type) {
+                    case ServerConstant.REDIS_STRING:
+                        return redisClusterService.setNx(redis_key, redis_value) == 1 ? "1" : "2";
+                    case ServerConstant.REDIS_LIST:
+                        return redisClusterService.lPush(redis_key, redis_value) == 1 ? "1" : "2";
+                    case ServerConstant.REDIS_SET:
+                        return redisClusterService.sAdd(redis_key, redis_value) == 1 ? "1" : "2";
+                    case ServerConstant.REDIS_ZSET:
+                        return redisClusterService.zAdd(redis_key, redis_score, redis_value) == 1 ? "1" : "2";
+                    case ServerConstant.REDIS_HASH:
+                        return redisClusterService.hSetNx(redis_key, redis_field, redis_value) == 1 ? "1" : "2";
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return e.getMessage();
+        }
+        return "0";
+    }
+
     /**
      * 序列化恢复数据
      *
@@ -384,8 +422,26 @@ public class RedisClusterController {
 
     @RequestMapping("/setExpire")
     @ResponseBody
-    public long setExpire(String key, int seconds) {
-        return redisClusterService.expire(key, seconds);
+    public String setExpire(String key, int seconds) {
+        try {
+            redisClusterService.expire(key, seconds);
+            return "1";
+        } catch (Exception e) {
+            e.getMessage();
+            return e.getMessage();
+        }
+    }
+
+    @RequestMapping("/persist")
+    @ResponseBody
+    public String persist(String key) {
+        try {
+            redisClusterService.persist(key);
+            return "1";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return e.getMessage();
+        }
     }
 
     @RequestMapping("/upPage")

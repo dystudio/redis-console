@@ -126,15 +126,6 @@
                     <label>key</label>
                     <input type="text" class="form-control" id="match" value="${match}" name="match">
                 </div>
-                <%--  <div class="form-group">
-                      <label for="customerFrom">类型</label>
-                      <select class="form-control" id="customerFrom" name="custSource">
-                          <option value="">--请选择--</option>
-                          <c:forEach items="${type}" var="item">
-                              <option value="${item}">${item}</option>
-                          </c:forEach>
-                      </select>
-                  </div>--%>
                 <button type="submit" class="btn btn-primary">查询</button>
             </form>
         </div>
@@ -158,7 +149,7 @@
                     <div class="form-group">
                         <label for="redis_key" class="col-sm-2 control-label">key</label>
                         <div class="col-sm-10">
-                            <input type="text" class="form-control" id="redis_key" placeholder="key"
+                            <input type="text" class="form-control" id="redis_key"
                                    name="redis_key">
                         </div>
                     </div>
@@ -174,6 +165,18 @@
                             </select>
                         </div>
                     </div>
+                    <c:if test="${server=='/standalone'}">
+                        <div class="form-group">
+                            <label for="redis_data_size" style="float:left;padding:10px 15px 0 40px;">数据库</label>
+                            <div class="col-sm-10">
+                                <select class="form-control" id="redis_data_size" name="redis_data_size">
+                                    <c:forEach begin="0" end="${dataSize-1}" varStatus="vs">
+                                        <option value="${vs.index}">db-${vs.index}</option>
+                                    </c:forEach>
+                                </select>
+                            </div>
+                        </div>
+                    </c:if>
                     <div class="form-group">
                         <label for="redis_serializable" style="float:left;padding:10px 14px 0 41px;">序列化</label>
                         <div class="col-sm-10">
@@ -197,7 +200,6 @@
                                       name="redis_field"></textarea>
                         </div>
                     </div>
-
                     <div class="form-group">
                         <label for="redis_value" class="col-sm-2 control-label">value</label>
                         <div class="col-sm-10">
@@ -208,7 +210,7 @@
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-success" data-dismiss="modal" id="redis_save">保存</button>
+                <button type="button" class="btn btn-success" id="redis_save">保存</button>
                 <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
             </div>
         </div>
@@ -283,8 +285,10 @@
                 showModel(data);
             }
         };
-
+        $("#redis_add_dialog").modal('hide');
         $("#add_redis_form").ajaxSubmit(options);
+    })
+    $("#redisContent").on('change',"#redis_view",function () {
     })
 </script>
 </html>
