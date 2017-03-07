@@ -8,35 +8,38 @@ import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.Tuple;
 
+import java.io.UnsupportedEncodingException;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
- * Created by trustme on 2017/2/12.
+ * Created by wang hongen on 2017/2/12.
  * RedisZSetService
  */
 @Service
 public class ZSetService {
-    public Long saveSerialize(int db, String key, double score, String value) {
+
+    public Long zAdd(int db, String key, double score, String value) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
         Boolean exists = jedis.exists(key);
-        if (exists) {
+        if (exists && !jedis.type(key).equals(ServerConstant.REDIS_ZSET)) {
             return 2L;
         }
-        jedis.zadd(key.getBytes(), score, SerializeUtils.serialize(value));
+        jedis.zadd(key, score, value);
         jedis.close();
         return 1L;
     }
 
-    public Long save(int db, String key, double score, String value) {
+    public Long zAddSerialize(int db, String key, double score, String value) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
         Boolean exists = jedis.exists(key);
-        if (exists) {
+        if (exists && !jedis.type(key).equals(ServerConstant.REDIS_ZSET)) {
             return 2L;
         }
-        jedis.zadd(key, score, value);
+        jedis.zadd(key.getBytes(), score, SerializeUtils.serialize(value));
         jedis.close();
         return 1L;
     }
@@ -59,6 +62,28 @@ public class ZSetService {
         return page;
     }
 
+    public Page<Set<Tuple>> findZSetPageByKeySerialize(int db, String key, int pageNo) {
+        Page<Set<Tuple>> page = new Page<>();
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        Set<Tuple> tupleSet = null;
+        try {
+            tupleSet = jedis.zrangeByScoreWithScores(key.getBytes(ServerConstant.CHARSET), (pageNo - 1) * ServerConstant.PAGE_NUM, pageNo * ServerConstant.PAGE_NUM)
+                    .stream()
+                    .map(tuple -> new Tuple(SerializeUtils.unSerialize(tuple.getBinaryElement()).toString(), tuple.getScore()))
+                    .collect(Collectors.toSet());
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        //总数据
+        page.setTotalRecord(jedis.llen(key));
+        page.setPageNo(pageNo);
+        page.setResults(tupleSet);
+        jedis.close();
+        return page;
+    }
+
+
     public void updateZSet(int db, String key, String oldVal, String newVal, double score) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
@@ -80,7 +105,7 @@ public class ZSetService {
      *
      * @param zSetMap map
      */
-    public void saveAllZSet(int db, Map<String, Map<String, Number>> zSetMap) {
+    public void saveAllZSet(int db, Map<String, Map<String, Double>> zSetMap) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
         zSetMap.forEach((key, map) -> map.forEach((elem, score) -> jedis.zadd(key, score.doubleValue(), elem)));

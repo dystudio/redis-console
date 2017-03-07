@@ -127,7 +127,7 @@ function setExpire(th) {
             alert("超过int最大范围!");
             return;
         }
-        if (screen == '') {
+        if (seconds == '') {
             $.ajax({
                 url: ctx + server + "/persist",
                 data: {db: redisDb, key: key},
@@ -297,7 +297,7 @@ function delZSet(th) {
     var oldVal = zSetArr[i];
     $.ajax({
         url: ctx + server + "/delZSet",
-        data: {db: redisDb, key: key, val: val},
+        data: {db: redisDb, key: key, val: oldVal},
         type: "post",
         dataType: "text",
         success: function (data) {
@@ -557,7 +557,7 @@ function pageViewAjax(url, th) {
 }
 function getHash() {
     $.ajax({
-        url: ctx + server + "/hGetAll",
+        url: ctx + server + serialize + "/hGetAll",
         data: {db: redisDb, key: key},
         type: "post",
         dataType: "json",
@@ -573,8 +573,8 @@ function getHash() {
             var i = 0;
             for (var field in data) {
                 hashArr.push(field);
-                str += '<tr><td style="padding: 0;"><textarea class="form-control" oldField=\'' + i++ + '\'>' + field + '</textarea></td><td style="padding: 0;">' +
-                    '<textarea class="form-control">' + data[field] + '</textarea></td>' +
+                str += '<tr><td style="padding: 0;"><textarea class="form-control" oldField=\'' + i++ + '\'>' + ((redisView == 1 || redisView == 3) ? format(field) : field) + '</textarea></td><td style="padding: 0;">' +
+                    '<textarea class="form-control">' + ((redisView == 1 || redisView == 3) ? format(data[field]) : data[field]) + '</textarea></td>' +
                     '<td><button type="button" class="btn btn-success btn-xs " onclick="updateHash(this)">保存</button>' +
                     '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delHash(this);" style="margin-left: 4px;">删除</a></td></tr>';
             }
@@ -585,7 +585,7 @@ function getHash() {
 }
 function getZSet() {
     $.ajax({
-        url: ctx + server + "/getZSet",
+        url: ctx + server + serialize + "/getZSet",
         data: {db: redisDb, pageNo: 1, key: key},
         type: "post",
         dataType: "json",
@@ -601,7 +601,7 @@ function getZSet() {
             for (var i = 0; i < data.results.length; i++) {
                 zSetArr[i] = data.results.element;
                 str += '<tr><td style="padding: 0;"><input type="text" maxlength="50" class="form-control" value="' + data.results[i].score + '" onkeyup="checkDouble(this)"></td><td style="padding: 0;">' +
-                    '<textarea class="form-control" oldVal="' + i + '" >' + data.results[i].element + '</textarea></td>' +
+                    '<textarea class="form-control" oldVal="' + i + '" >' + ((redisView == 1 || redisView == 3) ? format(data[i].element) : data[i].element) + '</textarea></td>' +
                     '<td><button type="button" class="btn btn-success btn-xs " onclick="updateZSet(this)">保存</button>' +
                     '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delZSet(this);" style="margin-left: 4px;">删除</a></td></tr>';
             }
@@ -616,7 +616,7 @@ function getZSet() {
 }
 function getSet() {
     $.ajax({
-        url: ctx + server + "/getSet",
+        url: ctx + server + serialize + "/getSet",
         data: {db: redisDb, key: key},
         type: "post",
         dataType: "json",
@@ -631,7 +631,7 @@ function getSet() {
             setArr = [];
             for (var i = 0; i < data.length; i++) {
                 setArr[i] = data[i];
-                str += '<tr><td style="padding: 0;"><textarea class="form-control" oldVal="' + i + '">' + data[i] + '</textarea></td>' +
+                str += '<tr><td style="padding: 0;"><textarea class="form-control" oldVal="' + i + '">' + ((redisView == 1 || redisView == 3) ? format(data[i]) : data[i]) + '</textarea></td>' +
                     '<td><button type="button" class="btn btn-success btn-xs " onclick="updateSet(this)">保存</button>' +
                     '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delSet(this);" style="margin-left: 4px;">删除</a></td></tr>';
             }
@@ -642,7 +642,7 @@ function getSet() {
 }
 function getList() {
     $.ajax({
-        url: ctx + server + "/getList",
+        url: ctx + server + serialize + "/getList",
         data: {db: redisDb, key: key, pageNo: 1},
         type: "post",
         dataType: "json",
@@ -653,15 +653,11 @@ function getList() {
                 '操作</th> </tr> </thead> <tbody style="border: 1px solid #ddd;"> <tr> <td style="padding: 0;"><input type="text" class="form-control" ' +
                 'value="' + key + '"> </td><td><button type="button" class="btn btn-success btn-xs " onclick="rename(this)">保存</button>' +
                 '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delKey(this);" style="margin-left: 4px;">删除</a>' +
-                '</td> </tr></tbody></table><div class="detail-div"><label style="padding-left: 8px;">size:' + data.totalRecord + '</label> ' +
-                ' <label for="redis_serializable" style="padding:10px 8px 0 41px;">视图:</label> ' +
-                ' <select style="width: auto;display: inline;" class="form-control" id="redis_serializable" name="redis_serializable">' +
-                ' <option value="0" selected>Plain Text</option> <option value="1">JSON</option> </select> ' +
-                '</div><table class="table table-bordered "><thead><tr><th style="width:3%;">' +
+                '</td> </tr></tbody></table><table class="table table-bordered "><thead><tr><th style="width:3%;">' +
                 'row</th><th style="width:83%;">value</th><th style="text-align: center;">操作</th></tr>' +
                 '</thead><tbody id="list-content">';
             for (var i = 0; i < data.results.length; i++) {
-                str += '<tr><td >' + ((data.pageNo - 1) * data.pageSize + i + 1) + '</td><td style="padding: 0;"><textarea class="form-control">' + data.results[i] + '</textarea></td>' +
+                str += '<tr><td >' + ((data.pageNo - 1) * data.pageSize + i + 1) + '</td><td style="padding: 0;"><textarea class="form-control">' + ((redisView == 1 || redisView == 3) ? format(data.results[i]) : data.results[i]) + '</textarea></td>' +
                     '<td><button type="button" class="btn btn-success btn-xs " onclick="updateList(this)">保存</button>' +
                     '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delList(this);" style="margin-left: 4px;">删除</a></td></tr>';
             }
@@ -677,7 +673,7 @@ function getList() {
 }
 function getString() {
     $.ajax({
-        url: ctx + server + "/getString",
+        url: ctx + server + serialize + "/getString",
         data: {db: redisDb, key: key},
         type: "post",
         dataType: "text",
@@ -688,11 +684,8 @@ function getString() {
                 '操作</th></tr></thead><tbody><tr><td style="padding:0;"><input type="text"  class="form-control" ' +
                 'value="' + key + '"></td><td><button type="button" class="btn btn-success btn-xs " onclick="rename(this)">保存</button>' +
                 '<a href="javascript:void(0);" class="btn btn-danger btn-xs" onclick="delKey(this);" style="margin-left: 4px;">删除</a>' +
-                '</td></tr></tbody><div class="detail-div"><label for="redis_view" style="padding:10px 5px 0 8px;">视图:</label> ' +
-                ' <select style="width: auto;display: inline;" class="form-control" id="redis_view">' +
-                ' <option value="text" >Plain Text</option> <option value="json" selected>JSON</option> </select> ' +
-                '</div><thead><tr><th>value</th><th style="text-align:center;">操作</th></tr></thead>' +
-                '<tbody><tr><td style="padding: 0;"><textarea class="form-control">' + format(data) + '</textarea></td>' +
+                '</td></tr></tbody><thead><tr><th>value</th><th style="text-align:center;">操作</th></tr></thead>' +
+                '<tbody><tr><td style="padding: 0;"><textarea class="form-control">' + ((redisView == 1 || redisView == 3) ? format(data) : data) + '</textarea></td>' +
                 '<td><button type="button" class="btn btn-success btn-xs " onclick="updateString(this)">保存</button></td></tr></table>' +
                 '</table> </div>' + ttlStr;
             $("#redisContent").html(str);
@@ -703,7 +696,7 @@ function clusterUpPage(pageNo, event) {
     event = event || window.event;
     var obj = event.srcElement ? event.srcElement : event.target;
     $.ajax({
-        url: ctx + server + "/upPage",
+        url: ctx + server + serialize + "/upPage",
         data: {pageNo: pageNo, match: match},
         type: "post",
         dataType: "text",
@@ -718,7 +711,7 @@ function clusterNextPage(pageNo, event) {
     event = event || window.event;
     var obj = event.srcElement ? event.srcElement : event.target;
     $.ajax({
-        url: ctx + server + "/nextPage",
+        url: ctx + server + serialize + "/nextPage",
         data: {pageNo: pageNo, match: match},
         type: "post",
         dataType: "text",
@@ -732,7 +725,7 @@ function nextPage(db, cursor, event) {
     event = event || window.event;
     var obj = event.srcElement ? event.srcElement : event.target;
     $.ajax({
-        url: ctx + server + "/nextPage",
+        url: ctx + server + serialize + "/nextPage",
         data: {db: db, cursor: cursor, match: match},
         type: "post",
         dataType: "text",

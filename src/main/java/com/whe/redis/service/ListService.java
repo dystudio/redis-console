@@ -7,9 +7,11 @@ import com.whe.redis.util.ServerConstant;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
 
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Created by trustme on 2017/2/12.
@@ -17,19 +19,24 @@ import java.util.UUID;
  */
 @Service
 public class ListService {
-    public Long saveSerialize(int db, String key, String value) {
-        Jedis jedis = JedisFactory.getJedisPool().getResource();
-        jedis.select(db);
-        Long nx = jedis.lpushx(key.getBytes(), SerializeUtils.serialize(value));
-        jedis.close();
-        return nx;
-    }
 
-    public Long save(int db, String key, String value) {
+    public Long lPushSerialize(int db, String key, String value) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
         Boolean exists = jedis.exists(key);
-        if (exists) {
+        if (exists && !ServerConstant.REDIS_LIST.equals(jedis.type(key))) {
+            return 2L;
+        }
+        jedis.lpushx(key.getBytes(), SerializeUtils.serialize(value));
+        jedis.close();
+        return 1L;
+    }
+
+    public Long lPush(int db, String key, String value) {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        Boolean exists = jedis.exists(key);
+        if (exists && !ServerConstant.REDIS_LIST.equals(jedis.type(key))) {
             return 2L;
         }
         jedis.lpush(key, value);
@@ -47,6 +54,29 @@ public class ListService {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
         List<String> list = jedis.lrange(key, (pageNo - 1) * ServerConstant.PAGE_NUM, pageNo * ServerConstant.PAGE_NUM);
+        //总数据
+        page.setTotalRecord(jedis.llen(key));
+        page.setPageNo(pageNo);
+        page.setResults(list);
+        jedis.close();
+        return page;
+    }
+
+    /**
+     * 根据key分页查询list类型数据
+     *
+     * @return Page<List<String>>
+     */
+    public Page<List<String>> findListPageByKeySerialize(int db, String key, int pageNo) {
+        Page<List<String>> page = new Page<>();
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        List<String> list = null;
+        try {
+            list = jedis.lrange(key.getBytes(ServerConstant.CHARSET), (pageNo - 1) * ServerConstant.PAGE_NUM, pageNo * ServerConstant.PAGE_NUM).stream().map(bytes -> SerializeUtils.unSerialize(bytes).toString()).collect(Collectors.toList());
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
         //总数据
         page.setTotalRecord(jedis.llen(key));
         page.setPageNo(pageNo);

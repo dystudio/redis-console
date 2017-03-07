@@ -1,7 +1,8 @@
 package com.whe.redis.util;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
 /**
@@ -9,15 +10,31 @@ import java.io.ObjectOutputStream;
  * JDK序列化工具
  */
 public class SerializeUtils {
-    public static byte[] serialize(Object obj) {
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+    public static byte[] serialize(Object object) {
+        ObjectOutputStream objectOutputStream;
+        ByteArrayOutputStream byteArrayOutputStream;
         try {
-            ObjectOutputStream objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
-            objectOutputStream.writeObject(obj);
+            // 序列化
+            byteArrayOutputStream = new ByteArrayOutputStream();
+            objectOutputStream = new ObjectOutputStream(byteArrayOutputStream);
+            objectOutputStream.writeObject(object);
             return byteArrayOutputStream.toByteArray();
-        } catch (IOException e) {
-            e.printStackTrace();
+        } catch (Exception ignored) {
+
         }
         return null;
+    }
+
+    public static Object unSerialize(byte[] bytes) {
+        ByteArrayInputStream byteArrayInputStream;
+        try {
+            // 反序列化
+            byteArrayInputStream = new ByteArrayInputStream(bytes);
+            ObjectInputStream ois = new ObjectInputStream(byteArrayInputStream);
+            return ois.readObject();
+        } catch (Exception ignored) {
+
+        }
+        return new String(bytes);
     }
 }

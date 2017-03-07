@@ -10,6 +10,7 @@ import redis.clients.jedis.*;
 import redis.clients.jedis.exceptions.JedisConnectionException;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
@@ -56,7 +57,7 @@ public class RedisClusterService {
 
     public Long zAdd(String key, Double score, String member) {
         Boolean exists = jedisCluster.exists(key);
-        if (exists) {
+        if (exists && !jedisCluster.type(key).equals(ServerConstant.REDIS_ZSET)) {
             return 2L;
         }
         jedisCluster.zadd(key, score, member);
@@ -74,7 +75,7 @@ public class RedisClusterService {
 
     public Long sAdd(String key, String value) {
         Boolean exists = jedisCluster.exists(key);
-        if (exists) {
+        if (exists && !jedisCluster.type(key).equals(ServerConstant.REDIS_SET)) {
             return 2L;
         }
         jedisCluster.sadd(key, value);
@@ -91,10 +92,6 @@ public class RedisClusterService {
     }
 
     public Long lPush(String key, String value) {
-        Boolean exists = jedisCluster.exists(key);
-        if (exists) {
-            return 2L;
-        }
         jedisCluster.lpush(key, value);
         return 1L;
     }
@@ -294,6 +291,10 @@ public class RedisClusterService {
         return jedisCluster.hgetAll(key);
     }
 
+    public Map<String, String> hGetAll(byte[] key) {
+        return jedisCluster.hgetAll(key).entrySet().stream().collect(Collectors.toMap(entry -> SerializeUtils.unSerialize(entry.getKey()).toString(), entry -> SerializeUtils.unSerialize(entry.getValue()).toString()));
+    }
+
     public void delZSet(String key, String val) {
         jedisCluster.zrem(key, val);
     }
@@ -318,6 +319,16 @@ public class RedisClusterService {
         return page;
     }
 
+    public Page<Set<Tuple>> findZSetPageByKey(byte[] key, int pageNo) {
+        Page<Set<Tuple>> page = new Page<>();
+        Set<Tuple> tupleSet = jedisCluster.zrangeByScoreWithScores(key, (pageNo - 1) * ServerConstant.PAGE_NUM, pageNo * ServerConstant.PAGE_NUM).stream().map(tuple -> new Tuple(SerializeUtils.unSerialize(tuple.getBinaryElement()).toString(), tuple.getScore())).collect(Collectors.toSet());
+        //总数据
+        page.setTotalRecord(jedisCluster.zcard(key));
+        page.setPageNo(pageNo);
+        page.setResults(tupleSet);
+        return page;
+    }
+
     public void updateSet(String key, String oldVal, String newVal) {
         jedisCluster.srem(key, oldVal);
         jedisCluster.sadd(key, newVal);
@@ -334,6 +345,15 @@ public class RedisClusterService {
      */
     public Set<String> getSet(String key) {
         return jedisCluster.smembers(key);
+    }
+
+    /**
+     * 查询set类型数据
+     *
+     * @return Set<String>
+     */
+    public Set<String> getSet(byte[] key) {
+        return jedisCluster.smembers(key).stream().map(bytes -> SerializeUtils.unSerialize(bytes).toString()).collect(Collectors.toSet());
     }
 
     public void lRem(int index, String key) {
@@ -373,12 +393,31 @@ public class RedisClusterService {
         return page;
     }
 
+    /**
+     * 根据key分页查询list类型数据
+     *
+     * @return Page<List<String>>
+     */
+    public Page<List<String>> findListPageByKey(byte[] key, int pageNo) {
+        Page<List<String>> page = new Page<>();
+        List<String> list = jedisCluster.lrange(key, (pageNo - 1) * ServerConstant.PAGE_NUM, pageNo * ServerConstant.PAGE_NUM).stream().map(bytes -> SerializeUtils.unSerialize(bytes).toString()).collect(Collectors.toList());
+        //总数据
+        page.setTotalRecord(jedisCluster.llen(key));
+        page.setPageNo(pageNo);
+        page.setResults(list);
+        return page;
+    }
+
     public void set(String key, String val) {
         jedisCluster.set(key, val);
     }
 
     public String get(String key) {
         return jedisCluster.get(key);
+    }
+
+    public String get(byte[] key) {
+        return SerializeUtils.unSerialize(jedisCluster.get(key)).toString();
     }
 
     public Long del(String key) {

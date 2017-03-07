@@ -126,21 +126,35 @@ public class RedisClusterController {
             String data = new String(file.getBytes(), ServerConstant.CHARSET);
             Object obj = JSON.parse(data);
             if (obj instanceof Map) {
-                Map map = (Map) obj;
-                if (map.containsKey(ServerConstant.REDIS_STRING)) {
-                    redisClusterService.saveAllStringSerialize((Map) map.get(ServerConstant.REDIS_STRING));
-                }
-                if (map.containsKey(ServerConstant.REDIS_LIST)) {
-                    redisClusterService.saveAllListSerialize((Map) map.get(ServerConstant.REDIS_LIST));
-                }
-                if (map.containsKey(ServerConstant.REDIS_SET)) {
-                    redisClusterService.saveAllSetSerialize((Map) map.get(ServerConstant.REDIS_SET));
-                }
-                if (map.containsKey(ServerConstant.REDIS_ZSET)) {
-                    redisClusterService.saveAllZSetSerialize((Map) map.get(ServerConstant.REDIS_ZSET));
-                }
-                if (map.containsKey(ServerConstant.REDIS_HASH)) {
-                    redisClusterService.saveAllHashSerialize((Map) map.get(ServerConstant.REDIS_HASH));
+                Map<String, Map> map = (Map) obj;
+                boolean isCluster = false;
+                for (Map.Entry<String, Map> entry : map.entrySet()) {
+                    Map nowMap;
+                    try {
+                        Integer.parseInt(entry.getKey());
+                        nowMap = entry.getValue();
+                    } catch (Exception e) {
+                        isCluster = true;
+                        nowMap = map;
+                    }
+                    if (map.containsKey(ServerConstant.REDIS_STRING)) {
+                        redisClusterService.saveAllStringSerialize((Map) nowMap.get(ServerConstant.REDIS_STRING));
+                    }
+                    if (map.containsKey(ServerConstant.REDIS_LIST)) {
+                        redisClusterService.saveAllListSerialize((Map) nowMap.get(ServerConstant.REDIS_LIST));
+                    }
+                    if (map.containsKey(ServerConstant.REDIS_SET)) {
+                        redisClusterService.saveAllSetSerialize((Map) nowMap.get(ServerConstant.REDIS_SET));
+                    }
+                    if (map.containsKey(ServerConstant.REDIS_ZSET)) {
+                        redisClusterService.saveAllZSetSerialize((Map) nowMap.get(ServerConstant.REDIS_ZSET));
+                    }
+                    if (map.containsKey(ServerConstant.REDIS_HASH)) {
+                        redisClusterService.saveAllHashSerialize((Map) nowMap.get(ServerConstant.REDIS_HASH));
+                    }
+                    if (isCluster) {
+                        break;
+                    }
                 }
             }
         } catch (Exception e) {
@@ -163,21 +177,35 @@ public class RedisClusterController {
             String data = new String(file.getBytes(), ServerConstant.CHARSET);
             Object obj = JSON.parse(data);
             if (obj instanceof Map) {
-                Map map = (Map) obj;
-                if (map.containsKey(ServerConstant.REDIS_STRING)) {
-                    redisClusterService.saveAllString((Map<String, String>) map.get(ServerConstant.REDIS_STRING));
-                }
-                if (map.containsKey(ServerConstant.REDIS_LIST)) {
-                    redisClusterService.saveAllList((Map) map.get(ServerConstant.REDIS_LIST));
-                }
-                if (map.containsKey(ServerConstant.REDIS_SET)) {
-                    redisClusterService.saveAllSet((Map) map.get(ServerConstant.REDIS_SET));
-                }
-                if (map.containsKey(ServerConstant.REDIS_ZSET)) {
-                    redisClusterService.saveAllZSet((Map) map.get(ServerConstant.REDIS_ZSET));
-                }
-                if (map.containsKey(ServerConstant.REDIS_HASH)) {
-                    redisClusterService.saveAllHash((Map) map.get(ServerConstant.REDIS_HASH));
+                Map<String, Map> map = (Map) obj;
+                boolean isCluster = false;
+                for (Map.Entry<String, Map> entry : map.entrySet()) {
+                    Map nowMap;
+                    try {
+                        Integer.parseInt(entry.getKey());
+                        nowMap = entry.getValue();
+                    } catch (Exception e) {
+                        isCluster = true;
+                        nowMap = map;
+                    }
+                    if (nowMap.containsKey(ServerConstant.REDIS_STRING)) {
+                        redisClusterService.saveAllString((Map<String, String>) nowMap.get(ServerConstant.REDIS_STRING));
+                    }
+                    if (nowMap.containsKey(ServerConstant.REDIS_LIST)) {
+                        redisClusterService.saveAllList((Map) nowMap.get(ServerConstant.REDIS_LIST));
+                    }
+                    if (nowMap.containsKey(ServerConstant.REDIS_SET)) {
+                        redisClusterService.saveAllSet((Map) nowMap.get(ServerConstant.REDIS_SET));
+                    }
+                    if (nowMap.containsKey(ServerConstant.REDIS_ZSET)) {
+                        redisClusterService.saveAllZSet((Map) nowMap.get(ServerConstant.REDIS_ZSET));
+                    }
+                    if (nowMap.containsKey(ServerConstant.REDIS_HASH)) {
+                        redisClusterService.saveAllHash((Map) nowMap.get(ServerConstant.REDIS_HASH));
+                    }
+                    if (isCluster) {
+                        break;
+                    }
                 }
             }
         } catch (Exception e) {
@@ -237,6 +265,16 @@ public class RedisClusterController {
         }
     }
 
+    @RequestMapping(value = {"/serialize/hGetAll"})
+    @ResponseBody
+    public Map<String, String> hGetAllSerialize(String key) {
+        try {
+            return redisClusterService.hGetAll(key.getBytes(ServerConstant.CHARSET));
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
 
     @RequestMapping(value = {"/hGetAll"})
     @ResponseBody
@@ -266,6 +304,20 @@ public class RedisClusterController {
             e.printStackTrace();
             return e.getMessage();
         }
+    }
+
+    @RequestMapping(value = {"/serialize/getZSet"})
+    @ResponseBody
+    public Page<Set<Tuple>> getSerializeZSet(String key, int pageNo, HttpServletRequest request) {
+        Page<Set<Tuple>> page = null;
+        try {
+            page = redisClusterService.findZSetPageByKey(key.getBytes(ServerConstant.CHARSET), pageNo);
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        assert page != null;
+        page.pageViewAjax(request.getContextPath() + "/serialize/getList", "");
+        return page;
     }
 
     /**
@@ -303,6 +355,17 @@ public class RedisClusterController {
             e.printStackTrace();
             return e.getMessage();
         }
+    }
+
+    @RequestMapping(value = {"/serialize/getSet"})
+    @ResponseBody
+    public Set<String> getSerializeSet(String key) {
+        try {
+            return redisClusterService.getSet(key.getBytes(ServerConstant.CHARSET));
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 
     /**
@@ -360,6 +423,20 @@ public class RedisClusterController {
         }
     }
 
+    @RequestMapping(value = {"/serialize/getList"})
+    @ResponseBody
+    public Page<List<String>> getSerializeList(String key, int pageNo, HttpServletRequest request) {
+        Page<List<String>> page = null;
+        try {
+            page = redisClusterService.findListPageByKey(key.getBytes(ServerConstant.CHARSET), pageNo);
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        assert page != null;
+        page.pageViewAjax(request.getContextPath() + "/serialize/getList", "");
+        return page;
+    }
+
     /**
      * ajax分页加载list类型数据
      *
@@ -384,6 +461,17 @@ public class RedisClusterController {
             e.printStackTrace();
             return e.getMessage();
         }
+    }
+
+    @RequestMapping(value = {"/serialize/getString"})
+    @ResponseBody
+    public String getSerializeString(String key) {
+        try {
+            return redisClusterService.get(key.getBytes(ServerConstant.CHARSET));
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        return "";
     }
 
     @RequestMapping("/getString")

@@ -2,9 +2,11 @@ package com.whe.redis.service;
 
 import com.whe.redis.util.JedisFactory;
 import com.whe.redis.util.SerializeUtils;
+import com.whe.redis.util.ServerConstant;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
 
+import java.io.UnsupportedEncodingException;
 import java.util.Map;
 
 /**
@@ -42,6 +44,17 @@ public class StringService {
         String val = jedis.get(key);
         jedis.close();
         return val;
+    }
+
+    public String getStringSerialize(int db, String key) throws UnsupportedEncodingException {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        Object val = SerializeUtils.unSerialize(jedis.get(key.getBytes(ServerConstant.CHARSET)));
+        if (val == null) {
+            val = jedis.get(key);
+        }
+        jedis.close();
+        return val.toString();
     }
 
     /**

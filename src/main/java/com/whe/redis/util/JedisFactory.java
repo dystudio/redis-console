@@ -75,7 +75,6 @@ public class JedisFactory {
                     try {
                         jedis = entry.getValue().getResource();
                         redisClusterNode = new RedisClusterNode(jedis.getClient().getHost() + ":" + jedis.getClient().getPort(), jedis.clusterNodes());
-                        jedis.close();
                         break;
                     } catch (Exception ignored) {
                         // try next nodes

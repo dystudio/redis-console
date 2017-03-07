@@ -60,7 +60,6 @@ public class RedisController {
     public String index(Model model, @RequestParam(defaultValue = "0") String cursor, String match, HttpServletRequest request, HttpServletResponse response) {
         try {
             String treeJson = treeJson(cursor, match, request, response);
-            Set<String> redisDb = new HashSet<>();
             Integer size = redisService.getDataBasesSize();
             model.addAttribute("dataSize", size);
             model.addAttribute("tree", treeJson);
@@ -81,26 +80,26 @@ public class RedisController {
                     case ServerConstant.REDIS_STRING:
                         return stringService.saveSerialize(redis_data_size, redis_key, redis_value) == 1 ? "1" : "2";
                     case ServerConstant.REDIS_LIST:
-                        return listService.saveSerialize(redis_data_size, redis_key, redis_value) == 1 ? "1" : "2";
+                        return listService.lPushSerialize(redis_data_size, redis_key, redis_value) == 1 ? "1" : "2";
                     case ServerConstant.REDIS_SET:
-                        return setService.saveSerialize(redis_data_size, redis_key, redis_value) == 1 ? "1" : "2";
+                        return setService.sAddSerialize(redis_data_size, redis_key, redis_value) == 1 ? "1" : "2";
                     case ServerConstant.REDIS_ZSET:
-                        return zSetService.saveSerialize(redis_data_size, redis_key, redis_score, redis_value) == 1 ? "1" : "2";
+                        return zSetService.zAddSerialize(redis_data_size, redis_key, redis_score, redis_value) == 1 ? "1" : "2";
                     case ServerConstant.REDIS_HASH:
-                        return hashService.saveSerialize(redis_data_size, redis_key, redis_field, redis_value) == 1 ? "1" : "2";
+                        return hashService.hSetNxSerialize(redis_data_size, redis_key, redis_field, redis_value) == 1 ? "1" : "2";
                 }
             } else {
                 switch (redis_type) {
                     case ServerConstant.REDIS_STRING:
                         return stringService.save(redis_data_size, redis_key, redis_value) == 1 ? "1" : "2";
                     case ServerConstant.REDIS_LIST:
-                        return listService.save(redis_data_size, redis_key, redis_value) == 1 ? "1" : "2";
+                        return listService.lPush(redis_data_size, redis_key, redis_value) == 1 ? "1" : "2";
                     case ServerConstant.REDIS_SET:
-                        return setService.save(redis_data_size, redis_key, redis_value) == 1 ? "1" : "2";
+                        return setService.sAdd(redis_data_size, redis_key, redis_value) == 1 ? "1" : "2";
                     case ServerConstant.REDIS_ZSET:
-                        return zSetService.save(redis_data_size, redis_key, redis_score, redis_value) == 1 ? "1" : "2";
+                        return zSetService.zAdd(redis_data_size, redis_key, redis_score, redis_value) == 1 ? "1" : "2";
                     case ServerConstant.REDIS_HASH:
-                        return hashService.save(redis_data_size, redis_key, redis_field, redis_value) == 1 ? "1" : "2";
+                        return hashService.hSetNx(redis_data_size, redis_key, redis_field, redis_value) == 1 ? "1" : "2";
                 }
             }
         } catch (Exception e) {
@@ -121,6 +120,16 @@ public class RedisController {
         return stringService.getString(db, key);
     }
 
+    @RequestMapping(value = {"/serialize/getString"})
+    @ResponseBody
+    public String getSerializeString(Integer db, String key) {
+        try {
+            return stringService.getStringSerialize(db, key);
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
 
     /**
      * ajax分页加载list类型数据
@@ -135,6 +144,13 @@ public class RedisController {
         return page;
     }
 
+    @RequestMapping(value = {"/serialize/getList"})
+    @ResponseBody
+    public Page<List<String>> getSerializeList(int db, String key, int pageNo, HttpServletRequest request) {
+        Page<List<String>> page = listService.findListPageByKeySerialize(db, key, pageNo);
+        page.pageViewAjax(request.getContextPath() + "/serialize/getList", "");
+        return page;
+    }
 
     /**
      * ajax加载set类型数据
@@ -145,6 +161,12 @@ public class RedisController {
     @ResponseBody
     public Set<String> getSet(int db, String key) {
         return setService.getSet(db, key);
+    }
+
+    @RequestMapping(value = {"/serialize/getSet"})
+    @ResponseBody
+    public Set<String> getSerializeSet(int db, String key) {
+        return setService.getSetSerialize(db, key);
     }
 
     /**
@@ -160,10 +182,24 @@ public class RedisController {
         return page;
     }
 
+    @RequestMapping(value = {"/serialize/getZSet"})
+    @ResponseBody
+    public Page<Set<Tuple>> getSerializeZSet(int db, String key, int pageNo, HttpServletRequest request) {
+        Page<Set<Tuple>> page = zSetService.findZSetPageByKeySerialize(db, key, pageNo);
+        page.pageViewAjax(request.getContextPath() + "/serialize/getList", "");
+        return page;
+    }
+
     @RequestMapping(value = {"/hGetAll"})
     @ResponseBody
     public Map<String, String> hGetAll(int db, String key) {
         return hashService.hGetAll(db, key);
+    }
+
+    @RequestMapping(value = {"/serialize/hGetAll"})
+    @ResponseBody
+    public Map<String, String> hGetAllSerialize(int db, String key) {
+        return hashService.hGetAllSerialize(db, key);
     }
 
     /**
@@ -414,15 +450,14 @@ public class RedisController {
     /**
      * 备份数据
      *
-     * @param request  request
      * @param response response
      * @throws IOException IOException
      */
     @RequestMapping("/backup")
-    public void backup(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public void backup(HttpServletResponse response) throws IOException {
         String str = redisService.backup();
         LocalDate data = LocalDate.now();
-        response.setContentType(request.getServletContext().getMimeType(data + "standalone.redis"));//设置MIME类型
+        response.setContentType("text/plain; charset=utf-8");//设置MIME类型
         response.setHeader("Content-Disposition", "attachment; filename=" + data + "standalone.redis");
         response.getWriter().write(str);
     }
@@ -440,25 +475,38 @@ public class RedisController {
             String data = new String(file.getBytes(), ServerConstant.CHARSET);
             Object obj = JSON.parse(data);
             if (obj instanceof Map) {
-                Map<String, Map<String, Map<String, Object>>> map = (Map) obj;
-                map.entrySet().forEach(entry -> {
-                    Map<String, Map<String, Object>> value = entry.getValue();
-                    if (value.containsKey(ServerConstant.REDIS_STRING)) {
-                        stringService.saveAllString(Integer.parseInt(entry.getKey()), (Map) value.get(ServerConstant.REDIS_STRING));
+                Map<String, Map> map = (Map) obj;
+                boolean isCluster = false;
+                for (Map.Entry<String, Map> entry : map.entrySet()) {
+                    Map nowMap;
+                    int db;
+                    try {
+                        db = Integer.parseInt(entry.getKey());
+                        nowMap = entry.getValue();
+                    } catch (Exception e) {
+                        nowMap = map;
+                        isCluster = true;
+                        db = 0;
                     }
-                    if (value.containsKey(ServerConstant.REDIS_LIST)) {
-                        listService.saveAllList(Integer.parseInt(entry.getKey()), (Map) value.get(ServerConstant.REDIS_LIST));
+                    if (nowMap.containsKey(ServerConstant.REDIS_STRING)) {
+                        stringService.saveAllString(db, (Map<String, String>) nowMap.get(ServerConstant.REDIS_STRING));
                     }
-                    if (value.containsKey(ServerConstant.REDIS_SET)) {
-                        setService.saveAllSet(Integer.parseInt(entry.getKey()), (Map) value.get(ServerConstant.REDIS_SET));
+                    if (nowMap.containsKey(ServerConstant.REDIS_LIST)) {
+                        listService.saveAllList(db, (Map) nowMap.get(ServerConstant.REDIS_LIST));
                     }
-                    if (value.containsKey(ServerConstant.REDIS_ZSET)) {
-                        zSetService.saveAllZSet(Integer.parseInt(entry.getKey()), (Map) value.get(ServerConstant.REDIS_ZSET));
+                    if (nowMap.containsKey(ServerConstant.REDIS_SET)) {
+                        setService.saveAllSet(db, (Map) nowMap.get(ServerConstant.REDIS_SET));
                     }
-                    if (value.containsKey(ServerConstant.REDIS_HASH)) {
-                        hashService.saveAllHash(Integer.parseInt(entry.getKey()), (Map) value.get(ServerConstant.REDIS_HASH));
+                    if (nowMap.containsKey(ServerConstant.REDIS_ZSET)) {
+                        zSetService.saveAllZSet(db, (Map) nowMap.get(ServerConstant.REDIS_ZSET));
                     }
-                });
+                    if (nowMap.containsKey(ServerConstant.REDIS_HASH)) {
+                        hashService.saveAllHash(db, (Map) nowMap.get(ServerConstant.REDIS_HASH));
+                    }
+                    if (isCluster) {
+                        break;
+                    }
+                }
             }
 
         } catch (Exception e) {
@@ -480,25 +528,38 @@ public class RedisController {
             String data = new String(file.getBytes(), ServerConstant.CHARSET);
             Object obj = JSON.parse(data);
             if (obj instanceof Map) {
-                Map<String, Map<String, Map<String, Object>>> map = (Map) obj;
-                map.entrySet().forEach(entry -> {
-                    Map<String, Map<String, Object>> value = entry.getValue();
-                    if (value.containsKey(ServerConstant.REDIS_STRING)) {
-                        stringService.saveAllStringSerialize(Integer.parseInt(entry.getKey()), (Map) value.get(ServerConstant.REDIS_STRING));
+                Map<String, Map> map = (Map) obj;
+                boolean isCluster = false;
+                for (Map.Entry<String, Map> entry : map.entrySet()) {
+                    Map nowMap;
+                    int db;
+                    try {
+                        db = Integer.parseInt(entry.getKey());
+                        nowMap = entry.getValue();
+                    } catch (Exception e) {
+                        isCluster = true;
+                        db = 0;
+                        nowMap = map;
                     }
-                    if (value.containsKey(ServerConstant.REDIS_LIST)) {
-                        listService.saveAllListSerialize(Integer.parseInt(entry.getKey()), (Map) value.get(ServerConstant.REDIS_LIST));
+                    if (nowMap.containsKey(ServerConstant.REDIS_STRING)) {
+                        stringService.saveAllStringSerialize(db, (Map<String, String>) nowMap.get(ServerConstant.REDIS_STRING));
                     }
-                    if (value.containsKey(ServerConstant.REDIS_SET)) {
-                        setService.saveAllSetSerialize(Integer.parseInt(entry.getKey()), (Map) value.get(ServerConstant.REDIS_SET));
+                    if (nowMap.containsKey(ServerConstant.REDIS_LIST)) {
+                        listService.saveAllListSerialize(db, (Map) nowMap.get(ServerConstant.REDIS_LIST));
                     }
-                    if (value.containsKey(ServerConstant.REDIS_ZSET)) {
-                        zSetService.saveAllZSetSerialize(Integer.parseInt(entry.getKey()), (Map) value.get(ServerConstant.REDIS_ZSET));
+                    if (nowMap.containsKey(ServerConstant.REDIS_SET)) {
+                        setService.saveAllSetSerialize(db, (Map) nowMap.get(ServerConstant.REDIS_SET));
                     }
-                    if (value.containsKey(ServerConstant.REDIS_HASH)) {
-                        hashService.saveAllHashSerialize(Integer.parseInt(entry.getKey()), (Map) value.get(ServerConstant.REDIS_HASH));
+                    if (nowMap.containsKey(ServerConstant.REDIS_ZSET)) {
+                        zSetService.saveAllZSetSerialize(db, (Map) nowMap.get(ServerConstant.REDIS_ZSET));
                     }
-                });
+                    if (nowMap.containsKey(ServerConstant.REDIS_HASH)) {
+                        hashService.saveAllHashSerialize(db, (Map) nowMap.get(ServerConstant.REDIS_HASH));
+                    }
+                    if (isCluster) {
+                        break;
+                    }
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();

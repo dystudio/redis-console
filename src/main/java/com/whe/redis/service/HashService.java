@@ -2,10 +2,13 @@ package com.whe.redis.service;
 
 import com.whe.redis.util.JedisFactory;
 import com.whe.redis.util.SerializeUtils;
+import com.whe.redis.util.ServerConstant;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
 
+import java.io.UnsupportedEncodingException;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created by trustme on 2017/2/12.
@@ -13,11 +16,11 @@ import java.util.Map;
  */
 @Service
 public class HashService {
-    public Long saveSerialize(int db, String key, String field, String value) {
+    public Long hSetNxSerialize(int db, String key, String field, String value) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
         Boolean exists = jedis.exists(key);
-        if (exists) {
+        if (exists && !ServerConstant.REDIS_HASH.equals(jedis.type(key))) {
             return 2L;
         }
         Long l = jedis.hsetnx(key.getBytes(), SerializeUtils.serialize(field), SerializeUtils.serialize(value));
@@ -25,11 +28,11 @@ public class HashService {
         return l;
     }
 
-    public Long save(int db, String key, String field, String value) {
+    public Long hSetNx(int db, String key, String field, String value) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
         Boolean exists = jedis.exists(key);
-        if (exists) {
+        if (exists && !ServerConstant.REDIS_HASH.equals(jedis.type(key))) {
             return 2L;
         }
         Long l = jedis.hsetnx(key, field, value);
@@ -41,6 +44,22 @@ public class HashService {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
         Map<String, String> map = jedis.hgetAll(key);
+        jedis.close();
+        return map;
+    }
+
+    public Map<String, String> hGetAllSerialize(int db, String key) {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        Map<String, String> map = null;
+        try {
+            map = jedis.hgetAll(key.getBytes(ServerConstant.CHARSET))
+                    .entrySet()
+                    .stream()
+                    .collect(Collectors.toMap(entry -> SerializeUtils.unSerialize(entry.getKey()).toString(), entry -> SerializeUtils.unSerialize(entry.getValue()).toString()));
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
         jedis.close();
         return map;
     }

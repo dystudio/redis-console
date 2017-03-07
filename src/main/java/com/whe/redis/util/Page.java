@@ -177,12 +177,16 @@ public class Page<T> {
 
     /**
      * ajax分页显示
-     *  boorStrap分页样式
+     * boorStrap分页样式
+     *
      * @param url    连接
      * @param params 后面参数
      */
     public void pageViewAjax(String url, String params) {
         pageView = new ArrayList<>();
+        if (totalPage <= 1) {
+            return;
+        }
         pageView.add("<ul class=\"pagination\">");
         if (this.pageNo != 1) {
             pageView.add("<li><a href=\"javascript:void(0);\" onclick=\"pageViewAjax('" + url + "?pageNo=1" + params + "',this)\">首页</a></li>");
@@ -246,12 +250,12 @@ public class Page<T> {
                 pageView.add("<li><a href=\"javascript:void(0);\" onclick=\"pageViewAjax('" + url + "?pageNo=" + (i + 1) + params + "',this)\">" + (i + 1) + "</a></li>");
             }
         } else {
-            for(int i=4;i>-4;i--){
-                if(this.pageNo-i==this.pageNo){
+            for (int i = 4; i > -4; i--) {
+                if (this.pageNo - i == this.pageNo) {
                     pageView.add("<li class=\"active\"><a href=\"javascript:void(0)\">" + this.pageNo + "</a></li>");
                     continue;
                 }
-                pageView.add("<li><a href=\"javascript:void(0);\" onclick=\"pageViewAjax('" + url + "?pageNo=" + (this.pageNo-i) + params + "',this)\">" + (this.pageNo-i) + "</a></li>");
+                pageView.add("<li><a href=\"javascript:void(0);\" onclick=\"pageViewAjax('" + url + "?pageNo=" + (this.pageNo - i) + params + "',this)\">" + (this.pageNo - i) + "</a></li>");
             }
 
             pageView.add("<li class=\"disabled\"><a href=\"javascript:void(0)\">...</a></li>");

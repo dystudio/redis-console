@@ -76,12 +76,14 @@ public class RedisService {
         }
         return JSON.toJSONString(dbKeys);
     }
-    public void persist(int db,String key){
+
+    public void persist(int db, String key) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
         jedis.persist(key);
         jedis.close();
     }
+
     public Integer getDataBasesSize() {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         List<String> list = jedis.configGet(ServerConstant.DATABASES);
@@ -167,17 +169,11 @@ public class RedisService {
 
     public Map<String, String> getType(int db, List<String> keys) {
         JedisPool jedisPool = JedisFactory.getJedisPool();
-        long l = System.currentTimeMillis();
-        //Map<String, String> map = keys.stream().collect(Collectors.toMap(key -> key, jedis::type));
-        Map<String, String> collect = keys.parallelStream().collect(Collectors.toMap(key -> key, key -> {
-            Jedis jedis = jedisPool.getResource();
-            jedis.select(db);
-            String type = jedis.type(key);
-            jedis.close();
-            return type;
-        }));
-        System.out.println((System.currentTimeMillis() - l));
-        return collect;
+        Jedis jedis = jedisPool.getResource();
+        jedis.select(db);
+        Map<String, String> map = keys.stream().collect(Collectors.toMap(key -> key, jedis::type));
+        jedis.close();
+        return map;
     }
 
     public Map<Integer, Long> getDataBases() {

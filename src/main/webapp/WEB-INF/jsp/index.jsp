@@ -105,6 +105,17 @@
     <!-- /.row -->
     <div class="panel panel-default">
         <div class="panel-body">
+            <div class="form-group" style="margin: 0px">
+                <label class="col-sm-2 control-label" style="float:left;padding:16px 14px 0 0px;width: 43px">视图</label>
+                <div class="col-sm-10" id="redis_view" style="width: 150px;margin-top: 7px">
+                    <select class="form-control" name="redis_serializable">
+                        <option value="0" selected>Plain Text</option>
+                        <option value="1">JSON</option>
+                        <option value="2">JDK序列化</option>
+                        <option value="3">JDK序列化和JSON</option>
+                    </select>
+                </div>
+            </div>
             <button type="button" id="addRedis" class="btn btn-success navbar-btn">添加</button>
             <button type="button" id="backup" class="btn btn-primary navbar-btn">备份</button>
             <span class="btn btn-success btn-file"> 恢复
@@ -133,7 +144,7 @@
     <div id="redisContent">
     </div>
 </div>
-<!-- 客户编辑对话框 -->
+
 <div class="modal fade" id="redis_add_dialog" tabindex="-1" role="dialog"
      aria-labelledby="myModalLabel">
     <div class="modal-dialog" role="document">
@@ -217,6 +228,7 @@
     </div>
 </div>
 <!-- /#page-wrapper -->
+
 </body>
 <!-- 2 jQuery类库 -->
 <script src="${ctx}/js/jquery.min.js"></script>
@@ -230,6 +242,8 @@
     var defaultData = ${tree};
     var server = '${server}';
     var match = '${match}';
+    var redisView = 0;
+    var serialize = "";
     $("#tree").initTree(defaultData);
     $("#addRedis").on('click', function () {
         $("#redis_add_dialog").modal("show");
@@ -275,7 +289,7 @@
             return;
         }
         var options = {
-            url: ctx + server + "/save",
+            url: ctx + server + serialize + "/save",
             type: "post",
             dataType: "text",
             success: function (data) {
@@ -287,8 +301,26 @@
         };
         $("#redis_add_dialog").modal('hide');
         $("#add_redis_form").ajaxSubmit(options);
-    })
-    $("#redisContent").on('change',"#redis_view",function () {
+    });
+    $("#redis_view").on('change', function () {
+        redisView = $(this).find("option:selected").val();
+        console.log(redisView);
+        if (redisView == 3 || redisView == 2) {
+            serialize = "/serialize";
+        } else {
+            serialize = "";
+        }
+        if (redisType == string) {
+            getString();
+        } else if (redisType == list) {
+            getList();
+        } else if (redisType == set) {
+            getSet();
+        } else if (redisType == zset) {
+            getZSet();
+        } else if (redisType == hash) {
+            getHash();
+        }
     })
 </script>
 </html>

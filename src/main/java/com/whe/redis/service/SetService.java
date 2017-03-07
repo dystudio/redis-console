@@ -2,13 +2,16 @@ package com.whe.redis.service;
 
 import com.whe.redis.util.JedisFactory;
 import com.whe.redis.util.SerializeUtils;
+import com.whe.redis.util.ServerConstant;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
 
+import java.io.UnsupportedEncodingException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Created by trustme on 2017/2/12.
@@ -16,11 +19,13 @@ import java.util.Set;
  */
 @Service
 public class SetService {
-    public Long saveSerialize(int db, String key, String value) {
+
+
+    public Long sAddSerialize(int db, String key, String value) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
         Boolean exists = jedis.exists(key);
-        if (exists) {
+        if (exists && !ServerConstant.REDIS_SET.equals(jedis.type(key))) {
             return 2L;
         }
         jedis.sadd(key.getBytes(), SerializeUtils.serialize(value));
@@ -28,11 +33,11 @@ public class SetService {
         return 1L;
     }
 
-    public Long save(int db, String key, String value) {
+    public Long sAdd(int db, String key, String value) {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
         Boolean exists = jedis.exists(key);
-        if (exists) {
+        if (exists && !ServerConstant.REDIS_SET.equals(jedis.type(key))) {
             return 2L;
         }
         jedis.sadd(key, value);
@@ -49,6 +54,19 @@ public class SetService {
         Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
         Set<String> set = jedis.smembers(key);
+        jedis.close();
+        return set;
+    }
+
+    public Set<String> getSetSerialize(int db, String key) {
+        Jedis jedis = JedisFactory.getJedisPool().getResource();
+        jedis.select(db);
+        Set<String> set = null;
+        try {
+            set = jedis.smembers(key.getBytes(ServerConstant.CHARSET)).stream().map(bytes -> SerializeUtils.unSerialize(bytes).toString()).collect(Collectors.toSet());
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
         jedis.close();
         return set;
     }
