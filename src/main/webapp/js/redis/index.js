@@ -127,7 +127,7 @@ function setExpire(th) {
             alert("超过int最大范围!");
             return;
         }
-        if (seconds == '') {
+        if (seconds == '' || seconds < 0) {
             $.ajax({
                 url: ctx + server + "/persist",
                 data: {db: redisDb, key: key},

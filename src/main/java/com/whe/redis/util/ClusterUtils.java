@@ -5,6 +5,6 @@ package com.whe.redis.util;
  *
  * @author wang hongen
  */
-public interface RedisClusterUtils {
+public interface ClusterUtils {
 
 }

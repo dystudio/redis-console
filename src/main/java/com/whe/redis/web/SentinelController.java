@@ -1,7 +1,7 @@
 package com.whe.redis.web;
 
 import com.alibaba.fastjson.JSON;
-import com.whe.redis.service.StandAloneService;
+import com.whe.redis.service.SentinelService;
 import com.whe.redis.util.JedisFactory;
 import com.whe.redis.util.Page;
 import com.whe.redis.util.ServerConstant;
@@ -26,22 +26,19 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
- * Created by wang hongen on 2017/1/12.
- * Redis控制台
- *
- * @author wanghongen
+ * Created by wang hongen on 2017/3/9.
+ * SentinelController
  */
 @Controller
-@RequestMapping("/standalone")
-public class RedisController {
+@RequestMapping("/sentinel")
+public class SentinelController {
     private static final Logger log = LoggerFactory.getLogger(RedisController.class);
 
     @Resource
-    private StandAloneService standAloneService;
+    private SentinelService sentinelService;
 
 
     /**
@@ -54,11 +51,11 @@ public class RedisController {
     public String index(Model model, @RequestParam(defaultValue = "0") String cursor, String match, HttpServletRequest request, HttpServletResponse response) {
         try {
             String treeJson = treeJson(cursor, match, request, response);
-            Integer size = standAloneService.getDataBasesSize();
+            Integer size = sentinelService.getDataBasesSize();
             model.addAttribute("dataSize", size);
             model.addAttribute("tree", treeJson);
             model.addAttribute("match", match);
-            model.addAttribute("server", "/standalone");
+            model.addAttribute("server", "/sentinel");
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -72,32 +69,32 @@ public class RedisController {
             if ("1".equals(redis_serializable)) {
                 switch (redis_type) {
                     case ServerConstant.REDIS_STRING:
-                        return standAloneService.setNxSerialize(redis_data_size, redis_key, redis_value) == 1 ? "1" : "2";
-                    case ServerConstant.REDIS_HASH:
-                        return standAloneService.hSetNxSerialize(redis_data_size, redis_key, redis_field, redis_value) == 1 ? "1" : "2";
+                        return sentinelService.setNxSerialize(redis_data_size, redis_key, redis_value) == 1 ? "1" : "2";
                     case ServerConstant.REDIS_LIST:
-                        return standAloneService.lPushSerialize(redis_data_size, redis_key, redis_value) == 1 ? "1" : "2";
+                        return sentinelService.lPushSerialize(redis_data_size, redis_key, redis_value) == 1 ? "1" : "2";
                     case ServerConstant.REDIS_SET:
-                        return standAloneService.sAddSerialize(redis_data_size, redis_key, redis_value) == 1 ? "1" : "2";
+                        return sentinelService.sAddSerialize(redis_data_size, redis_key, redis_value) == 1 ? "1" : "2";
                     case ServerConstant.REDIS_ZSET:
-                        return standAloneService.zAddSerialize(redis_data_size, redis_key, redis_score, redis_value) == 1 ? "1" : "2";
+                        return sentinelService.zAddSerialize(redis_data_size, redis_key, redis_score, redis_value) == 1 ? "1" : "2";
+                    case ServerConstant.REDIS_HASH:
+                        return sentinelService.hSetNxSerialize(redis_data_size, redis_key, redis_field, redis_value) == 1 ? "1" : "2";
                 }
             } else {
                 switch (redis_type) {
                     case ServerConstant.REDIS_STRING:
-                        return standAloneService.setNx(redis_data_size, redis_key, redis_value) == 1 ? "1" : "2";
-                    case ServerConstant.REDIS_HASH:
-                        return standAloneService.hSetNx(redis_data_size, redis_key, redis_field, redis_value) == 1 ? "1" : "2";
+                        return sentinelService.setNx(redis_data_size, redis_key, redis_value) == 1 ? "1" : "2";
                     case ServerConstant.REDIS_LIST:
-                        return standAloneService.lPush(redis_data_size, redis_key, redis_value) == 1 ? "1" : "2";
+                        return sentinelService.lPush(redis_data_size, redis_key, redis_value) == 1 ? "1" : "2";
                     case ServerConstant.REDIS_SET:
-                        return standAloneService.sAdd(redis_data_size, redis_key, redis_value) == 1 ? "1" : "2";
+                        return sentinelService.sAdd(redis_data_size, redis_key, redis_value) == 1 ? "1" : "2";
                     case ServerConstant.REDIS_ZSET:
-                        return standAloneService.zAdd(redis_data_size, redis_key, redis_score, redis_value) == 1 ? "1" : "2";
+                        return sentinelService.zAdd(redis_data_size, redis_key, redis_score, redis_value) == 1 ? "1" : "2";
+                    case ServerConstant.REDIS_HASH:
+                        return sentinelService.hSetNx(redis_data_size, redis_key, redis_field, redis_value) == 1 ? "1" : "2";
                 }
             }
         } catch (Exception e) {
-            log.error("RedisController save error:" + e.getMessage(), e);
+            e.printStackTrace();
             return e.getMessage();
         }
         return "0";
@@ -111,18 +108,18 @@ public class RedisController {
     @RequestMapping(value = {"/getString"})
     @ResponseBody
     public String getString(Integer db, String key) {
-        return standAloneService.getString(db, key);
+        return sentinelService.getString(db, key);
     }
 
     @RequestMapping(value = {"/serialize/getString"})
     @ResponseBody
     public String getSerializeString(Integer db, String key) {
         try {
-            return standAloneService.getStringSerialize(db, key);
+            return sentinelService.getStringSerialize(db, key);
         } catch (UnsupportedEncodingException e) {
-            log.error("RedisController getSerializeString error:" + e.getMessage(), e);
+            log.error("SentinelController getSerializeString error:" + e.getMessage(), e);
         }
-        return null;
+        return "";
     }
 
     /**
@@ -133,7 +130,7 @@ public class RedisController {
     @RequestMapping(value = {"/getList"})
     @ResponseBody
     public Page<List<String>> getList(int db, String key, int pageNo, HttpServletRequest request) {
-        Page<List<String>> page = standAloneService.findListPageByKey(db, key, pageNo);
+        Page<List<String>> page = sentinelService.findListPageByKey(db, key, pageNo);
         page.pageViewAjax(request.getContextPath() + "/getList", "");
         return page;
     }
@@ -143,10 +140,10 @@ public class RedisController {
     public Page<List<String>> getSerializeList(int db, String key, int pageNo, HttpServletRequest request) {
         Page<List<String>> page = null;
         try {
-            page = standAloneService.findListPageByKeySerialize(db, key, pageNo);
+            page = sentinelService.findListPageByKeySerialize(db, key, pageNo);
             page.pageViewAjax(request.getContextPath() + "/serialize/getList", "");
         } catch (UnsupportedEncodingException e) {
-            log.error("RedisController getSerializeList error:" + e.getMessage(), e);
+            log.error("SentinelController getSerializeList error:" + e.getMessage(), e);
         }
         return page;
     }
@@ -159,13 +156,13 @@ public class RedisController {
     @RequestMapping(value = {"/getSet"})
     @ResponseBody
     public Set<String> getSet(int db, String key) {
-        return standAloneService.getSet(db, key);
+        return sentinelService.getSet(db, key);
     }
 
     @RequestMapping(value = {"/serialize/getSet"})
     @ResponseBody
     public Set<String> getSerializeSet(int db, String key) {
-        return standAloneService.getSetSerialize(db, key);
+        return sentinelService.getSetSerialize(db, key);
     }
 
     /**
@@ -176,7 +173,7 @@ public class RedisController {
     @RequestMapping(value = {"/getZSet"})
     @ResponseBody
     public Page<Set<Tuple>> getZSet(int db, int pageNo, String key) {
-        Page<Set<Tuple>> page = standAloneService.findZSetPageByKey(db, pageNo, key);
+        Page<Set<Tuple>> page = sentinelService.findZSetPageByKey(db, pageNo, key);
         page.pageViewAjax("/getZSet", "");
         return page;
     }
@@ -186,10 +183,10 @@ public class RedisController {
     public Page<Set<Tuple>> getSerializeZSet(int db, String key, int pageNo, HttpServletRequest request) {
         Page<Set<Tuple>> page = null;
         try {
-            page = standAloneService.findZSetPageByKeySerialize(db, key, pageNo);
+            page = sentinelService.findZSetPageByKeySerialize(db, key, pageNo);
             page.pageViewAjax(request.getContextPath() + "/serialize/getList", "");
         } catch (UnsupportedEncodingException e) {
-            log.error("RedisController getSerializeZSet error:" + e.getMessage(), e);
+            log.error("SentinelController getSerializeZSet error:" + e.getMessage(), e);
         }
         return page;
     }
@@ -197,16 +194,16 @@ public class RedisController {
     @RequestMapping(value = {"/hGetAll"})
     @ResponseBody
     public Map<String, String> hGetAll(int db, String key) {
-        return standAloneService.hGetAll(db, key);
+        return sentinelService.hGetAll(db, key);
     }
 
     @RequestMapping(value = {"/serialize/hGetAll"})
     @ResponseBody
     public Map<String, String> hGetAllSerialize(int db, String key) {
         try {
-            return standAloneService.hGetAllSerialize(db, key);
+            return sentinelService.hGetAllSerialize(db, key);
         } catch (UnsupportedEncodingException e) {
-            log.error("RedisController hGetAllSerialize error:" + e.getMessage(), e);
+            log.error("SentinelController hGetAllSerialize error:" + e.getMessage(), e);
         }
         return null;
     }
@@ -223,9 +220,9 @@ public class RedisController {
     @ResponseBody
     public String renameNx(int db, String oldKey, String newKey) {
         try {
-            return standAloneService.renameNx(db, oldKey, newKey) == 0 ? "2" : "1";
+            return sentinelService.renameNx(db, oldKey, newKey) == 0 ? "2" : "1";
         } catch (Exception e) {
-            log.error("RedisController renameNx error:" + e.getMessage(), e);
+            log.error("SentinelController renameNx error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -241,9 +238,9 @@ public class RedisController {
     @ResponseBody
     public long ttl(int db, String key) {
         try {
-            return standAloneService.ttl(db, key);
+            return sentinelService.ttl(db, key);
         } catch (Exception e) {
-            log.error("RedisController ttl error:" + e.getMessage(), e);
+            log.error("SentinelController ttl error:" + e.getMessage(), e);
             return -1;
         }
     }
@@ -260,11 +257,10 @@ public class RedisController {
     @ResponseBody
     public String setExpire(int db, String key, int seconds) {
         try {
-
-            standAloneService.setExpire(db, key, seconds);
+            sentinelService.setExpire(db, key, seconds);
             return "1";
         } catch (Exception e) {
-            log.error("RedisController setExpire error:" + e.getMessage(), e);
+            log.error("SentinelController setExpire error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -280,10 +276,10 @@ public class RedisController {
     @ResponseBody
     public String persist(int db, String key) {
         try {
-            standAloneService.persist(db, key);
+            sentinelService.persist(db, key);
             return "1";
         } catch (Exception e) {
-            log.error("RedisController persist error:" + e.getMessage(), e);
+            log.error("SentinelController persist error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -299,10 +295,10 @@ public class RedisController {
     @ResponseBody
     public String delKey(int db, String key) {
         try {
-            standAloneService.delKey(db, key);
+            sentinelService.delKey(db, key);
             return "1";
         } catch (Exception e) {
-            log.error("RedisController delKey error:" + e.getMessage(), e);
+            log.error("SentinelController delKey error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -319,10 +315,10 @@ public class RedisController {
     @ResponseBody
     public String updateString(int db, String key, String val) {
         try {
-            standAloneService.set(db, key, val);
+            sentinelService.set(db, key, val);
             return "1";
         } catch (Exception e) {
-            log.error("RedisController updateString error:" + e.getMessage(), e);
+            log.error("SentinelController updateString error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -340,10 +336,10 @@ public class RedisController {
     @ResponseBody
     public String updateList(int db, int index, String key, String val) {
         try {
-            standAloneService.lSet(db, index, key, val);
+            sentinelService.lSet(db, index, key, val);
             return "1";
         } catch (Exception e) {
-            log.error("RedisController updateList error:" + e.getMessage(), e);
+            log.error("SentinelController updateList error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -361,14 +357,14 @@ public class RedisController {
     @ResponseBody
     public String delList(int db, int listSize, int index, String key) {
         try {
-            long lLen = standAloneService.lLen(db, key);
+            long lLen = sentinelService.lLen(db, key);
             if (listSize != lLen) {
                 return "2";
             }
-            standAloneService.lRem(db, index, key);
+            sentinelService.lRem(db, index, key);
             return "1";
         } catch (Exception e) {
-            log.error("RedisController delList error:" + e.getMessage(), e);
+            log.error("SentinelController delList error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -378,10 +374,10 @@ public class RedisController {
     @ResponseBody
     public String updateSet(int db, String key, String oldVal, String newVal) {
         try {
-            standAloneService.updateSet(db, key, oldVal, newVal);
+            sentinelService.updateSet(db, key, oldVal, newVal);
             return "1";
         } catch (Exception e) {
-            log.error("RedisController updateSet error:" + e.getMessage(), e);
+            log.error("SentinelController updateSet error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -390,10 +386,10 @@ public class RedisController {
     @ResponseBody
     public String delSet(int db, String key, String val) {
         try {
-            standAloneService.delSet(db, key, val);
+            sentinelService.delSet(db, key, val);
             return "1";
         } catch (Exception e) {
-            log.error("RedisController delSet error:" + e.getMessage(), e);
+            e.printStackTrace();
             return e.getMessage();
         }
     }
@@ -402,10 +398,10 @@ public class RedisController {
     @ResponseBody
     public String updateZSet(int db, String key, String oldVal, String newVal, double score) {
         try {
-            standAloneService.updateZSet(db, key, oldVal, newVal, score);
+            sentinelService.updateZSet(db, key, oldVal, newVal, score);
             return "1";
         } catch (Exception e) {
-            log.error("RedisController updateZSet error:" + e.getMessage(), e);
+            e.printStackTrace();
             return e.getMessage();
         }
     }
@@ -414,10 +410,10 @@ public class RedisController {
     @ResponseBody
     public String delZSet(int db, String key, String val) {
         try {
-            standAloneService.delZSet(db, key, val);
+            sentinelService.delZSet(db, key, val);
             return "1";
         } catch (Exception e) {
-            log.error("RedisController delZSet error:" + e.getMessage(), e);
+            e.printStackTrace();
             return e.getMessage();
         }
     }
@@ -426,10 +422,10 @@ public class RedisController {
     @ResponseBody
     public String hSet(int db, String key, String field, String val) {
         try {
-            standAloneService.hSet(db, key, field, val);
+            sentinelService.hSet(db, key, field, val);
             return "1";
         } catch (Exception e) {
-            log.error("RedisController hSet error:" + e.getMessage(), e);
+            e.printStackTrace();
             return e.getMessage();
         }
     }
@@ -438,9 +434,9 @@ public class RedisController {
     @ResponseBody
     public String updateHash(int db, String key, String oldField, String newField, String val) {
         try {
-            return standAloneService.updateHash(db, key, oldField, newField, val) ? "1" : "2";
+            return sentinelService.updateHash(db, key, oldField, newField, val) ? "1" : "2";
         } catch (Exception e) {
-            log.error("RedisController updateHash error:" + e.getMessage(), e);
+            e.printStackTrace();
             return e.getMessage();
         }
     }
@@ -449,10 +445,10 @@ public class RedisController {
     @ResponseBody
     public String delHash(int db, String key, String field) {
         try {
-            standAloneService.delHash(db, key, field);
+            sentinelService.delHash(db, key, field);
             return "1";
         } catch (Exception e) {
-            log.error("RedisController delHash error:" + e.getMessage(), e);
+            e.printStackTrace();
             return e.getMessage();
         }
     }
@@ -465,9 +461,8 @@ public class RedisController {
      */
     @RequestMapping("/backup")
     public void backup(HttpServletResponse response) throws IOException {
-        String str = standAloneService.backup();
+        String str = sentinelService.backup();
         LocalDate data = LocalDate.now();
-        log.info("RedisController backup info:" + data);
         response.setContentType("text/plain; charset=utf-8");//设置MIME类型
         response.setHeader("Content-Disposition", "attachment; filename=" + data + "standalone.redis");
         response.getWriter().write(str);
@@ -495,24 +490,24 @@ public class RedisController {
                         db = Integer.parseInt(entry.getKey());
                         nowMap = entry.getValue();
                     } catch (Exception e) {
-                        isCluster = true;
                         nowMap = map;
+                        isCluster = true;
                         db = 0;
                     }
                     if (nowMap.containsKey(ServerConstant.REDIS_STRING)) {
-                        standAloneService.saveAllString(db, (Map<String, String>) nowMap.get(ServerConstant.REDIS_STRING));
-                    }
-                    if (nowMap.containsKey(ServerConstant.REDIS_HASH)) {
-                        standAloneService.saveAllHash(db, (Map) nowMap.get(ServerConstant.REDIS_HASH));
+                        sentinelService.saveAllString(db, (Map<String, String>) nowMap.get(ServerConstant.REDIS_STRING));
                     }
                     if (nowMap.containsKey(ServerConstant.REDIS_LIST)) {
-                        standAloneService.saveAllList(db, (Map) nowMap.get(ServerConstant.REDIS_LIST));
+                        sentinelService.saveAllList(db, (Map) nowMap.get(ServerConstant.REDIS_LIST));
                     }
                     if (nowMap.containsKey(ServerConstant.REDIS_SET)) {
-                        standAloneService.saveAllSet(db, (Map) nowMap.get(ServerConstant.REDIS_SET));
+                        sentinelService.saveAllSet(db, (Map) nowMap.get(ServerConstant.REDIS_SET));
                     }
                     if (nowMap.containsKey(ServerConstant.REDIS_ZSET)) {
-                        standAloneService.saveAllZSet(db, (Map) nowMap.get(ServerConstant.REDIS_ZSET));
+                        sentinelService.saveAllZSet(db, (Map) nowMap.get(ServerConstant.REDIS_ZSET));
+                    }
+                    if (nowMap.containsKey(ServerConstant.REDIS_HASH)) {
+                        sentinelService.saveAllHash(db, (Map) nowMap.get(ServerConstant.REDIS_HASH));
                     }
                     if (isCluster) {
                         break;
@@ -521,7 +516,7 @@ public class RedisController {
             }
 
         } catch (Exception e) {
-            log.error("RedisController recover error:" + e.getMessage(), e);
+            e.printStackTrace();
             return e.getMessage();
         }
         return "1";
@@ -548,24 +543,24 @@ public class RedisController {
                         db = Integer.parseInt(entry.getKey());
                         nowMap = entry.getValue();
                     } catch (Exception e) {
-                        db = 0;
                         isCluster = true;
+                        db = 0;
                         nowMap = map;
                     }
                     if (nowMap.containsKey(ServerConstant.REDIS_STRING)) {
-                        standAloneService.saveAllStringSerialize(db, (Map<String, String>) nowMap.get(ServerConstant.REDIS_STRING));
+                        sentinelService.saveAllStringSerialize(db, (Map<String, String>) nowMap.get(ServerConstant.REDIS_STRING));
                     }
                     if (nowMap.containsKey(ServerConstant.REDIS_LIST)) {
-                        standAloneService.saveAllListSerialize(db, (Map) nowMap.get(ServerConstant.REDIS_LIST));
+                        sentinelService.saveAllListSerialize(db, (Map) nowMap.get(ServerConstant.REDIS_LIST));
                     }
                     if (nowMap.containsKey(ServerConstant.REDIS_SET)) {
-                        standAloneService.saveAllSetSerialize(db, (Map) nowMap.get(ServerConstant.REDIS_SET));
+                        sentinelService.saveAllSetSerialize(db, (Map) nowMap.get(ServerConstant.REDIS_SET));
                     }
                     if (nowMap.containsKey(ServerConstant.REDIS_ZSET)) {
-                        standAloneService.saveAllZSetSerialize(db, (Map) nowMap.get(ServerConstant.REDIS_ZSET));
+                        sentinelService.saveAllZSetSerialize(db, (Map) nowMap.get(ServerConstant.REDIS_ZSET));
                     }
                     if (nowMap.containsKey(ServerConstant.REDIS_HASH)) {
-                        standAloneService.saveAllHashSerialize(db, (Map) nowMap.get(ServerConstant.REDIS_HASH));
+                        sentinelService.saveAllHashSerialize(db, (Map) nowMap.get(ServerConstant.REDIS_HASH));
                     }
                     if (isCluster) {
                         break;
@@ -573,7 +568,7 @@ public class RedisController {
                 }
             }
         } catch (Exception e) {
-            log.error("RedisController serializeRecover error:" + e.getMessage(), e);
+            e.printStackTrace();
             return e.getMessage();
         }
         return "1";
@@ -588,10 +583,10 @@ public class RedisController {
     @ResponseBody
     public String flushAll() {
         try {
-            standAloneService.flushAll();
+            sentinelService.flushAll();
             return "1";
         } catch (Exception e) {
-            log.error("RedisController flushAll error:" + e.getMessage(), e);
+            e.printStackTrace();
             return e.getMessage();
         }
     }
@@ -611,16 +606,21 @@ public class RedisController {
         if (cookies != null && cookies.length > 0) {
             Optional<Cookie> cookie = Stream.of(cookies).filter(c -> c.getName().equals(ServerConstant.REDIS_CURSOR)).findAny();
             cookie.ifPresent(c -> {
+                String value = null;
                 try {
-                    String value = URLDecoder.decode(c.getValue(), ServerConstant.CHARSET);
-                    Map map = JSON.parseObject(value, Map.class);
-                    List<String> list = (List<String>) map.get(db);
-                    list.add(cursor);
-                    c.setValue(URLEncoder.encode(JSON.toJSONString(map), ServerConstant.CHARSET));
-                    response.addCookie(c);
+                    value = URLDecoder.decode(c.getValue(), ServerConstant.CHARSET);
                 } catch (UnsupportedEncodingException e) {
-                    log.error("RedisController nextPage error:" + e.getMessage(), e);
+                    e.printStackTrace();
                 }
+                Map map = JSON.parseObject(value, Map.class);
+                List<String> list = (List<String>) map.get(db);
+                list.add(cursor);
+                try {
+                    c.setValue(URLEncoder.encode(JSON.toJSONString(map), ServerConstant.CHARSET));
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
+                response.addCookie(c);
             });
         }
         String upCursor = getUpCursorByCookie(cookies, db, cursor);
@@ -640,18 +640,17 @@ public class RedisController {
             }
             Map map = JSON.parseObject(value, Map.class);
             List<String> list = (List<String>) map.get(db);
-            int size = list.size();
-            return IntStream
-                    .range(0, size)
-                    .filter(i -> list.get(i).equals(cursor))
-                    .boxed()
-                    .map(i -> list.get(i - 1))
-                    .findAny().orElse(ServerConstant.DEFAULT_CURSOR);
+            for (int i = 0; i < list.size(); i++) {
+                if (list.get(i).equals(cursor)) {
+                    return list.get(i - 1);
+                }
+            }
+            return ServerConstant.DEFAULT_CURSOR;
         }).orElse(ServerConstant.DEFAULT_CURSOR);
     }
 
     private String treeJson(String cursor, String match, HttpServletRequest request, HttpServletResponse response) {
-        Map<Integer, Long> dataBases = standAloneService.getDataBases();
+        Map<Integer, Long> dataBases = sentinelService.getDataBases();
         StringBuilder sb = new StringBuilder();
         sb.append("[{");
         sb.append("text:").append("'").append(JedisFactory.getStandAlone()).append("',");
@@ -659,24 +658,22 @@ public class RedisController {
         sb.append("nodes:").append("[");
         Map<Integer, List<String>> map = new HashMap<>();
         dataBases.entrySet().forEach(entry -> {
-            sb.append("{text:").append("'").append(ServerConstant.DB).append(entry.getKey()).append("',")
-                    .append("icon:").append(request.getContextPath()).append("'/img/db.png',")
-                    .append("tags:").append("['").append(entry.getValue()).append("']");
+            sb.append("{text:").append("'").append(ServerConstant.DB).append(entry.getKey()).append("',").append("icon:").append(request.getContextPath()).append("'/img/db.png',").append("tags:").append("['").append(entry.getValue()).append("']");
             Long dbSize = entry.getValue();
             if (dbSize > 0) {
-                ScanResult<String> scanResult = standAloneService.getKeysByDb(entry.getKey(), cursor, match);
-                sb.append(",").append("expanded:").append(true).append(",").append("nodes:").append("[");
-                Map<String, String> typeMap = standAloneService.getType(entry.getKey(), scanResult.getResult());
+                ScanResult<String> scanResult = sentinelService.getKeysByDb(entry.getKey(), cursor, match);
+                sb.append(",").append("expanded:").append(true).append(",");
+                sb.append("nodes:").append("[");
+                Map<String, String> typeMap = sentinelService.getType(entry.getKey(), scanResult.getResult());
                 typeMap.forEach((key, type) -> sb.append("{text:").append("'").append(key).append("',icon:'").append(request.getContextPath()).append("/img/").append(type).append(".png").append("',type:'").append(type).append("'},"));
                 if (dbSize > ServerConstant.PAGE_NUM) {
                     List<String> list = new ArrayList<>();
                     list.add("0");
                     map.put(entry.getKey(), list);
                     String stringCursor = scanResult.getStringCursor();
-                    sb.append("{page:").append("'<ul class=\"pagination\" style=\"margin:0px\"> <li class=\"disabled\" ><a  href=\"javascript:void(0);\" onclick=\"upPage(")
-                            .append(entry.getKey()).append(",").append(ServerConstant.DEFAULT_CURSOR).append(",event)").append(" \">上一页</a></li><li ");
+                    sb.append("{page:").append("'<ul class=\"pagination\" style=\"margin:0px\"> <li class=\"disabled\" ><a  href=\"javascript:void(0);\" onclick=\"upPage(").append(entry.getKey()).append(",").append(ServerConstant.DEFAULT_CURSOR).append(",event)").append(" \">上一页</a></li><li ");
                     if ("0".equals(stringCursor)) {
-                        sb.append(" class=\"disabled\" ");
+                        sb.append(" class=\"disabled\"");
                     }
                     sb.append("> <a  href=\"javascript:void(0);\" onclick=\"nextPage(").append(entry.getKey()).append(",").append(stringCursor).append(",event)").append(" \">下一页</a></li></ul>'}");
                 }
@@ -690,7 +687,6 @@ public class RedisController {
         try {
             encode = URLEncoder.encode(jsonString, ServerConstant.CHARSET);
         } catch (UnsupportedEncodingException e) {
-            log.error("RedisController treeJson error:" + e.getMessage(), e);
             e.printStackTrace();
         }
         Cookie cookie = new Cookie(ServerConstant.REDIS_CURSOR, encode);
@@ -702,14 +698,14 @@ public class RedisController {
 
     private String dbJson(Integer db, String cursor, String upCursor, String match, HttpServletRequest request) {
         StringBuilder sb = new StringBuilder();
-        ScanResult<String> scanResult = standAloneService.getKeysByDb(db, cursor, match);
+        ScanResult<String> scanResult = sentinelService.getKeysByDb(db, cursor, match);
         sb.append("[");
-        Map<String, String> typeMap = standAloneService.getType(db, scanResult.getResult());
+        Map<String, String> typeMap = sentinelService.getType(db, scanResult.getResult());
         typeMap.forEach((key, type) -> sb.append("{text:").append("'").append(key).append("',icon:'").append(request.getContextPath()).append("/img/").append(type).append(".png").append("',type:'").append(type).append("'},"));
         String stringCursor = scanResult.getStringCursor();
         sb.append("{page:").append("'<ul class=\"pagination\" style=\"margin:0px\"> <li ");
         if (cursor == null || "0".equals(cursor)) {
-            sb.append(" class=\"disabled\" ");
+            sb.append(" class=\"disabled\"");
         }
         sb.append("><a  href=\"javascript:void(0);\" onclick=\"upPage(").append(db).append(",").append(upCursor).append(",event)").append(" \">上一页</a></li><li ");
         if ("0".equals(stringCursor)) {

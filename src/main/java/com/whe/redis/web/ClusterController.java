@@ -1,11 +1,10 @@
 package com.whe.redis.web;
 
 import com.alibaba.fastjson.JSON;
-import com.whe.redis.service.RedisClusterService;
+import com.whe.redis.service.ClusterService;
 import com.whe.redis.util.Page;
 import com.whe.redis.util.ServerConstant;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 import redis.clients.jedis.ScanResult;
 import redis.clients.jedis.Tuple;
 
+import javax.annotation.Resource;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -32,9 +32,9 @@ import java.util.stream.Stream;
  */
 @Controller
 @RequestMapping("/cluster")
-public class RedisClusterController {
-    @Autowired
-    private RedisClusterService redisClusterService;
+public class ClusterController {
+    @Resource
+    private ClusterService clusterService;
 
     private String contextPath = null;
 
@@ -83,28 +83,28 @@ public class RedisClusterController {
             if ("1".equals(redis_serializable)) {
                 switch (redis_type) {
                     case ServerConstant.REDIS_STRING:
-                        return redisClusterService.setNxSerialize(redis_key, redis_value) == 1 ? "1" : "2";
+                        return clusterService.setNxSerialize(redis_key, redis_value) == 1 ? "1" : "2";
                     case ServerConstant.REDIS_LIST:
-                        return redisClusterService.lPushSerialize(redis_key, redis_value) == 1 ? "1" : "2";
+                        return clusterService.lPushSerialize(redis_key, redis_value) == 1 ? "1" : "2";
                     case ServerConstant.REDIS_SET:
-                        return redisClusterService.sAddSerialize(redis_key, redis_value) == 1 ? "1" : "2";
+                        return clusterService.sAddSerialize(redis_key, redis_value) == 1 ? "1" : "2";
                     case ServerConstant.REDIS_ZSET:
-                        return redisClusterService.zAddSerialize(redis_key, redis_score, redis_value) == 1 ? "1" : "2";
+                        return clusterService.zAddSerialize(redis_key, redis_score, redis_value) == 1 ? "1" : "2";
                     case ServerConstant.REDIS_HASH:
-                        return redisClusterService.hSetNxSerialize(redis_key, redis_field, redis_value) == 1 ? "1" : "2";
+                        return clusterService.hSetNxSerialize(redis_key, redis_field, redis_value) == 1 ? "1" : "2";
                 }
             } else {
                 switch (redis_type) {
                     case ServerConstant.REDIS_STRING:
-                        return redisClusterService.setNx(redis_key, redis_value) == 1 ? "1" : "2";
+                        return clusterService.setNx(redis_key, redis_value) == 1 ? "1" : "2";
                     case ServerConstant.REDIS_LIST:
-                        return redisClusterService.lPush(redis_key, redis_value) == 1 ? "1" : "2";
+                        return clusterService.lPush(redis_key, redis_value) == 1 ? "1" : "2";
                     case ServerConstant.REDIS_SET:
-                        return redisClusterService.sAdd(redis_key, redis_value) == 1 ? "1" : "2";
+                        return clusterService.sAdd(redis_key, redis_value) == 1 ? "1" : "2";
                     case ServerConstant.REDIS_ZSET:
-                        return redisClusterService.zAdd(redis_key, redis_score, redis_value) == 1 ? "1" : "2";
+                        return clusterService.zAdd(redis_key, redis_score, redis_value) == 1 ? "1" : "2";
                     case ServerConstant.REDIS_HASH:
-                        return redisClusterService.hSetNx(redis_key, redis_field, redis_value) == 1 ? "1" : "2";
+                        return clusterService.hSetNx(redis_key, redis_field, redis_value) == 1 ? "1" : "2";
                 }
             }
         } catch (Exception e) {
@@ -138,19 +138,19 @@ public class RedisClusterController {
                         nowMap = map;
                     }
                     if (map.containsKey(ServerConstant.REDIS_STRING)) {
-                        redisClusterService.saveAllStringSerialize((Map) nowMap.get(ServerConstant.REDIS_STRING));
+                        clusterService.saveAllStringSerialize((Map) nowMap.get(ServerConstant.REDIS_STRING));
                     }
                     if (map.containsKey(ServerConstant.REDIS_LIST)) {
-                        redisClusterService.saveAllListSerialize((Map) nowMap.get(ServerConstant.REDIS_LIST));
+                        clusterService.saveAllListSerialize((Map) nowMap.get(ServerConstant.REDIS_LIST));
                     }
                     if (map.containsKey(ServerConstant.REDIS_SET)) {
-                        redisClusterService.saveAllSetSerialize((Map) nowMap.get(ServerConstant.REDIS_SET));
+                        clusterService.saveAllSetSerialize((Map) nowMap.get(ServerConstant.REDIS_SET));
                     }
                     if (map.containsKey(ServerConstant.REDIS_ZSET)) {
-                        redisClusterService.saveAllZSetSerialize((Map) nowMap.get(ServerConstant.REDIS_ZSET));
+                        clusterService.saveAllZSetSerialize((Map) nowMap.get(ServerConstant.REDIS_ZSET));
                     }
                     if (map.containsKey(ServerConstant.REDIS_HASH)) {
-                        redisClusterService.saveAllHashSerialize((Map) nowMap.get(ServerConstant.REDIS_HASH));
+                        clusterService.saveAllHashSerialize((Map) nowMap.get(ServerConstant.REDIS_HASH));
                     }
                     if (isCluster) {
                         break;
@@ -189,19 +189,19 @@ public class RedisClusterController {
                         nowMap = map;
                     }
                     if (nowMap.containsKey(ServerConstant.REDIS_STRING)) {
-                        redisClusterService.saveAllString((Map<String, String>) nowMap.get(ServerConstant.REDIS_STRING));
+                        clusterService.saveAllString((Map<String, String>) nowMap.get(ServerConstant.REDIS_STRING));
                     }
                     if (nowMap.containsKey(ServerConstant.REDIS_LIST)) {
-                        redisClusterService.saveAllList((Map) nowMap.get(ServerConstant.REDIS_LIST));
+                        clusterService.saveAllList((Map) nowMap.get(ServerConstant.REDIS_LIST));
                     }
                     if (nowMap.containsKey(ServerConstant.REDIS_SET)) {
-                        redisClusterService.saveAllSet((Map) nowMap.get(ServerConstant.REDIS_SET));
+                        clusterService.saveAllSet((Map) nowMap.get(ServerConstant.REDIS_SET));
                     }
                     if (nowMap.containsKey(ServerConstant.REDIS_ZSET)) {
-                        redisClusterService.saveAllZSet((Map) nowMap.get(ServerConstant.REDIS_ZSET));
+                        clusterService.saveAllZSet((Map) nowMap.get(ServerConstant.REDIS_ZSET));
                     }
                     if (nowMap.containsKey(ServerConstant.REDIS_HASH)) {
-                        redisClusterService.saveAllHash((Map) nowMap.get(ServerConstant.REDIS_HASH));
+                        clusterService.saveAllHash((Map) nowMap.get(ServerConstant.REDIS_HASH));
                     }
                     if (isCluster) {
                         break;
@@ -218,23 +218,22 @@ public class RedisClusterController {
     /**
      * 备份数据
      *
-     * @param request  request
      * @param response response
      * @throws IOException IOException
      */
     @RequestMapping("/backup")
-    public void backup(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    public void backup(HttpServletResponse response) throws IOException {
         LocalDate date = LocalDate.now();
-        response.setContentType(request.getServletContext().getMimeType(date + "cluster.redis"));//设置MIME类型
+        response.setContentType("text/plain; charset=utf-8");//设置MIME类型
         response.setHeader("Content-Disposition", "attachment; filename=" + date + "cluster.redis");
-        response.getWriter().write(redisClusterService.getAll());
+        response.getWriter().write(clusterService.getAll());
     }
 
     @RequestMapping(value = {"/hSet"})
     @ResponseBody
     public String hSet(String key, String field, String val) {
         try {
-            redisClusterService.hSet(key, field, val);
+            clusterService.hSet(key, field, val);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
@@ -246,7 +245,7 @@ public class RedisClusterController {
     @ResponseBody
     public String updateHash(String key, String oldField, String newField, String val) {
         try {
-            return redisClusterService.updateHash(key, oldField, newField, val) ? "1" : "2";
+            return clusterService.updateHash(key, oldField, newField, val) ? "1" : "2";
         } catch (Exception e) {
             e.printStackTrace();
             return e.getMessage();
@@ -257,7 +256,7 @@ public class RedisClusterController {
     @ResponseBody
     public String delHash(String key, String field) {
         try {
-            redisClusterService.delHash(key, field);
+            clusterService.delHash(key, field);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
@@ -269,7 +268,7 @@ public class RedisClusterController {
     @ResponseBody
     public Map<String, String> hGetAllSerialize(String key) {
         try {
-            return redisClusterService.hGetAll(key.getBytes(ServerConstant.CHARSET));
+            return clusterService.hGetAll(key.getBytes(ServerConstant.CHARSET));
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -279,14 +278,14 @@ public class RedisClusterController {
     @RequestMapping(value = {"/hGetAll"})
     @ResponseBody
     public Map<String, String> hGetAll(String key) {
-        return redisClusterService.hGetAll(key);
+        return clusterService.hGetAll(key);
     }
 
     @RequestMapping(value = {"/updateZSet"})
     @ResponseBody
     public String updateZSet(String key, String oldVal, String newVal, double score) {
         try {
-            redisClusterService.updateZSet(key, oldVal, newVal, score);
+            clusterService.updateZSet(key, oldVal, newVal, score);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
@@ -298,7 +297,7 @@ public class RedisClusterController {
     @ResponseBody
     public String delZSet(String key, String val) {
         try {
-            redisClusterService.delZSet(key, val);
+            clusterService.delZSet(key, val);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
@@ -311,7 +310,7 @@ public class RedisClusterController {
     public Page<Set<Tuple>> getSerializeZSet(String key, int pageNo, HttpServletRequest request) {
         Page<Set<Tuple>> page = null;
         try {
-            page = redisClusterService.findZSetPageByKey(key.getBytes(ServerConstant.CHARSET), pageNo);
+            page = clusterService.findZSetPageByKey(key.getBytes(ServerConstant.CHARSET), pageNo);
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -328,7 +327,7 @@ public class RedisClusterController {
     @RequestMapping(value = {"/getZSet"})
     @ResponseBody
     public Page<Set<Tuple>> getZSet(int pageNo, String key) {
-        Page<Set<Tuple>> page = redisClusterService.findZSetPageByKey(pageNo, key);
+        Page<Set<Tuple>> page = clusterService.findZSetPageByKey(pageNo, key);
         page.pageViewAjax("/getZSet", "");
         return page;
     }
@@ -337,7 +336,7 @@ public class RedisClusterController {
     @ResponseBody
     public String delSet(String key, String val) {
         try {
-            redisClusterService.delSet(key, val);
+            clusterService.delSet(key, val);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
@@ -349,7 +348,7 @@ public class RedisClusterController {
     @ResponseBody
     public String updateSet(String key, String oldVal, String newVal) {
         try {
-            redisClusterService.updateSet(key, oldVal, newVal);
+            clusterService.updateSet(key, oldVal, newVal);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
@@ -361,7 +360,7 @@ public class RedisClusterController {
     @ResponseBody
     public Set<String> getSerializeSet(String key) {
         try {
-            return redisClusterService.getSet(key.getBytes(ServerConstant.CHARSET));
+            return clusterService.getSet(key.getBytes(ServerConstant.CHARSET));
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -376,7 +375,7 @@ public class RedisClusterController {
     @RequestMapping(value = {"/getSet"})
     @ResponseBody
     public Set<String> getSet(String key) {
-        return redisClusterService.getSet(key);
+        return clusterService.getSet(key);
     }
 
     /**
@@ -391,11 +390,11 @@ public class RedisClusterController {
     @ResponseBody
     public String delList(int listSize, int index, String key) {
         try {
-            long lLen = redisClusterService.lLen(key);
+            long lLen = clusterService.lLen(key);
             if (listSize != lLen) {
                 return "2";
             }
-            redisClusterService.lRem(index, key);
+            clusterService.lRem(index, key);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
@@ -415,7 +414,7 @@ public class RedisClusterController {
     @ResponseBody
     public String updateList(int index, String key, String val) {
         try {
-            redisClusterService.lSet(index, key, val);
+            clusterService.lSet(index, key, val);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
@@ -428,7 +427,7 @@ public class RedisClusterController {
     public Page<List<String>> getSerializeList(String key, int pageNo, HttpServletRequest request) {
         Page<List<String>> page = null;
         try {
-            page = redisClusterService.findListPageByKey(key.getBytes(ServerConstant.CHARSET), pageNo);
+            page = clusterService.findListPageByKey(key.getBytes(ServerConstant.CHARSET), pageNo);
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -445,7 +444,7 @@ public class RedisClusterController {
     @RequestMapping(value = {"/getList"})
     @ResponseBody
     public Page<List<String>> getList(String key, int pageNo, HttpServletRequest request) {
-        Page<List<String>> page = redisClusterService.findListPageByKey(key, pageNo);
+        Page<List<String>> page = clusterService.findListPageByKey(key, pageNo);
         page.pageViewAjax(contextPath + "/getList", "");
         return page;
     }
@@ -455,7 +454,7 @@ public class RedisClusterController {
     @ResponseBody
     public String updateString(String key, String val) {
         try {
-            redisClusterService.set(key, val);
+            clusterService.set(key, val);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
@@ -467,7 +466,7 @@ public class RedisClusterController {
     @ResponseBody
     public String getSerializeString(String key) {
         try {
-            return redisClusterService.get(key.getBytes(ServerConstant.CHARSET));
+            return clusterService.get(key.getBytes(ServerConstant.CHARSET));
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();
         }
@@ -477,14 +476,14 @@ public class RedisClusterController {
     @RequestMapping("/getString")
     @ResponseBody
     public String getString(String key) {
-        return redisClusterService.get(key);
+        return clusterService.get(key);
     }
 
     @RequestMapping("/delKey")
     @ResponseBody
     public String delKey(String key) {
         try {
-            return redisClusterService.del(key) == 1 ? "1" : "0";
+            return clusterService.del(key) == 1 ? "1" : "0";
         } catch (Exception e) {
             e.printStackTrace();
             return e.getMessage();
@@ -495,7 +494,7 @@ public class RedisClusterController {
     @ResponseBody
     public String renameNx(String oldKey, String newKey) {
         try {
-            return redisClusterService.renameNx(oldKey, newKey) == 0 ? "2" : "1";
+            return clusterService.renameNx(oldKey, newKey) == 0 ? "2" : "1";
         } catch (Exception e) {
             e.printStackTrace();
             return e.getMessage();
@@ -505,14 +504,14 @@ public class RedisClusterController {
     @RequestMapping("/ttl")
     @ResponseBody
     public long ttl(String key) {
-        return redisClusterService.ttl(key);
+        return clusterService.ttl(key);
     }
 
     @RequestMapping("/setExpire")
     @ResponseBody
     public String setExpire(String key, int seconds) {
         try {
-            redisClusterService.expire(key, seconds);
+            clusterService.expire(key, seconds);
             return "1";
         } catch (Exception e) {
             e.getMessage();
@@ -524,7 +523,7 @@ public class RedisClusterController {
     @ResponseBody
     public String persist(String key) {
         try {
-            redisClusterService.persist(key);
+            clusterService.persist(key);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
@@ -554,7 +553,7 @@ public class RedisClusterController {
     @ResponseBody
     public String flushAll() {
         try {
-            redisClusterService.flushAll();
+            clusterService.flushAll();
         } catch (Exception e) {
             e.printStackTrace();
             return "0";
@@ -595,11 +594,11 @@ public class RedisClusterController {
         } else {
             match = "*" + match + "*";
         }
-        Map<String, ScanResult<String>> nodeScan = redisClusterService.scan(nodeCursor, match);
+        Map<String, ScanResult<String>> nodeScan = clusterService.scan(nodeCursor, match);
         StringBuilder sb = new StringBuilder();
         sb.append("[");
         Map<String, String> nextNodeCursor = nodeScan.entrySet().stream().filter(entry -> {
-            Map<String, String> typeMap = redisClusterService.getType(entry.getValue().getResult());
+            Map<String, String> typeMap = clusterService.getType(entry.getValue().getResult());
             typeMap.forEach((key, type) -> sb.append("{text:").append("'").append(key).append("',icon:'").append(contextPath).append("/img/").append(type).append(".png").append("',type:'").append(type).append("'},"));
             return !ServerConstant.DEFAULT_CURSOR.equalsIgnoreCase(entry.getValue().getStringCursor());
         }).collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getStringCursor()));

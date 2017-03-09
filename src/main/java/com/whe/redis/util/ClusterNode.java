@@ -5,9 +5,9 @@ import java.util.Set;
 
 /**
  * Created by wang hongen on 2017/1/23.
- * RedisClusterNode
+ * ClusterNode
  */
-public class RedisClusterNode {
+public class ClusterNode {
     private Set<String> masterNode = new HashSet<>();
     private Set<String> slaveNode = new HashSet<>();
     private Set<String> clusterNode = new HashSet<>();
@@ -15,7 +15,7 @@ public class RedisClusterNode {
     private static final String MASTER = "master";
     private static final String FAIL = "fail";
 
-    public RedisClusterNode(String nowNode, String clusterNodes) {
+    public ClusterNode(String nowNode, String clusterNodes) {
         parse(nowNode, clusterNodes);
 
     }

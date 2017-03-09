@@ -1,10 +1,7 @@
 package com.whe.redis.service;
 
 import com.alibaba.fastjson.JSON;
-import com.whe.redis.util.JedisFactory;
-import com.whe.redis.util.Page;
-import com.whe.redis.util.SerializeUtils;
-import com.whe.redis.util.ServerConstant;
+import com.whe.redis.util.*;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.*;
 import redis.clients.jedis.exceptions.JedisConnectionException;
@@ -20,7 +17,7 @@ import static java.util.stream.Collectors.toMap;
  * RedisClusterService
  */
 @Service
-public class RedisClusterService {
+public class ClusterService {
 
     private ScanParams scanParams = new ScanParams();
     private JedisCluster jedisCluster;
@@ -110,7 +107,15 @@ public class RedisClusterService {
      * @param hashMap map
      */
     public void saveAllHashSerialize(Map<String, Map<String, String>> hashMap) {
-        hashMap.forEach((key, map) -> map.forEach((field, val) -> jedisCluster.hset(key.getBytes(), SerializeUtils.serialize(field), SerializeUtils.serialize(val))));
+        hashMap.forEach((key, map) -> {
+            if (jedisCluster.exists(key)) {
+                if (!ServerConstant.REDIS_HASH.equals(jedisCluster.type(key))) {
+                    key = "RedisHash_" + key;
+                }
+            }
+            String finalKey = key;
+            map.forEach((field, val) -> jedisCluster.hset(finalKey.getBytes(), SerializeUtils.serialize(field), SerializeUtils.serialize(val)));
+        });
     }
 
     /**
@@ -119,7 +124,15 @@ public class RedisClusterService {
      * @param zSetMap map
      */
     public void saveAllZSetSerialize(Map<String, Map<String, Number>> zSetMap) {
-        zSetMap.forEach((key, map) -> map.forEach((elem, score) -> jedisCluster.zadd(key.getBytes(), score.doubleValue(), SerializeUtils.serialize(elem))));
+        zSetMap.forEach((key, map) -> {
+            if (jedisCluster.exists(key)) {
+                if (!ServerConstant.REDIS_ZSET.equals(jedisCluster.type(key))) {
+                    key = "RedisZSet_" + key;
+                }
+            }
+            String finalKey = key;
+            map.forEach((elem, score) -> jedisCluster.zadd(finalKey.getBytes(), score.doubleValue(), SerializeUtils.serialize(elem)));
+        });
     }
 
     /**
@@ -128,7 +141,15 @@ public class RedisClusterService {
      * @param setMap map
      */
     public void saveAllSetSerialize(Map<String, List<String>> setMap) {
-        setMap.forEach((key, list) -> new HashSet<>(list).forEach(val -> jedisCluster.sadd(key.getBytes(), SerializeUtils.serialize(val))));
+        setMap.forEach((key, list) -> {
+            if (jedisCluster.exists(key)) {
+                if (!ServerConstant.REDIS_SET.equals(jedisCluster.type(key))) {
+                    key = "RedisSet_" + key;
+                }
+            }
+            String finalKey = key;
+            new HashSet<>(list).forEach(val -> jedisCluster.sadd(finalKey.getBytes(), SerializeUtils.serialize(val)));
+        });
     }
 
     /**
@@ -137,7 +158,15 @@ public class RedisClusterService {
      * @param listMap map
      */
     public void saveAllListSerialize(Map<String, List<String>> listMap) {
-        listMap.forEach((key, list) -> list.forEach(val -> jedisCluster.lpush(key.getBytes(), SerializeUtils.serialize(val))));
+        listMap.forEach((key, list) -> {
+            if (jedisCluster.exists(key)) {
+                if (!ServerConstant.REDIS_LIST.equals(jedisCluster.type(key))) {
+                    key = "RedisList_" + key;
+                }
+            }
+            String finalKey = key;
+            list.forEach(val -> jedisCluster.lpush(finalKey.getBytes(), SerializeUtils.serialize(val)));
+        });
     }
 
     /**
@@ -146,7 +175,16 @@ public class RedisClusterService {
      * @param stringMap map
      */
     public void saveAllStringSerialize(Map<String, String> stringMap) {
-        stringMap.forEach(this::setNxSerialize);
+        stringMap.forEach((key, val) -> {
+            if (jedisCluster.exists(key)) {
+                if (ServerConstant.REDIS_STRING.equals(key)) {
+                    if (!ServerConstant.REDIS_STRING.equals(jedisCluster.type(key))) {
+                        key = "RedisString_" + key;
+                    }
+                }
+            }
+            jedisCluster.set(key, val);
+        });
     }
 
     /**
@@ -155,7 +193,15 @@ public class RedisClusterService {
      * @param hashMap map
      */
     public void saveAllHash(Map<String, Map<String, String>> hashMap) {
-        hashMap.forEach((key, map) -> map.forEach((field, val) -> jedisCluster.hset(key, field, val)));
+        hashMap.forEach((key, map) -> {
+            if (jedisCluster.exists(key)) {
+                if (!ServerConstant.REDIS_HASH.equals(jedisCluster.type(key))) {
+                    key = "RedisHash_" + key;
+                }
+            }
+            String finalKey = key;
+            map.forEach((field, val) -> jedisCluster.hset(finalKey, field, val));
+        });
     }
 
 
@@ -165,7 +211,15 @@ public class RedisClusterService {
      * @param zSetMap map
      */
     public void saveAllZSet(Map<String, Map<String, Number>> zSetMap) {
-        zSetMap.forEach((key, map) -> map.forEach((elem, score) -> jedisCluster.zadd(key, score.doubleValue(), elem)));
+        zSetMap.forEach((key, map) -> {
+            if (jedisCluster.exists(key)) {
+                if (!ServerConstant.REDIS_ZSET.equals(jedisCluster.type(key))) {
+                    key = "RedisZSet_" + key;
+                }
+            }
+            String finalKey = key;
+            map.forEach((elem, score) -> jedisCluster.zadd(finalKey, score.doubleValue(), elem));
+        });
     }
 
     /**
@@ -174,7 +228,15 @@ public class RedisClusterService {
      * @param setMap map
      */
     public void saveAllSet(Map<String, List<String>> setMap) {
-        setMap.forEach((key, list) -> new HashSet<>(list).forEach(val -> jedisCluster.sadd(key, val)));
+        setMap.forEach((key, list) -> {
+            if (jedisCluster.exists(key)) {
+                if (!ServerConstant.REDIS_SET.equals(jedisCluster.type(key))) {
+                    key = "RedisSet_" + key;
+                }
+            }
+            String finalKey = key;
+            new HashSet<>(list).forEach(val -> jedisCluster.sadd(finalKey, val));
+        });
     }
 
     /**
@@ -183,7 +245,15 @@ public class RedisClusterService {
      * @param listMap map
      */
     public void saveAllList(Map<String, List<String>> listMap) {
-        listMap.forEach((key, list) -> list.forEach(val -> jedisCluster.lpush(key, val)));
+        listMap.forEach((key, list) -> {
+            if (jedisCluster.exists(key)) {
+                if (!ServerConstant.REDIS_LIST.equals(jedisCluster.type(key))) {
+                    key = "RedisList_" + key;
+                }
+            }
+            String finalKey = key;
+            list.forEach(val -> jedisCluster.lpush(finalKey, val));
+        });
     }
 
     /**
@@ -192,7 +262,14 @@ public class RedisClusterService {
      * @param stringMap map
      */
     public void saveAllString(Map<String, String> stringMap) {
-        stringMap.forEach(jedisCluster::set);
+        stringMap.forEach((key, val) -> {
+            if (jedisCluster.exists(key)) {
+                if (!ServerConstant.REDIS_STRING.equals(jedisCluster.type(key))) {
+                    key = "RedisString_" + key;
+                }
+            }
+            jedisCluster.set(key, val);
+        });
     }
 
     /**
@@ -204,7 +281,7 @@ public class RedisClusterService {
         ScanParams scanParams = new ScanParams();
         scanParams.count(1000);
         scanParams.match(ServerConstant.DEFAULT_MATCH);
-        List<String> keys = jedisCluster.getClusterNodes().entrySet().stream().filter(entry -> JedisFactory.getRedisClusterNode().getMasterNode().contains(entry.getKey())).map(entry -> {
+        List<String> keys = jedisCluster.getClusterNodes().entrySet().stream().filter(entry -> JedisFactory.getClusterNode().getMasterNode().contains(entry.getKey())).map(entry -> {
             Jedis jedis = null;
             try {
                 jedis = entry.getValue().getResource();
@@ -442,9 +519,9 @@ public class RedisClusterService {
 
     public Map<String, ScanResult<String>> scan(Map<String, String> nodeCursor, String match) {
         scanParams.match(match);
-        Map<String, ScanResult<String>> nodeScan = new HashMap<>(ServerConstant.PAGE_NUM * JedisFactory.getRedisClusterNode().getMasterNode().size());
-        int count = ServerConstant.PAGE_NUM / JedisFactory.getRedisClusterNode().getMasterNode().size();
-        jedisCluster.getClusterNodes().entrySet().stream().filter(entry -> JedisFactory.getRedisClusterNode().getMasterNode().contains(entry.getKey())).forEach(entry -> {
+        Map<String, ScanResult<String>> nodeScan = new HashMap<>(ServerConstant.PAGE_NUM * JedisFactory.getClusterNode().getMasterNode().size());
+        int count = ServerConstant.PAGE_NUM / JedisFactory.getClusterNode().getMasterNode().size();
+        jedisCluster.getClusterNodes().entrySet().stream().filter(entry -> JedisFactory.getClusterNode().getMasterNode().contains(entry.getKey())).forEach(entry -> {
             Jedis jedis = null;
             try {
                 jedis = entry.getValue().getResource();
@@ -461,13 +538,13 @@ public class RedisClusterService {
                 }
                 nodeScan.put(entry.getKey(), jedis.scan(cursor, scanParams));
             } catch (JedisConnectionException e) {
-                Set<String> slaveNode = JedisFactory.getRedisClusterNode().getSlaveNode();
+                Set<String> slaveNode = JedisFactory.getClusterNode().getSlaveNode();
                 for (String node : slaveNode) {
                     String[] split = node.split(":");
                     Jedis j = null;
                     try {
                         j = new Jedis(split[0], Integer.parseInt(split[1]));
-                        JedisFactory.setRedisClusterNode(new com.whe.redis.util.RedisClusterNode(node, j.clusterNodes()));
+                        JedisFactory.setClusterNode(new ClusterNode(node, j.clusterNodes()));
                         break;
                     } catch (Exception ignored) {
                         // try next nodes
@@ -495,7 +572,7 @@ public class RedisClusterService {
      */
     public void flushAll() {
         jedisCluster.getClusterNodes().forEach((key, pool) -> {
-            if (JedisFactory.getRedisClusterNode().getMasterNode().contains(key)) {
+            if (JedisFactory.getClusterNode().getMasterNode().contains(key)) {
                 Jedis jedis = null;
                 try {
                     jedis = pool.getResource();

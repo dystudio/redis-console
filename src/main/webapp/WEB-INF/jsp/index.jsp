@@ -44,11 +44,18 @@
         <div class="navbar-collapse collapse">
             <ul class="nav navbar-nav">
                 <li class="active dropdown redisAll">
-                    <a href="#" class="dropdown-toggle"
-                       data-toggle="dropdown">${server=="/cluster"?"Cluster":"Standalone"}<span
-                            class="caret"></span></a>
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                        <c:choose>
+                            <c:when test="${server=='/standalone'}">Standalone</c:when>
+                            <c:when test="${server=='/sentinel'}">Sentinel</c:when>
+                            <c:when test="${server=='/cluster'}">Cluster</c:when>
+                            <c:otherwise>Standalone</c:otherwise>
+                        </c:choose>
+                        <span class="caret"></span>
+                    </a>
                     <ul class="dropdown-menu">
                         <li><a href="${ctx}/standalone/index">Standalone</a></li>
+                        <li><a href="${ctx}/sentinel/index">Sentinel</a></li>
                         <li><a href="${ctx}/cluster/index">Cluster</a></li>
                     </ul>
                 </li>
@@ -156,7 +163,7 @@
                 <h4 class="modal-title" id="myModalLabel">添加数据</h4>
             </div>
             <div class="modal-body">
-                <form class="form-horizontal" id="add_redis_form">
+                <form class="form-horizontal" id="add_redis_form" action="">
                     <div class="form-group">
                         <label for="redis_key" class="col-sm-2 control-label">key</label>
                         <div class="col-sm-10">
@@ -176,7 +183,7 @@
                             </select>
                         </div>
                     </div>
-                    <c:if test="${server=='/standalone'}">
+                    <c:if test="${server!='/cluster'}">
                         <div class="form-group">
                             <label for="redis_data_size" style="float:left;padding:10px 15px 0 40px;">数据库</label>
                             <div class="col-sm-10">
@@ -246,6 +253,15 @@
     var serialize = "";
     $("#tree").initTree(defaultData);
     $("#addRedis").on('click', function () {
+        if (key != null && key != string) {
+            $("#redis_key").val(key);
+        }
+        if (redisType != null) {
+            $("#redis_type").find("option[value='" + redisType + "']").prop("selected", true);
+        }
+        if (redisDb != null) {
+            $("#redis_data_size").find("option[value='" + redisDb + "']").prop("selected", true);
+        }
         $("#redis_add_dialog").modal("show");
     });
     $("#redis_type").on('change', function () {
@@ -289,7 +305,7 @@
             return;
         }
         var options = {
-            url: ctx + server + serialize + "/save",
+            url: ctx + server + "/save",
             type: "post",
             dataType: "text",
             success: function (data) {
@@ -304,7 +320,6 @@
     });
     $("#redis_view").on('change', function () {
         redisView = $(this).find("option:selected").val();
-        console.log(redisView);
         if (redisView == 3 || redisView == 2) {
             serialize = "/serialize";
         } else {

@@ -1,12 +1,16 @@
 package com.whe.redis.service;
 
 import com.alibaba.fastjson.JSON;
-import com.whe.redis.util.JedisFactory;
+import com.whe.redis.util.Page;
+import com.whe.redis.util.SerializeUtils;
 import com.whe.redis.util.ServerConstant;
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.stereotype.Service;
-import redis.clients.jedis.*;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.ScanParams;
+import redis.clients.jedis.ScanResult;
+import redis.clients.jedis.Tuple;
 
+import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -15,10 +19,181 @@ import java.util.stream.IntStream;
  * Created by wang hongen on 2017/1/13.
  * RedisService
  */
-@Service
 public class RedisService {
-    public String backup() {
-        Jedis jedis = JedisFactory.getJedisPool().getResource();
+
+    //Hash
+
+    Long hSetNxSerialize(Jedis jedis, int db, String key, String field, String value) {
+        jedis.select(db);
+        Boolean exists = jedis.exists(key);
+        if (exists && !ServerConstant.REDIS_HASH.equals(jedis.type(key))) {
+            return 2L;
+        }
+        return jedis.hsetnx(key.getBytes(), SerializeUtils.serialize(field), SerializeUtils.serialize(value));
+    }
+
+    Long hSetNx(Jedis jedis, int db, String key, String field, String value) {
+        jedis.select(db);
+        Boolean exists = jedis.exists(key);
+        if (exists && !ServerConstant.REDIS_HASH.equals(jedis.type(key))) {
+            return 2L;
+        }
+        return jedis.hsetnx(key, field, value);
+    }
+
+    Map<String, String> hGetAllSerialize(Jedis jedis, int db, String key) throws UnsupportedEncodingException {
+        jedis.select(db);
+        return jedis.hgetAll(key.getBytes(ServerConstant.CHARSET))
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(entry -> SerializeUtils.unSerialize(entry.getKey()).toString(),
+                        entry -> SerializeUtils.unSerialize(entry.getValue()).toString()));
+    }
+
+    boolean updateHash(Jedis jedis, int db, String key, String oldField, String newField, String val) {
+        jedis.select(db);
+        Boolean hExists = jedis.hexists(key, newField);
+        if (hExists) {
+            return false;
+        }
+        jedis.hdel(key, oldField);
+        jedis.hset(key, newField, val);
+        return true;
+    }
+
+
+    //zSet
+
+    Long zAdd(Jedis jedis, int db, String key, double score, String value) {
+        jedis.select(db);
+        Boolean exists = jedis.exists(key);
+        if (exists && !jedis.type(key).equals(ServerConstant.REDIS_ZSET)) {
+            return 2L;
+        }
+        jedis.zadd(key, score, value);
+        return 1L;
+    }
+
+    Long zAddSerialize(Jedis jedis, int db, String key, double score, String value) {
+        jedis.select(db);
+        Boolean exists = jedis.exists(key);
+        if (exists && !jedis.type(key).equals(ServerConstant.REDIS_ZSET)) {
+            return 2L;
+        }
+        jedis.zadd(key.getBytes(), score, SerializeUtils.serialize(value));
+        return 1L;
+    }
+
+    /**
+     * 根据key分页查询zSet类型数据
+     *
+     * @return Page<Set<Tuple>>
+     */
+    Page<Set<Tuple>> findZSetPageByKey(Jedis jedis, int db, int pageNo, String key) {
+        Page<Set<Tuple>> page = new Page<>();
+        jedis.select(db);
+        Set<Tuple> tupleSet = jedis.zrangeByScoreWithScores(key,
+                (pageNo - 1) * ServerConstant.PAGE_NUM,
+                pageNo * ServerConstant.PAGE_NUM);
+        //总数据
+        page.setTotalRecord(jedis.zcard(key));
+        page.setPageNo(pageNo);
+        page.setResults(tupleSet);
+        return page;
+    }
+
+    Page<Set<Tuple>> findZSetPageByKeySerialize(Jedis jedis, int db, String key, int pageNo) throws UnsupportedEncodingException {
+        Page<Set<Tuple>> page = new Page<>();
+        jedis.select(db);
+        Set<Tuple> tupleSet = jedis.zrangeByScoreWithScores(key.getBytes(ServerConstant.CHARSET),
+                (pageNo - 1) * ServerConstant.PAGE_NUM,
+                pageNo * ServerConstant.PAGE_NUM)
+                .stream()
+                .map(tuple -> new Tuple(SerializeUtils.unSerialize(tuple.getBinaryElement()).toString(), tuple.getScore()))
+                .collect(Collectors.toSet());
+
+        //总数据
+        page.setTotalRecord(jedis.llen(key));
+        page.setPageNo(pageNo);
+        page.setResults(tupleSet);
+        return page;
+    }
+
+    Long sAddSerialize(Jedis jedis, int db, String key, String value) {
+        jedis.select(db);
+        Boolean exists = jedis.exists(key);
+        if (exists && !ServerConstant.REDIS_SET.equals(jedis.type(key))) {
+            return 2L;
+        }
+        jedis.sadd(key.getBytes(), SerializeUtils.serialize(value));
+        return 1L;
+    }
+
+    Long sAdd(Jedis jedis, int db, String key, String value) {
+        jedis.select(db);
+        Boolean exists = jedis.exists(key);
+        if (exists && !ServerConstant.REDIS_SET.equals(jedis.type(key))) {
+            return 2L;
+        }
+        jedis.sadd(key, value);
+        return 1L;
+    }
+
+    Long lPushSerialize(Jedis jedis, int db, String key, String value) {
+        jedis.select(db);
+        Boolean exists = jedis.exists(key);
+        if (exists && !ServerConstant.REDIS_LIST.equals(jedis.type(key))) {
+            return 2L;
+        }
+        jedis.lpushx(key.getBytes(), SerializeUtils.serialize(value));
+        return 1L;
+    }
+
+    Long lPush(Jedis jedis, int db, String key, String value) {
+        jedis.select(db);
+        Boolean exists = jedis.exists(key);
+        if (exists && !ServerConstant.REDIS_LIST.equals(jedis.type(key))) {
+            return 2L;
+        }
+        jedis.lpushx(key, value);
+        return 1L;
+    }
+
+    /**
+     * 根据key分页查询list类型数据
+     *
+     * @return Page<List<String>>
+     */
+    Page<List<String>> findListPageByKey(Jedis jedis, int db, String key, int pageNo) {
+        Page<List<String>> page = new Page<>();
+        jedis.select(db);
+        //总数据
+        List<String> list = jedis.lrange(key, (pageNo - 1) * ServerConstant.PAGE_NUM,
+                pageNo * ServerConstant.PAGE_NUM);
+        page.setTotalRecord(jedis.llen(key));
+        page.setPageNo(pageNo);
+        page.setResults(list);
+        return page;
+    }
+
+
+    Page<List<String>> findListPageByKeySerialize(Jedis jedis, int db, String key, int pageNo) throws UnsupportedEncodingException {
+        Page<List<String>> page = new Page<>();
+        jedis.select(db);
+        //总数据
+        List<String> list = jedis.lrange(key.getBytes(ServerConstant.CHARSET),
+                (pageNo - 1) * ServerConstant.PAGE_NUM,
+                pageNo * ServerConstant.PAGE_NUM)
+                .stream()
+                .map(bytes -> SerializeUtils.unSerialize(bytes).toString())
+                .collect(Collectors.toList());
+        page.setTotalRecord(jedis.llen(key));
+        page.setPageNo(pageNo);
+        page.setResults(list);
+        return page;
+    }
+
+    String backup(Jedis jedis) {
         int size = Integer.parseInt(jedis.configGet(ServerConstant.DATABASES).get(1));
         Map<String, Object> dbKeys = new HashMap<>();
         for (int i = 0; i < size; i++) {
@@ -77,28 +252,17 @@ public class RedisService {
         return JSON.toJSONString(dbKeys);
     }
 
-    public void persist(int db, String key) {
-        Jedis jedis = JedisFactory.getJedisPool().getResource();
-        jedis.select(db);
-        jedis.persist(key);
-        jedis.close();
-    }
-
-    public Integer getDataBasesSize() {
-        Jedis jedis = JedisFactory.getJedisPool().getResource();
+    Integer getDataBasesSize(Jedis jedis) {
         List<String> list = jedis.configGet(ServerConstant.DATABASES);
-        int size = Integer.parseInt(list.get(1));
-        jedis.close();
-        return size;
+        return Integer.parseInt(list.get(1));
     }
 
-    public ScanResult<String> getKeysByDb(int db, String cursor, String match) {
+    ScanResult<String> getKeysByDb(Jedis jedis, int db, String cursor, String match) {
         if (StringUtils.isBlank(match)) {
             match = ServerConstant.DEFAULT_MATCH;
         } else {
             match = "*" + match + "*";
         }
-        Jedis jedis = JedisFactory.getJedisPool().getResource();
         jedis.select(db);
         ScanParams scanParams = new ScanParams();
         scanParams.count(ServerConstant.PAGE_NUM);
@@ -106,96 +270,19 @@ public class RedisService {
         if (cursor == null) {
             cursor = ServerConstant.DEFAULT_CURSOR;
         }
-        ScanResult<String> scan = jedis.scan(cursor, scanParams);
-        jedis.close();
-        return scan;
-    }
-
-    /**
-     * 更新key
-     *
-     * @param db     db
-     * @param oldKey 旧key
-     * @param newKey 新key
-     */
-    public long renameNx(int db, String oldKey, String newKey) {
-        Jedis jedis = JedisFactory.getJedisPool().getResource();
-        jedis.select(db);
-        Long aLong = jedis.renamenx(oldKey, newKey);
-        jedis.close();
-        return aLong;
-    }
-
-    /**
-     * @param db  db
-     * @param key key
-     * @return long
-     */
-    public long ttl(int db, String key) {
-        Jedis jedis = JedisFactory.getJedisPool().getResource();
-        jedis.select(db);
-        Long ttl = jedis.ttl(key);
-        jedis.close();
-        return ttl;
-    }
-
-    /**
-     * 更新生存时间
-     *
-     * @param db      db
-     * @param key     key
-     * @param seconds 秒
-     */
-    public void setExpire(int db, String key, int seconds) {
-        Jedis jedis = JedisFactory.getJedisPool().getResource();
-        jedis.select(db);
-        jedis.expire(key, seconds);
-        jedis.close();
-    }
-
-    /**
-     * 删除key
-     *
-     * @param db  db
-     * @param key key
-     */
-    public void delKey(int db, String key) {
-        Jedis jedis = JedisFactory.getJedisPool().getResource();
-        jedis.select(db);
-        jedis.del(key);
-        jedis.close();
+        return jedis.scan(cursor, scanParams);
     }
 
 
-    public Map<String, String> getType(int db, List<String> keys) {
-        JedisPool jedisPool = JedisFactory.getJedisPool();
-        Jedis jedis = jedisPool.getResource();
-        jedis.select(db);
-        Map<String, String> map = keys.stream().collect(Collectors.toMap(key -> key, jedis::type));
-        jedis.close();
-        return map;
-    }
-
-    public Map<Integer, Long> getDataBases() {
-        Jedis jedis = JedisFactory.getJedisPool().getResource();
+    Map<Integer, Long> getDataBases(Jedis jedis) {
         List<String> list = jedis.configGet(ServerConstant.DATABASES);
         int size = Integer.parseInt(list.get(1));
-        Map<Integer, Long> map = IntStream.range(0, size).boxed().collect(Collectors.toMap(i -> i, i -> {
-            jedis.select(i);
-            return jedis.dbSize();
-        }));
-        jedis.close();
-        return map;
+        return IntStream
+                .range(0, size)
+                .boxed()
+                .collect(Collectors.toMap(i -> i, i -> {
+                    jedis.select(i);
+                    return jedis.dbSize();
+                }));
     }
-
-
-    /**
-     * 删除所有数据
-     */
-    public void flushAll() {
-        Jedis jedis = JedisFactory.getJedisPool().getResource();
-        jedis.flushAll();
-        jedis.close();
-    }
-
 }
