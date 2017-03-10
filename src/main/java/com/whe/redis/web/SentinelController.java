@@ -35,7 +35,7 @@ import java.util.stream.Stream;
 @Controller
 @RequestMapping("/sentinel")
 public class SentinelController {
-    private static final Logger log = LoggerFactory.getLogger(RedisController.class);
+    private static final Logger log = LoggerFactory.getLogger(StandaloneController.class);
 
     @Resource
     private SentinelService sentinelService;
@@ -666,7 +666,7 @@ public class SentinelController {
                 sb.append("nodes:").append("[");
                 Map<String, String> typeMap = sentinelService.getType(entry.getKey(), scanResult.getResult());
                 typeMap.forEach((key, type) -> sb.append("{text:").append("'").append(key).append("',icon:'").append(request.getContextPath()).append("/img/").append(type).append(".png").append("',type:'").append(type).append("'},"));
-                if (dbSize > ServerConstant.PAGE_NUM) {
+                if (scanResult.getResult().size() > ServerConstant.PAGE_NUM) {
                     List<String> list = new ArrayList<>();
                     list.add("0");
                     map.put(entry.getKey(), list);

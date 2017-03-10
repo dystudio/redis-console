@@ -5,15 +5,15 @@ import com.whe.redis.util.Page;
 import com.whe.redis.util.SerializeUtils;
 import com.whe.redis.util.ServerConstant;
 import org.apache.commons.lang3.StringUtils;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.ScanParams;
-import redis.clients.jedis.ScanResult;
-import redis.clients.jedis.Tuple;
+import redis.clients.jedis.*;
 
 import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * Created by wang hongen on 2017/1/13.
@@ -110,7 +110,7 @@ public class RedisService {
                 pageNo * ServerConstant.PAGE_NUM)
                 .stream()
                 .map(tuple -> new Tuple(SerializeUtils.unSerialize(tuple.getBinaryElement()).toString(), tuple.getScore()))
-                .collect(Collectors.toSet());
+                .collect(toSet());
 
         //总数据
         page.setTotalRecord(jedis.llen(key));
@@ -197,51 +197,70 @@ public class RedisService {
         int size = Integer.parseInt(jedis.configGet(ServerConstant.DATABASES).get(1));
         Map<String, Object> dbKeys = new HashMap<>();
         for (int i = 0; i < size; i++) {
+            Pipeline pipeline = jedis.pipelined();
             jedis.select(i);
-            String cursor = ServerConstant.DEFAULT_CURSOR;
-            ScanParams scanParams = new ScanParams();
-            scanParams.count(1000);
-            scanParams.match(ServerConstant.DEFAULT_MATCH);
-            List<String> keys = new ArrayList<>(jedis.dbSize().intValue());
-            do {
-                ScanResult<String> scan = jedis.scan(cursor, scanParams);
-                cursor = scan.getStringCursor();
-                keys.addAll(scan.getResult());
-            } while (!ServerConstant.DEFAULT_CURSOR.equals(cursor));
 
-            Map<String, String> stringMap = new HashMap<>();
-            Map<String, List<String>> listMap = new HashMap<>();
-            Map<String, Set<String>> setMap = new HashMap<>();
-            Map<String, Set<Tuple>> tupleMap = new HashMap<>();
-            Map<String, Map<String, String>> hashMap = new HashMap<>();
-            keys.forEach(key -> {
-                String type = jedis.type(key);
-                if (ServerConstant.REDIS_STRING.equals(type)) {
-                    stringMap.put(key, jedis.get(key));
-                } else if (ServerConstant.REDIS_HASH.equals(type)) {
-                    hashMap.put(key, jedis.hgetAll(key));
-                } else if (ServerConstant.REDIS_LIST.equals(type)) {
-                    listMap.put(key, jedis.lrange(key, 0, -1));
-                } else if (ServerConstant.REDIS_SET.equals(type)) {
-                    setMap.put(key, jedis.smembers(key));
-                } else if (ServerConstant.REDIS_ZSET.equalsIgnoreCase(key)) {
-                    tupleMap.put(key, jedis.zrangeWithScores(key, 0, -1));
+            Set<String> keys = new HashSet<>(jedis.dbSize().intValue());
+
+            Response<Set<String>> responseKeys = pipeline.keys(ServerConstant.DEFAULT_MATCH);
+            pipeline.sync();
+            keys.addAll(responseKeys.get());
+
+            Map<String, Response<String>> responseString = new HashMap<>();
+            Map<String, Response<List<String>>> responseList = new HashMap<>();
+            Map<String, Response<Set<String>>> responseSet = new HashMap<>();
+            Map<String, Response<Set<Tuple>>> responseTuple = new HashMap<>();
+            Map<String, Response<Map<String, String>>> responseHash = new HashMap<>();
+
+            Map<String, Response<String>> keyType = new HashMap<>(keys.size());
+            keys.forEach(key -> keyType.put(key, pipeline.type(key)));
+            pipeline.sync();
+
+            keyType.forEach((key, type) -> {
+                if (ServerConstant.REDIS_STRING.equals(type.get())) {
+                    responseString.put(key, pipeline.get(key));
+                } else if (ServerConstant.REDIS_HASH.equals(type.get())) {
+                    responseHash.put(key, pipeline.hgetAll(key));
+                } else if (ServerConstant.REDIS_LIST.equals(type.get())) {
+                    responseList.put(key, pipeline.lrange(key, 0, -1));
+                } else if (ServerConstant.REDIS_SET.equals(type.get())) {
+                    responseSet.put(key, pipeline.smembers(key));
+                } else if (ServerConstant.REDIS_ZSET.equalsIgnoreCase(type.get())) {
+                    responseTuple.put(key, pipeline.zrangeWithScores(key, 0, -1));
                 }
             });
+            pipeline.sync();
+            Map<String, String> stringMap = new HashMap<>(responseString.size());
+            Map<String, List<String>> listMap = new HashMap<>(responseList.size());
+            Map<String, Set<String>> setMap = new HashMap<>(responseSet.size());
+            Map<String, Set<Tuple>> tupleMap = new HashMap<>(responseTuple.size());
+            Map<String, Map<String, String>> hashMap = new HashMap<>(responseHash.size());
+
+
             Map<String, Object> map = new HashMap<>();
+
+            responseString.forEach((key, val) -> stringMap.put(key, val.get()));
             if (stringMap.size() > 0) {
                 map.put(ServerConstant.REDIS_STRING, stringMap);
             }
+
+            responseList.forEach((key, val) -> listMap.put(key, val.get()));
             if (listMap.size() > 0) {
                 map.put(ServerConstant.REDIS_LIST, listMap);
             }
+
+            responseSet.forEach((key, val) -> setMap.put(key, val.get()));
             if (setMap.size() > 0) {
                 map.put(ServerConstant.REDIS_SET, setMap);
             }
+
+            responseTuple.forEach((key, val) -> tupleMap.put(key, val.get()));
             if (tupleMap.size() > 0) {
                 Map<String, Map<String, Double>> zSetMap = tupleMap.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().stream().collect(Collectors.toMap(Tuple::getElement, Tuple::getScore))));
                 map.put(ServerConstant.REDIS_ZSET, zSetMap);
             }
+
+            responseHash.forEach((key, val) -> hashMap.put(key, val.get()));
             if (hashMap.size() > 0) {
                 map.put(ServerConstant.REDIS_HASH, hashMap);
             }
@@ -252,25 +271,43 @@ public class RedisService {
         return JSON.toJSONString(dbKeys);
     }
 
+    Map<String, String> getType(Jedis jedis, int db, List<String> keys) {
+        jedis.select(db);
+        Pipeline pipeline = jedis.pipelined();
+        Map<String, Response<String>> responseMap = keys.stream().collect(toMap(key -> key, pipeline::type));
+        pipeline.sync();
+        Map<String, String> typeMap = new HashMap<>(responseMap.size());
+        responseMap.forEach((key, val) -> typeMap.put(key, val.get()));
+        return typeMap;
+    }
+
     Integer getDataBasesSize(Jedis jedis) {
         List<String> list = jedis.configGet(ServerConstant.DATABASES);
         return Integer.parseInt(list.get(1));
     }
 
     ScanResult<String> getKeysByDb(Jedis jedis, int db, String cursor, String match) {
-        if (StringUtils.isBlank(match)) {
-            match = ServerConstant.DEFAULT_MATCH;
-        } else {
-            match = "*" + match + "*";
-        }
         jedis.select(db);
         ScanParams scanParams = new ScanParams();
         scanParams.count(ServerConstant.PAGE_NUM);
-        scanParams.match(match);
         if (cursor == null) {
             cursor = ServerConstant.DEFAULT_CURSOR;
         }
-        return jedis.scan(cursor, scanParams);
+        if (StringUtils.isBlank(match) || match.equals(ServerConstant.DEFAULT_MATCH)) {
+            match = ServerConstant.DEFAULT_MATCH;
+            scanParams.match(match);
+            return jedis.scan(cursor, scanParams);
+        }
+        match = "*" + match + "*";
+        scanParams.match(match);
+        ScanResult<String> scan;
+        List<String> keys = new ArrayList<>(ServerConstant.PAGE_NUM);
+        do {
+            scan = jedis.scan(cursor, scanParams);
+            cursor = scan.getStringCursor();
+            keys.addAll(scan.getResult());
+        } while (!cursor.equals(ServerConstant.DEFAULT_CURSOR) && !(keys.size() >= ServerConstant.PAGE_NUM));
+        return new ScanResult<>(cursor, keys);
     }
 
 

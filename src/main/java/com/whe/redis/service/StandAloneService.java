@@ -1,11 +1,9 @@
 package com.whe.redis.service;
 
+import com.whe.redis.util.JedisFactory;
 import com.whe.redis.util.*;
 import org.springframework.stereotype.Service;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPool;
-import redis.clients.jedis.ScanResult;
-import redis.clients.jedis.Tuple;
+import redis.clients.jedis.*;
 
 import java.io.UnsupportedEncodingException;
 import java.util.*;
@@ -20,7 +18,7 @@ public class StandAloneService extends RedisService {
     private JedisPool jedisPool = JedisFactory.getJedisPool();
     private JedisPoolTemplate jedisPoolTemplate = new JedisPoolTemplate(jedisPool);
 
-    
+
     //Hash
 
     public Long hSetNxSerialize(int db, String key, String field, String value) {
@@ -46,7 +44,7 @@ public class StandAloneService extends RedisService {
     }
 
     public void hSet(int db, String key, String field, String val) {
-        jedisPoolTemplate.execute(db, jedis -> jedis.hdel(key, field));
+        jedisPoolTemplate.execute(db, jedis -> jedis.hset(key, field, val));
     }
 
     public boolean updateHash(int db, String key, String oldField, String newField, String val) {
@@ -67,7 +65,9 @@ public class StandAloneService extends RedisService {
     public void saveAllHashSerialize(int db, Map<String, Map<String, String>> hashMap) {
         try (Jedis jedis = jedisPool.getResource()) {
             jedis.select(db);
-            hashMap.forEach((key, map) -> map.forEach((field, val) -> jedis.hset(key.getBytes(), SerializeUtils.serialize(field), SerializeUtils.serialize(val))));
+            Pipeline pipeline = jedis.pipelined();
+            hashMap.forEach((key, map) -> map.forEach((field, val) -> pipeline.hset(key.getBytes(), SerializeUtils.serialize(field), SerializeUtils.serialize(val))));
+            pipeline.sync();
         }
     }
 
@@ -80,7 +80,9 @@ public class StandAloneService extends RedisService {
     public void saveAllHash(int db, Map<String, Map<String, String>> hashMap) {
         try (Jedis jedis = jedisPool.getResource()) {
             jedis.select(db);
-            hashMap.forEach((key, map) -> map.forEach((field, val) -> jedis.hset(key, field, val)));
+            Pipeline pipeline = jedis.pipelined();
+            hashMap.forEach((key, map) -> map.forEach((field, val) -> pipeline.hset(key, field, val)));
+            pipeline.sync();
         }
     }
 
@@ -125,7 +127,7 @@ public class StandAloneService extends RedisService {
     }
 
     public void delZSet(int db, String key, String val) {
-        jedisPoolTemplate.execute(db, jedis -> jedis.zrem(key));
+        jedisPoolTemplate.execute(db, jedis -> jedis.zrem(key, val));
     }
 
 
@@ -137,7 +139,9 @@ public class StandAloneService extends RedisService {
     public void saveAllZSet(int db, Map<String, Map<String, Double>> zSetMap) {
         try (Jedis jedis = jedisPool.getResource()) {
             jedis.select(db);
-            zSetMap.forEach((key, map) -> map.forEach((elem, score) -> jedis.zadd(key, score.doubleValue(), elem)));
+            Pipeline pipeline = jedis.pipelined();
+            zSetMap.forEach((key, map) -> map.forEach((elem, score) -> pipeline.zadd(key, score.doubleValue(), elem)));
+            pipeline.sync();
         }
     }
 
@@ -149,7 +153,9 @@ public class StandAloneService extends RedisService {
     public void saveAllZSetSerialize(int db, Map<String, Map<String, Number>> zSetMap) {
         try (Jedis jedis = jedisPool.getResource()) {
             jedis.select(db);
-            zSetMap.forEach((key, map) -> map.forEach((elem, score) -> jedis.zadd(key.getBytes(), score.doubleValue(), SerializeUtils.serialize(elem))));
+            Pipeline pipeline = jedis.pipelined();
+            zSetMap.forEach((key, map) -> map.forEach((elem, score) -> pipeline.zadd(key.getBytes(), score.doubleValue(), SerializeUtils.serialize(elem))));
+            pipeline.sync();
         }
     }
 
@@ -190,7 +196,7 @@ public class StandAloneService extends RedisService {
     }
 
     public void delSet(int db, String key, String val) {
-        jedisPoolTemplate.execute(db, jeids -> jeids.srem(key));
+        jedisPoolTemplate.execute(db, jeids -> jeids.srem(key, val));
     }
 
     /**
@@ -201,7 +207,9 @@ public class StandAloneService extends RedisService {
     public void saveAllSet(int db, Map<String, List<String>> setMap) {
         try (Jedis jedis = jedisPool.getResource()) {
             jedis.select(db);
-            setMap.forEach((key, list) -> new HashSet<>(list).forEach(val -> jedis.sadd(key, val)));
+            Pipeline pipeline = jedis.pipelined();
+            setMap.forEach((key, list) -> new HashSet<>(list).forEach(val -> pipeline.sadd(key, val)));
+            pipeline.sync();
         }
     }
 
@@ -213,7 +221,9 @@ public class StandAloneService extends RedisService {
     public void saveAllSetSerialize(int db, Map<String, List<String>> setMap) {
         try (Jedis jedis = jedisPool.getResource()) {
             jedis.select(db);
-            setMap.forEach((key, list) -> new HashSet<>(list).forEach(val -> jedis.sadd(key.getBytes(), SerializeUtils.serialize(val))));
+            Pipeline pipeline = jedis.pipelined();
+            setMap.forEach((key, list) -> new HashSet<>(list).forEach(val -> pipeline.sadd(key.getBytes(), SerializeUtils.serialize(val))));
+            pipeline.sync();
         }
     }
 
@@ -278,7 +288,9 @@ public class StandAloneService extends RedisService {
     public void saveAllList(int db, Map<String, List<String>> listMap) {
         try (Jedis jedis = jedisPool.getResource()) {
             jedis.select(db);
-            listMap.forEach((key, list) -> list.forEach(val -> jedis.lpush(key, val)));
+            Pipeline pipeline = jedis.pipelined();
+            listMap.forEach((key, list) -> list.forEach(val -> pipeline.lpush(key, val)));
+            pipeline.sync();
         }
     }
 
@@ -291,7 +303,9 @@ public class StandAloneService extends RedisService {
     public void saveAllListSerialize(int db, Map<String, List<String>> listMap) {
         try (Jedis jedis = jedisPool.getResource()) {
             jedis.select(db);
-            listMap.forEach((key, list) -> list.forEach(val -> jedis.lpush(key.getBytes(), SerializeUtils.serialize(val))));
+            Pipeline pipeline = jedis.pipelined();
+            listMap.forEach((key, list) -> list.forEach(val -> pipeline.lpush(key.getBytes(), SerializeUtils.serialize(val))));
+            pipeline.sync();
         }
     }
 
@@ -340,8 +354,9 @@ public class StandAloneService extends RedisService {
     public void saveAllString(int db, Map<String, String> stringMap) {
         try (Jedis jedis = jedisPool.getResource()) {
             jedis.select(db);
-
-            stringMap.forEach(jedis::set);
+            Pipeline pipeline = jedis.pipelined();
+            stringMap.forEach(pipeline::set);
+            pipeline.sync();
         }
     }
 
@@ -353,7 +368,9 @@ public class StandAloneService extends RedisService {
     public void saveAllStringSerialize(int db, Map<String, String> stringMap) {
         try (Jedis jedis = jedisPool.getResource()) {
             jedis.select(db);
-            stringMap.forEach((key, val) -> jedis.set(key.getBytes(), SerializeUtils.serialize(val)));
+            Pipeline pipeline = jedis.pipelined();
+            stringMap.forEach((key, val) -> pipeline.set(key.getBytes(), SerializeUtils.serialize(val)));
+            pipeline.sync();
         }
     }
 
@@ -422,7 +439,9 @@ public class StandAloneService extends RedisService {
     }
 
     public Map<String, String> getType(int db, List<String> keys) {
-        return jedisPoolTemplate.execute(db, jedis -> keys.stream().collect(Collectors.toMap(key -> key, jedis::type)));
+        try (Jedis jedis = jedisPool.getResource()) {
+            return super.getType(jedis, db, keys);
+        }
     }
 
     public Map<Integer, Long> getDataBases() {

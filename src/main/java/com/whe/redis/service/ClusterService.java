@@ -2,6 +2,8 @@ package com.whe.redis.service;
 
 import com.alibaba.fastjson.JSON;
 import com.whe.redis.util.*;
+import com.whe.redis.util.ClusterPipeline;
+import com.whe.redis.util.JedisFactory;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.*;
 import redis.clients.jedis.exceptions.JedisConnectionException;
@@ -18,13 +20,16 @@ import static java.util.stream.Collectors.toMap;
  */
 @Service
 public class ClusterService {
-
+    private Map<String, JedisPool> nodeMap;
     private ScanParams scanParams = new ScanParams();
     private JedisCluster jedisCluster;
+    private ClusterPipeline clusterPipeline;
 
     {
         scanParams.match(ServerConstant.DEFAULT_MATCH);
         jedisCluster = JedisFactory.getJedisCluster();
+        nodeMap = jedisCluster.getClusterNodes();
+        clusterPipeline = new ClusterPipeline(JedisFactory.getClusterInfoCache());
     }
 
     public Long hSetNxSerialize(String key, String field, String value) {
@@ -281,7 +286,7 @@ public class ClusterService {
         ScanParams scanParams = new ScanParams();
         scanParams.count(1000);
         scanParams.match(ServerConstant.DEFAULT_MATCH);
-        List<String> keys = jedisCluster.getClusterNodes().entrySet().stream().filter(entry -> JedisFactory.getClusterNode().getMasterNode().contains(entry.getKey())).map(entry -> {
+        List<String> keys = jedisCluster.getClusterNodes().entrySet().stream().filter(entry -> JedisFactory.getClusterInfoCache().getMasterNode().contains(entry.getKey())).map(entry -> {
             Jedis jedis = null;
             try {
                 jedis = entry.getValue().getResource();
@@ -519,9 +524,9 @@ public class ClusterService {
 
     public Map<String, ScanResult<String>> scan(Map<String, String> nodeCursor, String match) {
         scanParams.match(match);
-        Map<String, ScanResult<String>> nodeScan = new HashMap<>(ServerConstant.PAGE_NUM * JedisFactory.getClusterNode().getMasterNode().size());
-        int count = ServerConstant.PAGE_NUM / JedisFactory.getClusterNode().getMasterNode().size();
-        jedisCluster.getClusterNodes().entrySet().stream().filter(entry -> JedisFactory.getClusterNode().getMasterNode().contains(entry.getKey())).forEach(entry -> {
+        Map<String, ScanResult<String>> nodeScan = new HashMap<>(ServerConstant.PAGE_NUM * JedisFactory.getClusterInfoCache().getMasterNode().size());
+        int count = ServerConstant.PAGE_NUM / JedisFactory.getClusterInfoCache().getMasterNode().size();
+        nodeMap.entrySet().stream().filter(entry -> JedisFactory.getClusterInfoCache().getMasterNode().contains(entry.getKey())).forEach(entry -> {
             Jedis jedis = null;
             try {
                 jedis = entry.getValue().getResource();
@@ -538,22 +543,9 @@ public class ClusterService {
                 }
                 nodeScan.put(entry.getKey(), jedis.scan(cursor, scanParams));
             } catch (JedisConnectionException e) {
-                Set<String> slaveNode = JedisFactory.getClusterNode().getSlaveNode();
-                for (String node : slaveNode) {
-                    String[] split = node.split(":");
-                    Jedis j = null;
-                    try {
-                        j = new Jedis(split[0], Integer.parseInt(split[1]));
-                        JedisFactory.setClusterNode(new ClusterNode(node, j.clusterNodes()));
-                        break;
-                    } catch (Exception ignored) {
-                        // try next nodes
-                    } finally {
-                        if (j != null) {
-                            j.close();
-                        }
-                    }
-                }
+
+                JedisFactory.setClusterInfoCache(new ClusterInfoCache(jedisCluster));
+
             } finally {
                 if (jedis != null) {
                     jedis.close();
@@ -564,15 +556,26 @@ public class ClusterService {
     }
 
     public Map<String, String> getType(List<String> keys) {
-        return keys.stream().collect(toMap(key -> key, jedisCluster::type));
+
+        long l = System.currentTimeMillis();
+
+        keys.forEach(key -> clusterPipeline.type(key));
+        Map<String, Response<String>> responseMap=new HashMap<>(keys.size());
+        keys.forEach((key)->responseMap.put(key,clusterPipeline.type(key)));
+        clusterPipeline.sync();
+        Map<String, String> typeMap = new HashMap<>(responseMap.size());
+        responseMap.forEach((key, val) -> typeMap.put(key, val.get()));
+        System.out.println("耗时:" + (System.currentTimeMillis() - l));
+        return typeMap;
     }
+
 
     /**
      * 删除所有数据
      */
     public void flushAll() {
-        jedisCluster.getClusterNodes().forEach((key, pool) -> {
-            if (JedisFactory.getClusterNode().getMasterNode().contains(key)) {
+        nodeMap.forEach((key, pool) -> {
+            if (JedisFactory.getClusterInfoCache().getMasterNode().contains(key)) {
                 Jedis jedis = null;
                 try {
                     jedis = pool.getResource();

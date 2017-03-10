@@ -37,8 +37,8 @@ import java.util.stream.Stream;
  */
 @Controller
 @RequestMapping("/standalone")
-public class RedisController {
-    private static final Logger log = LoggerFactory.getLogger(RedisController.class);
+public class StandaloneController {
+    private static final Logger log = LoggerFactory.getLogger(StandaloneController.class);
 
     @Resource
     private StandAloneService standAloneService;
@@ -667,8 +667,9 @@ public class RedisController {
                 ScanResult<String> scanResult = standAloneService.getKeysByDb(entry.getKey(), cursor, match);
                 sb.append(",").append("expanded:").append(true).append(",").append("nodes:").append("[");
                 Map<String, String> typeMap = standAloneService.getType(entry.getKey(), scanResult.getResult());
-                typeMap.forEach((key, type) -> sb.append("{text:").append("'").append(key).append("',icon:'").append(request.getContextPath()).append("/img/").append(type).append(".png").append("',type:'").append(type).append("'},"));
-                if (dbSize > ServerConstant.PAGE_NUM) {
+                typeMap.forEach((key, type) -> sb.append("{text:").append("'").append(key).append("',icon:'").append(request.getContextPath())
+                        .append("/img/").append(type).append(".png").append("',type:'").append(type).append("'},"));
+                if (scanResult.getResult().size() > ServerConstant.PAGE_NUM) {
                     List<String> list = new ArrayList<>();
                     list.add("0");
                     map.put(entry.getKey(), list);

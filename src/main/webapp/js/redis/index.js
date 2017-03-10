@@ -31,11 +31,13 @@ $(function () {
     });
     //恢复
     $("#recover").on("change", function () {
+        $("#recover").addClass("disabled");
         var options = {
             url: ctx + server + "/recover",
             type: "post",
             dataType: "text",
             success: function (data) {
+                $("#recover").removeClass("disabled");
                 if (data == '1') {
                     document.location.reload();//当前页面
                     $("#promptTitle").html("成功提示");

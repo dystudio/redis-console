@@ -214,7 +214,7 @@
                     <div class="form-group" id="hash_field" style="display: none">
                         <label for="redis_field" class="col-sm-2 control-label">field</label>
                         <div class="col-sm-10">
-                            <textarea class="form-control" id="redis_field"
+                            <textarea class="form-control"  id="redis_field"
                                       name="redis_field"></textarea>
                         </div>
                     </div>

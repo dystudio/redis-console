@@ -4,12 +4,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import redis.clients.jedis.*;
+import redis.clients.jedis.HostAndPort;
+import redis.clients.jedis.JedisCluster;
+import redis.clients.jedis.JedisPool;
+import redis.clients.jedis.JedisSentinelPool;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -27,7 +29,7 @@ public class JedisFactory {
     private static JedisPool jedisPool;
     private static JedisSentinelPool jedisSentinelPool;
     private static JedisCluster jedisCluster;
-    private static ClusterNode clusterNode = null;
+    private static ClusterInfoCache clusterInfoCache = null;
     private static String standAlone;
 
     /**
@@ -42,8 +44,10 @@ public class JedisFactory {
         InputStream in = JedisFactory.class.getResourceAsStream("/redis.properties");
         try {
             loadPro.load(in);
-            standAlone = loadPro.getProperty("stand.alone");
             GenericObjectPoolConfig poolConfig = RedisPoolConfig.getGenericObjectPoolConfig();
+
+            //单机
+            standAlone = loadPro.getProperty("stand.alone");
             if (StringUtils.isNotBlank(standAlone)) {
                 ServerConstant.REDIS_TYPE = ServerConstant.STAND_ALONE;
                 String[] split = standAlone.split(":");
@@ -60,6 +64,7 @@ public class JedisFactory {
                 }
             }
 
+            //哨兵
             String sentinel = loadPro.getProperty("sentinel");
             if (StringUtils.isNoneBlank(sentinel)) {
                 String masterName = loadPro.getProperty("master.name");
@@ -69,14 +74,14 @@ public class JedisFactory {
                 Set<String> set = Stream.of(sentinel).map(str -> str.split(";")).flatMap(Arrays::stream).collect(Collectors.toSet());
                 String pass = loadPro.getProperty("sentinel.pass");
                 if (StringUtils.isNoneBlank(pass)) {
-                    jedisSentinelPool = new JedisSentinelPool(masterName, set, RedisPoolConfig.getGenericObjectPoolConfig(), pass);
+                    jedisSentinelPool = new JedisSentinelPool(masterName, set, poolConfig, pass);
                 } else {
-                    jedisSentinelPool = new JedisSentinelPool(masterName, set, RedisPoolConfig.getGenericObjectPoolConfig());
+                    jedisSentinelPool = new JedisSentinelPool(masterName, set, poolConfig);
                 }
             }
 
+            //集群
             String redisCluster = loadPro.getProperty("cluster");
-
             if (StringUtils.isNotBlank(redisCluster)) {
                 ServerConstant.REDIS_TYPE = ServerConstant.REDIS_CLUSTER;
 
@@ -87,22 +92,9 @@ public class JedisFactory {
                 } else {
                     jedisCluster = new JedisCluster(set, poolConfig);
                 }
+
                 //保存集群节点信息
-                Map<String, JedisPool> clusterNodes = jedisCluster.getClusterNodes();
-                for (Map.Entry<String, JedisPool> entry : clusterNodes.entrySet()) {
-                    Jedis jedis = null;
-                    try {
-                        jedis = entry.getValue().getResource();
-                        clusterNode = new ClusterNode(jedis.getClient().getHost() + ":" + jedis.getClient().getPort(), jedis.clusterNodes());
-                        break;
-                    } catch (Exception ignored) {
-                        // try next nodes
-                    } finally {
-                        if (jedis != null) {
-                            jedis.close();
-                        }
-                    }
-                }
+                clusterInfoCache=new ClusterInfoCache(jedisCluster);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -153,12 +145,12 @@ public class JedisFactory {
         return jedisPool;
     }
 
-    public static ClusterNode getClusterNode() {
-        return clusterNode;
+    public static ClusterInfoCache getClusterInfoCache() {
+        return clusterInfoCache;
     }
 
-    public static void setClusterNode(ClusterNode clusterNode) {
-        JedisFactory.clusterNode = clusterNode;
+    public static void setClusterInfoCache(ClusterInfoCache clusterInfoCache) {
+        JedisFactory.clusterInfoCache = clusterInfoCache;
     }
 
     public static String getStandAlone() {

@@ -21,14 +21,14 @@ public class RedisTest {
         JedisPool jedisPool = new JedisPool(poolConfig, "172.16.63.104", 6379, 2000, "yhtest");
 
         long l = System.currentTimeMillis();
-
-        IntStream.rangeClosed(0,10000).parallel().forEach(i -> {
-            Jedis jedis = jedisPool.getResource();
-            jedis.del("yhPush_key" + i);
-//            jedis.set("key" + i, "val" + i);
+        Jedis jedis = jedisPool.getResource();
+        Pipeline pipeline = jedis.pipelined();
+        IntStream.rangeClosed(0,10000).forEach(i -> {
+         //   jedis.del("key" + i);
+            pipeline.lpush("list", "val" + i);
             System.out.println(i);
-            jedis.close();
         });
+        pipeline.sync();
         System.out.println("插入耗时:" + (System.currentTimeMillis() - l));
     }
 
