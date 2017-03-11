@@ -6,6 +6,8 @@ import com.whe.redis.util.JedisFactory;
 import com.whe.redis.util.Page;
 import com.whe.redis.util.ServerConstant;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,6 +36,8 @@ import java.util.stream.Stream;
 @Controller
 @RequestMapping("/cluster")
 public class ClusterController {
+    private static final Logger log = LoggerFactory.getLogger(ClusterController.class);
+
     @Resource
     private ClusterService clusterService;
 
@@ -49,9 +53,9 @@ public class ClusterController {
                 StringBuilder sb = new StringBuilder();
                 sb.append("[{");
                 sb.append("text:").append("'").append("redisCluster").append("',");
-                sb.append("icon:").append(request.getContextPath()).append("'/img/redis.png',").append("expanded:").append(true).append(",");
+                sb.append("icon:'").append(request.getContextPath()).append("/img/redis.png',").append("expanded:").append(true).append(",");
                 sb.append("nodes:").append("[");
-                sb.append("{text:").append("'").append("data").append("',").append("icon:").append(contextPath).append("'/img/db.png',").append("expanded:").append(true).append(",");
+                sb.append("{text:").append("'").append("data").append("',").append("icon:'").append(contextPath).append("/img/db.png',").append("expanded:").append(true).append(",");
                 sb.append("nodes:");
                 Map<Integer, Map<String, String>> map = new HashMap<>();
                 Map<String, String> nodeCursor = new HashMap<>();
@@ -75,6 +79,7 @@ public class ClusterController {
             model.addAttribute("server", "/cluster");
         } catch (Exception e) {
             e.printStackTrace();
+            log.error("ClusterController index error:" + e.getMessage(), e);
         }
         return "index";
     }

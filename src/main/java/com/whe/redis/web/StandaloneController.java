@@ -727,12 +727,12 @@ public class StandaloneController {
         StringBuilder sb = new StringBuilder();
         sb.append("[{");
         sb.append("text:").append("'").append(JedisFactory.getStandAlone()).append("',");
-        sb.append("icon:").append(request.getContextPath()).append("'/img/redis.png',").append("expanded:").append(true).append(",");
+        sb.append("icon:'").append(request.getContextPath()).append("/img/redis.png',").append("expanded:").append(true).append(",");
         sb.append("nodes:").append("[");
         Map<Integer, List<String>> map = new HashMap<>();
         dataBases.entrySet().forEach(entry -> {
             sb.append("{text:").append("'").append(ServerConstant.DB).append(entry.getKey()).append("',")
-                    .append("icon:").append(request.getContextPath()).append("'/img/db.png',")
+                    .append("icon:'").append(request.getContextPath()).append("/img/db.png',")
                     .append("tags:").append("['").append(entry.getValue()).append("']");
             Long dbSize = entry.getValue();
             if (dbSize > 0) {
@@ -741,7 +741,7 @@ public class StandaloneController {
                 Map<String, String> typeMap = standAloneService.getType(entry.getKey(), scanResult.getResult());
                 typeMap.forEach((key, type) -> sb.append("{text:").append("'").append(key).append("',icon:'").append(request.getContextPath())
                         .append("/img/").append(type).append(".png").append("',type:'").append(type).append("'},"));
-                if (scanResult.getResult().size() > ServerConstant.PAGE_NUM) {
+                if (scanResult.getResult().size() >= ServerConstant.PAGE_NUM) {
                     List<String> list = new ArrayList<>();
                     list.add("0");
                     map.put(entry.getKey(), list);
