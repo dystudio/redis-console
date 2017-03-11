@@ -43,10 +43,9 @@ public class RedisTest {
             set.add(new HostAndPort("192.168.88.128", i));
         }
         JedisCluster jedisCluster = new JedisCluster(set, poolConfig);
-        IntStream.rangeClosed(10000, 20000).forEach(i -> {
-            jedisCluster.zadd("zSet", i, "val" + i);
+        IntStream.rangeClosed(0, 1000).forEach(i -> {
             // jedisCluster.del("key" + i);
-            //  jedisCluster.set("key" + i, "val" + i);
+             jedisCluster.lpush("list", "val" + i);
             System.out.println(i);
         });
     }
@@ -60,10 +59,10 @@ public class RedisTest {
         JedisPool jedisPool = new JedisPool(poolConfig, "192.168.88.128", 6379, 2000);
         long l = System.currentTimeMillis();
         Jedis jedis = jedisPool.getResource();
-
-        for (int i = 0; i < 100000; i++) {
-            jedis.set("key" + i, "val" + i);
-            // jedis.del("key"+i);
+        jedis.set("s","s");
+        Pipeline pipeline = jedis.pipelined();
+        for (int i = 0; i < 10000; i++) {
+            pipeline.lpush("list","val"+i);
             System.out.println(i);
         }
         jedis.close();

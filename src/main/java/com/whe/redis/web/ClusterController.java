@@ -2,6 +2,7 @@ package com.whe.redis.web;
 
 import com.alibaba.fastjson.JSON;
 import com.whe.redis.service.ClusterService;
+import com.whe.redis.util.JedisFactory;
 import com.whe.redis.util.Page;
 import com.whe.redis.util.ServerConstant;
 import org.apache.commons.lang3.StringUtils;
@@ -44,31 +45,33 @@ public class ClusterController {
             contextPath = request.getContextPath();
         }
         try {
-            StringBuilder sb = new StringBuilder();
-            sb.append("[{");
-            sb.append("text:").append("'").append("redisCluster").append("',");
-            sb.append("icon:").append(request.getContextPath()).append("'/img/redis.png',").append("expanded:").append(true).append(",");
-            sb.append("nodes:").append("[");
-            sb.append("{text:").append("'").append("data").append("',").append("icon:").append(contextPath).append("'/img/db.png',").append("expanded:").append(true).append(",");
-            sb.append("nodes:");
-            Map<Integer, Map<String, String>> map = new HashMap<>();
-            Map<String, String> nodeCursor = new HashMap<>();
-            map.put(1, nodeCursor);
-            sb.append(dataTree(1, match, nodeCursor, map));
-            sb.append("}]}]");
-            model.addAttribute("tree", sb.toString());
-            String jsonString = JSON.toJSONString(map);
-            String encode = null;
-            try {
-                encode = URLEncoder.encode(jsonString, ServerConstant.CHARSET);
-            } catch (UnsupportedEncodingException e) {
-                e.printStackTrace();
+            if (JedisFactory.getJedisCluster() != null) {
+                StringBuilder sb = new StringBuilder();
+                sb.append("[{");
+                sb.append("text:").append("'").append("redisCluster").append("',");
+                sb.append("icon:").append(request.getContextPath()).append("'/img/redis.png',").append("expanded:").append(true).append(",");
+                sb.append("nodes:").append("[");
+                sb.append("{text:").append("'").append("data").append("',").append("icon:").append(contextPath).append("'/img/db.png',").append("expanded:").append(true).append(",");
+                sb.append("nodes:");
+                Map<Integer, Map<String, String>> map = new HashMap<>();
+                Map<String, String> nodeCursor = new HashMap<>();
+                map.put(1, nodeCursor);
+                sb.append(dataTree(1, match, nodeCursor, map));
+                sb.append("}]}]");
+                model.addAttribute("tree", sb.toString());
+                String jsonString = JSON.toJSONString(map);
+                String encode = null;
+                try {
+                    encode = URLEncoder.encode(jsonString, ServerConstant.CHARSET);
+                } catch (UnsupportedEncodingException e) {
+                    e.printStackTrace();
+                }
+                Cookie cookie = new Cookie(ServerConstant.CLUSTER_PAGE, encode);
+                cookie.setPath("/");
+                cookie.setMaxAge(-1);
+                response.addCookie(cookie);
+                model.addAttribute("match", match);
             }
-            Cookie cookie = new Cookie(ServerConstant.CLUSTER_PAGE, encode);
-            cookie.setPath("/");
-            cookie.setMaxAge(-1);
-            response.addCookie(cookie);
-            model.addAttribute("match", match);
             model.addAttribute("server", "/cluster");
         } catch (Exception e) {
             e.printStackTrace();
@@ -226,7 +229,7 @@ public class ClusterController {
         LocalDate date = LocalDate.now();
         response.setContentType("text/plain; charset=utf-8");//设置MIME类型
         response.setHeader("Content-Disposition", "attachment; filename=" + date + "cluster.redis");
-        response.getWriter().write(clusterService.getAll());
+        response.getWriter().write(clusterService.backup());
     }
 
     @RequestMapping(value = {"/hSet"})
@@ -241,11 +244,34 @@ public class ClusterController {
         }
     }
 
+    @RequestMapping(value = {"/serialize/hSet"})
+    @ResponseBody
+    public String hSetSerialize(String key, String field, String val) {
+        try {
+            clusterService.hSetSerialize(key, field, val);
+            return "1";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return e.getMessage();
+        }
+    }
+
     @RequestMapping(value = {"/updateHash"})
     @ResponseBody
     public String updateHash(String key, String oldField, String newField, String val) {
         try {
             return clusterService.updateHash(key, oldField, newField, val) ? "1" : "2";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return e.getMessage();
+        }
+    }
+
+    @RequestMapping(value = {"/serialize/updateHash"})
+    @ResponseBody
+    public String updateHashSerialize(String key, String oldField, String newField, String val) {
+        try {
+            return clusterService.updateHashSerialize(key, oldField, newField, val) ? "1" : "2";
         } catch (Exception e) {
             e.printStackTrace();
             return e.getMessage();
@@ -286,6 +312,18 @@ public class ClusterController {
     public String updateZSet(String key, String oldVal, String newVal, double score) {
         try {
             clusterService.updateZSet(key, oldVal, newVal, score);
+            return "1";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return e.getMessage();
+        }
+    }
+
+    @RequestMapping(value = {"/serialize/updateZSet"})
+    @ResponseBody
+    public String updateZSetSerialize(String key, String oldVal, String newVal, double score) {
+        try {
+            clusterService.updateZSetSerialize(key, oldVal, newVal, score);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
@@ -349,6 +387,18 @@ public class ClusterController {
     public String updateSet(String key, String oldVal, String newVal) {
         try {
             clusterService.updateSet(key, oldVal, newVal);
+            return "1";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return e.getMessage();
+        }
+    }
+
+    @RequestMapping(value = {"/serialize/updateSet"})
+    @ResponseBody
+    public String updateSetSerialize(String key, String oldVal, String newVal) {
+        try {
+            clusterService.updateSetSerialize(key, oldVal, newVal);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
@@ -422,6 +472,18 @@ public class ClusterController {
         }
     }
 
+    @RequestMapping(value = {"/serialize/updateList"})
+    @ResponseBody
+    public String updateListSerialize(int index, String key, String val) {
+        try {
+            clusterService.lSetSerialize(index, key, val);
+            return "1";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return e.getMessage();
+        }
+    }
+
     @RequestMapping(value = {"/serialize/getList"})
     @ResponseBody
     public Page<List<String>> getSerializeList(String key, int pageNo, HttpServletRequest request) {
@@ -443,7 +505,7 @@ public class ClusterController {
      */
     @RequestMapping(value = {"/getList"})
     @ResponseBody
-    public Page<List<String>> getList(String key, int pageNo, HttpServletRequest request) {
+    public Page<List<String>> getList(String key, int pageNo) {
         Page<List<String>> page = clusterService.findListPageByKey(key, pageNo);
         page.pageViewAjax(contextPath + "/getList", "");
         return page;
@@ -455,6 +517,18 @@ public class ClusterController {
     public String updateString(String key, String val) {
         try {
             clusterService.set(key, val);
+            return "1";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return e.getMessage();
+        }
+    }
+
+    @RequestMapping("/serialize/updateString")
+    @ResponseBody
+    public String updateStringSerialize(String key, String val) {
+        try {
+            clusterService.setSerialize(key, val);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
@@ -540,7 +614,12 @@ public class ClusterController {
     @RequestMapping("/nextPage")
     @ResponseBody
     public String nextPage(Integer pageNo, String match, HttpServletRequest request, HttpServletResponse response) {
-        return page(pageNo, match, request, response);
+        try {
+            return page(pageNo, match, request, response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "";
+        }
     }
 
 
@@ -565,21 +644,22 @@ public class ClusterController {
         Cookie[] cookies = request.getCookies();
         String data = null;
         if (cookies != null && cookies.length > 0) {
-            Optional<Cookie> optional = Stream.of(cookies).filter(c -> c.getName().equals(ServerConstant.CLUSTER_PAGE)).findAny();
+            Optional<Cookie> optional = Stream
+                    .of(cookies)
+                    .filter(c -> c.getName().equals(ServerConstant.CLUSTER_PAGE))
+                    .findAny();
+
             if (optional.isPresent()) {
                 Cookie cookie = optional.get();
-                String value = null;
                 try {
-                    value = URLDecoder.decode(cookie.getValue(), ServerConstant.CHARSET);
-                } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
-                }
-                Map<Integer, Map<String, String>> map = JSON.parseObject(value, Map.class);
-                Map<String, String> nodeCursor = map.get(pageNo);
-                data = dataTree(pageNo, match, nodeCursor, map);
-                try {
+                    String value = URLDecoder.decode(cookie.getValue(), ServerConstant.CHARSET);
+
+                    Map<Integer, Map<String, String>> map = JSON.parseObject(value, Map.class);
+                    Map<String, String> nodeCursor = map.get(pageNo);
+                    data = dataTree(pageNo, match, nodeCursor, map);
+
                     cookie.setValue(URLEncoder.encode(JSON.toJSONString(map), ServerConstant.CHARSET));
-                } catch (UnsupportedEncodingException e) {
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
                 response.addCookie(cookie);

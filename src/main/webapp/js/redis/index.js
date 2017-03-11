@@ -31,24 +31,19 @@ $(function () {
     });
     //恢复
     $("#recover").on("change", function () {
-        $("#recover").addClass("disabled");
+        $("#recover").closest(".btn").addClass("disabled");
+        $("#recover").closest(".btn").find(".text").html("恢复中");
         var options = {
             url: ctx + server + "/recover",
             type: "post",
             dataType: "text",
             success: function (data) {
-                $("#recover").removeClass("disabled");
-                if (data == '1') {
+                $("#recover").closest(".btn").removeClass("disabled");
+                $("#recover").closest(".btn").find(".text").html("恢复");
+                $("#promptBtn").on('click', function () {
                     document.location.reload();//当前页面
-                    $("#promptTitle").html("成功提示");
-                    $("#promptContent").html("<p>恢复成功</p>");
-                    $("#promptBtn").removeClass("btn-danger").addClass("btn-success");
-                } else {
-                    $("#promptTitle").html("失败提示");
-                    $("#promptContent").html("<p>恢复失败</p>");
-                    $("#promptBtn").removeClass("btn-success").addClass("btn-danger");
-                }
-                $("#prompt").modal("show");
+                });
+                showModel(data);
             }
         };
         $("#fileForm").ajaxSubmit(options);
@@ -56,14 +51,19 @@ $(function () {
     });
     //序列化恢复
     $("#serializeRecover").on("change", function () {
+        $("#serializeRecover").closest(".btn").addClass("disabled");
+        $("#serializeRecover").closest(".btn").find(".text").html("恢复中");
         var options = {
             url: ctx + server + "/serializeRecover",
             type: "post",
             dataType: "text",
             success: function (data) {
-                if (data == "1") {
+                $("#serializeRecover").closest(".btn").removeClass("disabled");
+                $("#serializeRecover").closest(".btn").find(".text").html("JDK序列化恢复");
+
+                $("#promptBtn").on('click', function () {
                     document.location.reload();//当前页面
-                }
+                });
                 showModel(data);
             }
         };
@@ -79,16 +79,13 @@ $(function () {
             dataType: "text",
             success: function (data) {
                 if (data == '1') {
-                    document.location.reload();//当前页面
-                    $("#promptTitle").html("成功提示");
                     $("#promptContent").html("<p>删除成功</p>");
                     $("#promptBtn").removeClass("btn-danger").addClass("btn-success");
-                } else {
-                    $("#promptTitle").html("失败提示");
-                    $("#promptContent").html("<p>删除失败</p>");
-                    $("#promptBtn").removeClass("btn-success").addClass("btn-danger");
+                    $("#promptBtn").on('click', function () {
+                        document.location.reload();//当前页面
+                    })
                 }
-                $("#prompt").modal("show");
+                showModel(data);
             }
         })
     });
@@ -178,7 +175,7 @@ function updateString(th) {
         return;
     }
     $.ajax({
-        url: ctx + server + "/updateString",
+        url: ctx + server + serialize + "/updateString",
         data: {db: redisDb, key: key, val: val},
         type: "post",
         dataType: "text",
@@ -195,7 +192,7 @@ function updateList(th) {
     var index = $(th).closest("tr").find("td").first().html();
     --index;
     $.ajax({
-        url: ctx + server + "/updateList",
+        url: ctx + server + serialize + "/updateList",
         data: {db: redisDb, index: index, key: key, val: val},
         type: "post",
         dataType: "text",
@@ -242,7 +239,7 @@ function updateSet(th) {
     var i = node.attr("oldVal");
     var oldVal = setArr[i];
     $.ajax({
-        url: ctx + server + "/updateSet",
+        url: ctx + server + serialize + "/updateSet",
         data: {db: redisDb, key: key, oldVal: oldVal, newVal: val},
         type: "post",
         dataType: "text",
@@ -281,7 +278,7 @@ function updateZSet(th) {
     }
     var score = $(th).closest("tr").find("input").val();
     $.ajax({
-        url: ctx + server + "/updateZSet",
+        url: ctx + server + serialize + "/updateZSet",
         data: {db: redisDb, key: key, oldVal: oldVal, newVal: newVal, score: score},
         type: "post",
         dataType: "text",
@@ -325,7 +322,7 @@ function updateHash(th) {
     }
     if (oldField == newField) {
         $.ajax({
-            url: ctx + server + "/hSet",
+            url: ctx + server + serialize + "/hSet",
             data: {db: redisDb, key: key, field: oldField, val: val},
             type: "post",
             dataType: "text",
@@ -335,7 +332,7 @@ function updateHash(th) {
         });
     } else {
         $.ajax({
-            url: ctx + server + "/updateHash",
+            url: ctx + server + serialize + "/updateHash",
             data: {db: redisDb, key: key, oldField: oldField, newField: newField, val: val},
             type: "post",
             dataType: "text",
@@ -433,6 +430,8 @@ $(function () {
             $("#type-content").css("display", "block");
         }
     });
+
+    //点击
     $("#tree").on('click', '.node-div', function () {
         var $result = $(this).find(".expand-icon");
         if ($result.length > 0) {
@@ -440,6 +439,10 @@ $(function () {
         }
         var db = $(this).parent().closest(".child_ul").siblings(".node-div").find(".text").html();
         var indexOf = db.indexOf("db");
+        if (indexOf == -1 && db != "data") {
+            redisDb = $(this).find(".text").html().substr(2);
+            return;
+        }
         redisDb = db.substring(indexOf + 2);
         var text = $(this).find(".text");
         key = text.html();
@@ -755,11 +758,9 @@ function upPage(db, cursor, event) {
 
 function showModel(data) {
     if (data == '1') {
-        $("#promptTitle").html("成功提示");
         $("#promptContent").html("<p>修改成功</p>");
         $("#promptBtn").removeClass("btn-danger").addClass("btn-success");
     } else if (data == "2") {
-        $("#promptTitle").html("失败提示");
         $("#promptContent").html("<p>键已存在!</p>");
         $("#promptBtn").removeClass("btn-success").addClass("btn-danger");
     } else {

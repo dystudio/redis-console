@@ -1,9 +1,9 @@
 package com.whe.redis.service;
 
 import com.alibaba.fastjson.JSON;
-import com.whe.redis.util.*;
 import com.whe.redis.util.ClusterPipeline;
 import com.whe.redis.util.JedisFactory;
+import com.whe.redis.util.*;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.*;
 import redis.clients.jedis.exceptions.JedisConnectionException;
@@ -11,8 +11,7 @@ import redis.clients.jedis.exceptions.JedisConnectionException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * Created by wang hongen on 2017/2/24.
@@ -20,7 +19,6 @@ import static java.util.stream.Collectors.toMap;
  */
 @Service
 public class ClusterService {
-    private Map<String, JedisPool> nodeMap;
     private ScanParams scanParams = new ScanParams();
     private JedisCluster jedisCluster;
     private ClusterPipeline clusterPipeline;
@@ -28,7 +26,6 @@ public class ClusterService {
     {
         scanParams.match(ServerConstant.DEFAULT_MATCH);
         jedisCluster = JedisFactory.getJedisCluster();
-        nodeMap = jedisCluster.getClusterNodes();
         clusterPipeline = new ClusterPipeline(JedisFactory.getClusterInfoCache());
     }
 
@@ -112,15 +109,8 @@ public class ClusterService {
      * @param hashMap map
      */
     public void saveAllHashSerialize(Map<String, Map<String, String>> hashMap) {
-        hashMap.forEach((key, map) -> {
-            if (jedisCluster.exists(key)) {
-                if (!ServerConstant.REDIS_HASH.equals(jedisCluster.type(key))) {
-                    key = "RedisHash_" + key;
-                }
-            }
-            String finalKey = key;
-            map.forEach((field, val) -> jedisCluster.hset(finalKey.getBytes(), SerializeUtils.serialize(field), SerializeUtils.serialize(val)));
-        });
+        hashMap.forEach((key, map) -> map.forEach((field, val) -> clusterPipeline.hSet(key.getBytes(), SerializeUtils.serialize(field), SerializeUtils.serialize(val))));
+        clusterPipeline.sync();
     }
 
     /**
@@ -129,15 +119,8 @@ public class ClusterService {
      * @param zSetMap map
      */
     public void saveAllZSetSerialize(Map<String, Map<String, Number>> zSetMap) {
-        zSetMap.forEach((key, map) -> {
-            if (jedisCluster.exists(key)) {
-                if (!ServerConstant.REDIS_ZSET.equals(jedisCluster.type(key))) {
-                    key = "RedisZSet_" + key;
-                }
-            }
-            String finalKey = key;
-            map.forEach((elem, score) -> jedisCluster.zadd(finalKey.getBytes(), score.doubleValue(), SerializeUtils.serialize(elem)));
-        });
+        zSetMap.forEach((key, map) -> map.forEach((elem, score) -> clusterPipeline.zAdd(key.getBytes(), score.doubleValue(), SerializeUtils.serialize(elem))));
+        clusterPipeline.sync();
     }
 
     /**
@@ -146,15 +129,8 @@ public class ClusterService {
      * @param setMap map
      */
     public void saveAllSetSerialize(Map<String, List<String>> setMap) {
-        setMap.forEach((key, list) -> {
-            if (jedisCluster.exists(key)) {
-                if (!ServerConstant.REDIS_SET.equals(jedisCluster.type(key))) {
-                    key = "RedisSet_" + key;
-                }
-            }
-            String finalKey = key;
-            new HashSet<>(list).forEach(val -> jedisCluster.sadd(finalKey.getBytes(), SerializeUtils.serialize(val)));
-        });
+        setMap.forEach((key, list) -> new HashSet<>(list).forEach(val -> clusterPipeline.sAdd(key.getBytes(), SerializeUtils.serialize(val))));
+        clusterPipeline.sync();
     }
 
     /**
@@ -163,15 +139,8 @@ public class ClusterService {
      * @param listMap map
      */
     public void saveAllListSerialize(Map<String, List<String>> listMap) {
-        listMap.forEach((key, list) -> {
-            if (jedisCluster.exists(key)) {
-                if (!ServerConstant.REDIS_LIST.equals(jedisCluster.type(key))) {
-                    key = "RedisList_" + key;
-                }
-            }
-            String finalKey = key;
-            list.forEach(val -> jedisCluster.lpush(finalKey.getBytes(), SerializeUtils.serialize(val)));
-        });
+        listMap.forEach((key, list) -> list.forEach(val -> clusterPipeline.lPush(key.getBytes(), SerializeUtils.serialize(val))));
+        clusterPipeline.sync();
     }
 
     /**
@@ -180,16 +149,8 @@ public class ClusterService {
      * @param stringMap map
      */
     public void saveAllStringSerialize(Map<String, String> stringMap) {
-        stringMap.forEach((key, val) -> {
-            if (jedisCluster.exists(key)) {
-                if (ServerConstant.REDIS_STRING.equals(key)) {
-                    if (!ServerConstant.REDIS_STRING.equals(jedisCluster.type(key))) {
-                        key = "RedisString_" + key;
-                    }
-                }
-            }
-            jedisCluster.set(key, val);
-        });
+        stringMap.forEach((key, val) -> clusterPipeline.set(key.getBytes(), val.getBytes()));
+        clusterPipeline.sync();
     }
 
     /**
@@ -198,15 +159,8 @@ public class ClusterService {
      * @param hashMap map
      */
     public void saveAllHash(Map<String, Map<String, String>> hashMap) {
-        hashMap.forEach((key, map) -> {
-            if (jedisCluster.exists(key)) {
-                if (!ServerConstant.REDIS_HASH.equals(jedisCluster.type(key))) {
-                    key = "RedisHash_" + key;
-                }
-            }
-            String finalKey = key;
-            map.forEach((field, val) -> jedisCluster.hset(finalKey, field, val));
-        });
+        hashMap.forEach((key, map) -> map.forEach((field, val) -> clusterPipeline.hSet(key, field, val)));
+        clusterPipeline.sync();
     }
 
 
@@ -216,15 +170,8 @@ public class ClusterService {
      * @param zSetMap map
      */
     public void saveAllZSet(Map<String, Map<String, Number>> zSetMap) {
-        zSetMap.forEach((key, map) -> {
-            if (jedisCluster.exists(key)) {
-                if (!ServerConstant.REDIS_ZSET.equals(jedisCluster.type(key))) {
-                    key = "RedisZSet_" + key;
-                }
-            }
-            String finalKey = key;
-            map.forEach((elem, score) -> jedisCluster.zadd(finalKey, score.doubleValue(), elem));
-        });
+        zSetMap.forEach((key, map) -> map.forEach((elem, score) -> clusterPipeline.zAdd(key, score.doubleValue(), elem)));
+        clusterPipeline.sync();
     }
 
     /**
@@ -233,15 +180,8 @@ public class ClusterService {
      * @param setMap map
      */
     public void saveAllSet(Map<String, List<String>> setMap) {
-        setMap.forEach((key, list) -> {
-            if (jedisCluster.exists(key)) {
-                if (!ServerConstant.REDIS_SET.equals(jedisCluster.type(key))) {
-                    key = "RedisSet_" + key;
-                }
-            }
-            String finalKey = key;
-            new HashSet<>(list).forEach(val -> jedisCluster.sadd(finalKey, val));
-        });
+        setMap.forEach((key, list) -> new HashSet<>(list).forEach(val -> clusterPipeline.sAdd(key, val)));
+        clusterPipeline.sync();
     }
 
     /**
@@ -250,15 +190,8 @@ public class ClusterService {
      * @param listMap map
      */
     public void saveAllList(Map<String, List<String>> listMap) {
-        listMap.forEach((key, list) -> {
-            if (jedisCluster.exists(key)) {
-                if (!ServerConstant.REDIS_LIST.equals(jedisCluster.type(key))) {
-                    key = "RedisList_" + key;
-                }
-            }
-            String finalKey = key;
-            list.forEach(val -> jedisCluster.lpush(finalKey, val));
-        });
+        listMap.forEach((key, list) -> list.forEach(val -> clusterPipeline.lPush(key, val)));
+        clusterPipeline.sync();
     }
 
     /**
@@ -267,68 +200,74 @@ public class ClusterService {
      * @param stringMap map
      */
     public void saveAllString(Map<String, String> stringMap) {
-        stringMap.forEach((key, val) -> {
-            if (jedisCluster.exists(key)) {
-                if (!ServerConstant.REDIS_STRING.equals(jedisCluster.type(key))) {
-                    key = "RedisString_" + key;
-                }
-            }
-            jedisCluster.set(key, val);
-        });
+        stringMap.forEach(clusterPipeline::set);
+        clusterPipeline.sync();
     }
 
     /**
      * 获得所有数据
-     *
-     * @return Map<String, String>
      */
-    public String getAll() {
-        ScanParams scanParams = new ScanParams();
-        scanParams.count(1000);
-        scanParams.match(ServerConstant.DEFAULT_MATCH);
-        List<String> keys = jedisCluster.getClusterNodes().entrySet().stream().filter(entry -> JedisFactory.getClusterInfoCache().getMasterNode().contains(entry.getKey())).map(entry -> {
-            Jedis jedis = null;
-            try {
-                jedis = entry.getValue().getResource();
-                String cursor = ServerConstant.DEFAULT_CURSOR;
-                List<String> list = new ArrayList<>(jedis.dbSize().intValue());
-                do {
-                    ScanResult<String> scan = jedis.scan(cursor, scanParams);
-                    cursor = scan.getStringCursor();
-                    list.addAll(scan.getResult());
-                } while (!ServerConstant.DEFAULT_CURSOR.equals(cursor));
-                return list;
-            } finally {
-                if (jedis != null) {
-                    jedis.close();
-                }
-            }
-        }).flatMap(Collection::stream).collect(toList());
+    public String backup() {
 
-        Map<String, String> stringMap = new HashMap<>();
-        Map<String, List<String>> listMap = new HashMap<>();
-        Map<String, Set<String>> setMap = new HashMap<>();
-        Map<String, Set<Tuple>> tupleMap = new HashMap<>();
-        Map<String, Map<String, String>> hashMap = new HashMap<>();
+        //管道获得所有key
+        Set<String> keys = jedisCluster.getClusterNodes()
+                .entrySet()
+                .stream()
+                .filter(entry -> JedisFactory.getClusterInfoCache().getMasterNode().contains(entry.getKey()))
+                .map(entry -> {
+                    try (Jedis jedis = entry.getValue().getResource()) {
+                        Pipeline pipeline = jedis.pipelined();
+                        Response<Set<String>> responseKeys = pipeline.keys(ServerConstant.DEFAULT_MATCH);
+                        pipeline.sync();
+                        return responseKeys.get();
+                    }
+                })
+                .flatMap(Collection::stream)
+                .collect(toSet());
 
-        keys.forEach(key -> {
-            String type = jedisCluster.type(key);
-            if (ServerConstant.REDIS_STRING.equals(type)) {
-                stringMap.put(key, jedisCluster.get(key));
-            } else if (ServerConstant.REDIS_LIST.equals(type)) {
-                listMap.put(key, jedisCluster.lrange(key, 0, -1));
-            } else if (ServerConstant.REDIS_SET.equals(type)) {
-                setMap.put(key, jedisCluster.smembers(key));
-            } else if (ServerConstant.REDIS_ZSET.equals(key)) {
-                tupleMap.put(key, jedisCluster.zrangeWithScores(key, 0, -1));
-            } else if (ServerConstant.REDIS_HASH.equals(type)) {
-                hashMap.put(key, jedisCluster.hgetAll(key));
+        //获得key的类型
+        Map<String, Response<String>> keyType = new HashMap<>(keys.size());
+        keys.forEach(key -> keyType.put(key, clusterPipeline.type(key)));
+        clusterPipeline.sync();
+
+        Map<String, Response<String>> responseString = new HashMap<>();
+        Map<String, Response<List<String>>> responseList = new HashMap<>();
+        Map<String, Response<Set<String>>> responseSet = new HashMap<>();
+        Map<String, Response<Set<Tuple>>> responseTuple = new HashMap<>();
+        Map<String, Response<Map<String, String>>> responseHash = new HashMap<>();
+        //获得所有数据
+        keyType.forEach((key, type) -> {
+            if (ServerConstant.REDIS_STRING.equals(type.get())) {
+                responseString.put(key, clusterPipeline.get(key));
+            } else if (ServerConstant.REDIS_LIST.equals(type.get())) {
+                responseList.put(key, clusterPipeline.lRange(key, 0, -1));
+            } else if (ServerConstant.REDIS_SET.equals(type.get())) {
+                responseSet.put(key, clusterPipeline.sMembers(key));
+            } else if (ServerConstant.REDIS_ZSET.equalsIgnoreCase(type.get())) {
+                responseTuple.put(key, clusterPipeline.zRangeWithScores(key, 0, -1));
+            } else if (ServerConstant.REDIS_HASH.equals(type.get())) {
+                responseHash.put(key, clusterPipeline.hGetAll(key));
             }
         });
+        clusterPipeline.sync();
+
+        Map<String, String> stringMap = new HashMap<>(responseString.size());
+        Map<String, List<String>> listMap = new HashMap<>(responseList.size());
+        Map<String, Set<String>> setMap = new HashMap<>(responseSet.size());
+        Map<String, Set<Tuple>> tupleMap = new HashMap<>(responseTuple.size());
+        Map<String, Map<String, String>> hashMap = new HashMap<>(responseHash.size());
+
+        responseString.forEach((key, val) -> stringMap.put(key, val.get()));
+        responseList.forEach((key, val) -> listMap.put(key, val.get()));
+        responseSet.forEach((key, val) -> setMap.put(key, val.get()));
+        responseTuple.forEach((key, val) -> tupleMap.put(key, val.get()));
+        responseHash.forEach((key, val) -> hashMap.put(key, val.get()));
+
         Map<String, Object> map = new HashMap<>();
         if (stringMap.size() > 0) {
             map.put(ServerConstant.REDIS_STRING, stringMap);
         }
+
         if (listMap.size() > 0) {
             map.put(ServerConstant.REDIS_LIST, listMap);
         }
@@ -355,6 +294,10 @@ public class ClusterService {
         jedisCluster.hset(key, field, val);
     }
 
+    public void hSetSerialize(String key, String field, String val) {
+        jedisCluster.hset(key.getBytes(), SerializeUtils.serialize(field), SerializeUtils.serialize(val));
+    }
+
     public Boolean updateHash(String key, String oldField, String newField, String val) {
         Boolean hExists = jedisCluster.hexists(key, newField);
         if (hExists) {
@@ -362,6 +305,16 @@ public class ClusterService {
         }
         jedisCluster.hdel(key, oldField);
         jedisCluster.hset(key, newField, val);
+        return true;
+    }
+
+    public Boolean updateHashSerialize(String key, String oldField, String newField, String val) {
+        Boolean hExists = jedisCluster.hexists(key, newField);
+        if (hExists) {
+            return false;
+        }
+        jedisCluster.hdel(key, oldField);
+        hSetSerialize(key, newField, val);
         return true;
     }
 
@@ -374,7 +327,11 @@ public class ClusterService {
     }
 
     public Map<String, String> hGetAll(byte[] key) {
-        return jedisCluster.hgetAll(key).entrySet().stream().collect(Collectors.toMap(entry -> SerializeUtils.unSerialize(entry.getKey()).toString(), entry -> SerializeUtils.unSerialize(entry.getValue()).toString()));
+        return jedisCluster.hgetAll(key)
+                .entrySet()
+                .stream()
+                .collect(Collectors.toMap(entry -> SerializeUtils.unSerialize(entry.getKey()).toString(),
+                        entry -> SerializeUtils.unSerialize(entry.getValue()).toString()));
     }
 
     public void delZSet(String key, String val) {
@@ -384,6 +341,11 @@ public class ClusterService {
     public void updateZSet(String key, String oldVal, String newVal, double score) {
         jedisCluster.zrem(key, oldVal);
         jedisCluster.zadd(key, score, newVal);
+    }
+
+    public void updateZSetSerialize(String key, String oldVal, String newVal, double score) {
+        jedisCluster.zrem(key, oldVal);
+        jedisCluster.zadd(key.getBytes(), score, SerializeUtils.serialize(newVal));
     }
 
     /**
@@ -403,7 +365,12 @@ public class ClusterService {
 
     public Page<Set<Tuple>> findZSetPageByKey(byte[] key, int pageNo) {
         Page<Set<Tuple>> page = new Page<>();
-        Set<Tuple> tupleSet = jedisCluster.zrangeByScoreWithScores(key, (pageNo - 1) * ServerConstant.PAGE_NUM, pageNo * ServerConstant.PAGE_NUM).stream().map(tuple -> new Tuple(SerializeUtils.unSerialize(tuple.getBinaryElement()).toString(), tuple.getScore())).collect(Collectors.toSet());
+        Set<Tuple> tupleSet = jedisCluster.zrangeByScoreWithScores(key,
+                (pageNo - 1) * ServerConstant.PAGE_NUM,
+                pageNo * ServerConstant.PAGE_NUM)
+                .stream()
+                .map(tuple -> new Tuple(SerializeUtils.unSerialize(tuple.getBinaryElement()).toString(), tuple.getScore()))
+                .collect(toSet());
         //总数据
         page.setTotalRecord(jedisCluster.zcard(key));
         page.setPageNo(pageNo);
@@ -414,6 +381,11 @@ public class ClusterService {
     public void updateSet(String key, String oldVal, String newVal) {
         jedisCluster.srem(key, oldVal);
         jedisCluster.sadd(key, newVal);
+    }
+
+    public void updateSetSerialize(String key, String oldVal, String newVal) {
+        jedisCluster.srem(key, oldVal);
+        jedisCluster.sadd(key.getBytes(), SerializeUtils.serialize(newVal));
     }
 
     public void delSet(String key, String val) {
@@ -430,12 +402,15 @@ public class ClusterService {
     }
 
     /**
-     * 查询set类型数据
+     * 序列化查询set类型数据
      *
      * @return Set<String>
      */
     public Set<String> getSet(byte[] key) {
-        return jedisCluster.smembers(key).stream().map(bytes -> SerializeUtils.unSerialize(bytes).toString()).collect(Collectors.toSet());
+        return jedisCluster.smembers(key)
+                .stream()
+                .map(bytes -> SerializeUtils.unSerialize(bytes).toString())
+                .collect(toSet());
     }
 
     public void lRem(int index, String key) {
@@ -459,6 +434,10 @@ public class ClusterService {
         jedisCluster.lset(key, index, value);
     }
 
+    public void lSetSerialize(int index, String key, String value) {
+        jedisCluster.lset(key.getBytes(), index, SerializeUtils.serialize(value));
+    }
+
 
     /**
      * 根据key分页查询list类型数据
@@ -476,13 +455,17 @@ public class ClusterService {
     }
 
     /**
-     * 根据key分页查询list类型数据
+     * 根据key序列化分页查询list类型数据
      *
      * @return Page<List<String>>
      */
     public Page<List<String>> findListPageByKey(byte[] key, int pageNo) {
         Page<List<String>> page = new Page<>();
-        List<String> list = jedisCluster.lrange(key, (pageNo - 1) * ServerConstant.PAGE_NUM, pageNo * ServerConstant.PAGE_NUM).stream().map(bytes -> SerializeUtils.unSerialize(bytes).toString()).collect(Collectors.toList());
+        List<String> list = jedisCluster.lrange(key, (pageNo - 1) * ServerConstant.PAGE_NUM,
+                pageNo * ServerConstant.PAGE_NUM)
+                .stream()
+                .map(bytes -> SerializeUtils.unSerialize(bytes).toString())
+                .collect(Collectors.toList());
         //总数据
         page.setTotalRecord(jedisCluster.llen(key));
         page.setPageNo(pageNo);
@@ -492,6 +475,10 @@ public class ClusterService {
 
     public void set(String key, String val) {
         jedisCluster.set(key, val);
+    }
+
+    public void setSerialize(String key, String val) {
+        jedisCluster.set(key.getBytes(), SerializeUtils.serialize(val));
     }
 
     public String get(String key) {
@@ -522,50 +509,85 @@ public class ClusterService {
         return jedisCluster.ttl(key);
     }
 
+    /**
+     * 扫描集群key
+     *
+     * @param nodeCursor Map<String, String> key-> 节点host:port,val->游标 cursor;
+     * @param match      匹配词
+     * @return Map<String, ScanResult<String>>
+     */
     public Map<String, ScanResult<String>> scan(Map<String, String> nodeCursor, String match) {
-        scanParams.match(match);
         Map<String, ScanResult<String>> nodeScan = new HashMap<>(ServerConstant.PAGE_NUM * JedisFactory.getClusterInfoCache().getMasterNode().size());
         int count = ServerConstant.PAGE_NUM / JedisFactory.getClusterInfoCache().getMasterNode().size();
-        nodeMap.entrySet().stream().filter(entry -> JedisFactory.getClusterInfoCache().getMasterNode().contains(entry.getKey())).forEach(entry -> {
-            Jedis jedis = null;
-            try {
-                jedis = entry.getValue().getResource();
-                String cursor = nodeCursor.get(entry.getKey());
-                if (cursor == null) {
-                    nodeCursor.put(entry.getKey(), ServerConstant.DEFAULT_CURSOR);
-                    cursor = nodeCursor.get(entry.getKey());
-                }
-                ScanResult<String> scan = jedis.scan(cursor, scanParams);
-                if (scan.getResult().size() < count) {
-                    scanParams.count(count - scan.getResult().size() + count);
-                } else {
-                    scanParams.count(count);
-                }
-                nodeScan.put(entry.getKey(), jedis.scan(cursor, scanParams));
-            } catch (JedisConnectionException e) {
+        jedisCluster.getClusterNodes()
+                .entrySet()
+                .stream()
+                .filter(entry -> JedisFactory.getClusterInfoCache().getMasterNode().contains(entry.getKey()))
+                .forEach((Map.Entry<String, JedisPool> entry) -> {
+                    Jedis jedis = null;
+                    try {
+                        jedis = entry.getValue().getResource();
+                        String cursor = nodeCursor.get(entry.getKey());
+                        //第一页 第一次扫描
+                        if (cursor == null) {
+                            nodeCursor.put(entry.getKey(), ServerConstant.DEFAULT_CURSOR);
+                            cursor = nodeCursor.get(entry.getKey());
+                        }
+                        ScanResult<String> scan = jedis.scan(cursor, scanParams);
 
-                JedisFactory.setClusterInfoCache(new ClusterInfoCache(jedisCluster));
+                        //当前节点key不够一次扫描key数量 下个节点补上缺的数量
+                        if (scan.getResult().size() < count) {
+                            scanParams.count(count - scan.getResult().size() + count);
+                        } else {
+                            scanParams.count(count);
+                        }
 
-            } finally {
-                if (jedis != null) {
-                    jedis.close();
-                }
-            }
-        });
+                        //全部匹配 只扫描一次
+                        if (match == null || match.equals(ServerConstant.DEFAULT_MATCH)) {
+                            scanParams.match(ServerConstant.DEFAULT_MATCH);
+                            nodeScan.put(entry.getKey(), scan);
+                            return;
+                        }
+
+                        /*
+                         对元素的模式匹配工作是在命令从数据集中取出元素之后,向客户端返回元素之前的这段时间内进行的,
+                         所以如果被迭代的数据集中只有少量元素和模式相匹配,那么迭代命令或许会在多次执行中都不返回任何元素
+                         可能存在大部分迭代都不返回任何元素,扫描到足够数量或迭代完
+                         */
+                        scanParams.match("*" + match + "*");
+                        List<String> keys = new ArrayList<>(count);
+                        do {
+                            scan = jedis.scan(cursor, scanParams);
+                            cursor = scan.getStringCursor();
+                            keys.addAll(scan.getResult());
+                        } while (!cursor.equals(ServerConstant.DEFAULT_CURSOR) && !(keys.size() >= count));
+                        nodeScan.put(entry.getKey(), new ScanResult<>(cursor, keys));
+                    } catch (JedisConnectionException e) {
+                        JedisFactory.getClusterInfoCache().initializeSlotsCache(jedisCluster);
+                    } finally {
+                        if (jedis != null) {
+                            jedis.close();
+                        }
+                    }
+                });
         return nodeScan;
     }
 
+    /**
+     * 查询key数据类型
+     *
+     * @param keys List<String>
+     * @return Map<String, String> key->key,val->对应key数据类型
+     */
     public Map<String, String> getType(List<String> keys) {
-
-        long l = System.currentTimeMillis();
-
+        //集群管道
         keys.forEach(key -> clusterPipeline.type(key));
-        Map<String, Response<String>> responseMap=new HashMap<>(keys.size());
-        keys.forEach((key)->responseMap.put(key,clusterPipeline.type(key)));
+        Map<String, Response<String>> responseMap = new HashMap<>(keys.size());
+        keys.forEach((key) -> responseMap.put(key, clusterPipeline.type(key)));
+        //执行
         clusterPipeline.sync();
         Map<String, String> typeMap = new HashMap<>(responseMap.size());
         responseMap.forEach((key, val) -> typeMap.put(key, val.get()));
-        System.out.println("耗时:" + (System.currentTimeMillis() - l));
         return typeMap;
     }
 
@@ -574,16 +596,11 @@ public class ClusterService {
      * 删除所有数据
      */
     public void flushAll() {
-        nodeMap.forEach((key, pool) -> {
+        //删除所有master节点数据 slave会同步master
+        jedisCluster.getClusterNodes().forEach((key, pool) -> {
             if (JedisFactory.getClusterInfoCache().getMasterNode().contains(key)) {
-                Jedis jedis = null;
-                try {
-                    jedis = pool.getResource();
+                try (Jedis jedis = pool.getResource()) {
                     jedis.flushAll();
-                } finally {
-                    if (jedis != null) {
-                        jedis.close();
-                    }
                 }
             }
         });

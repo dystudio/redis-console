@@ -47,9 +47,19 @@ public class SentinelService extends RedisService {
         sentinelPoolTemplate.execute(db, jedis -> jedis.hset(key, field, val));
     }
 
+    public void hSetSerialize(int db, String key, String field, String val) {
+        sentinelPoolTemplate.execute(db, jedis -> jedis.hset(key.getBytes(), SerializeUtils.serialize(field), SerializeUtils.serialize(val)));
+    }
+
     public boolean updateHash(int db, String key, String oldField, String newField, String val) {
         try (Jedis jedis = jedisSentinelPool.getResource()) {
             return super.updateHash(jedis, db, key, oldField, newField, val);
+        }
+    }
+
+    public Boolean updateHashSerialize(int db, String key, String oldField, String newField, String val) {
+        try (Jedis jedis = jedisSentinelPool.getResource()) {
+            return super.updateHashSerialize(jedis, db, key, oldField, newField, val);
         }
     }
 
@@ -125,6 +135,13 @@ public class SentinelService extends RedisService {
         });
     }
 
+    public void updateZSetSerialize(int db, String key, String oldVal, String newVal, double score) {
+        sentinelPoolTemplate.execute(db, jedis -> {
+            jedis.zrem(key, oldVal);
+            return jedis.zadd(key.getBytes(), score, SerializeUtils.serialize(newVal));
+        });
+    }
+
     public void delZSet(int db, String key, String val) {
         sentinelPoolTemplate.execute(db, jedis -> jedis.zrem(key, val));
     }
@@ -191,6 +208,13 @@ public class SentinelService extends RedisService {
         sentinelPoolTemplate.execute(db, jedis -> {
             jedis.srem(key, oldVal);
             return jedis.sadd(key, newVal);
+        });
+    }
+
+    public void updateSetSerialize(int db, String key, String oldVal, String newVal) {
+        sentinelPoolTemplate.execute(db, jedis -> {
+            jedis.srem(key, oldVal);
+            return jedis.sadd(key.getBytes(), SerializeUtils.serialize(newVal));
         });
     }
 
@@ -267,6 +291,10 @@ public class SentinelService extends RedisService {
      */
     public void lSet(int db, int index, String key, String value) {
         sentinelPoolTemplate.execute(db, jedis -> jedis.lset(key, index, value));
+    }
+
+    public void lSetSerialize(int db, int index, String key, String value) {
+        sentinelPoolTemplate.execute(db, jedis -> jedis.lset(key.getBytes(), index, SerializeUtils.serialize(value)));
     }
 
     public long lLen(int db, String key) {
@@ -346,6 +374,9 @@ public class SentinelService extends RedisService {
         sentinelPoolTemplate.execute(db, jedis -> jedis.set(key, val));
     }
 
+    public void setSerialize(int db, String key, String val) {
+        sentinelPoolTemplate.execute(db, jedis -> jedis.set(key.getBytes(), SerializeUtils.serialize(val)));
+    }
 
     /**
      * 保存所有string数据

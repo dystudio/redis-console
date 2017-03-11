@@ -4,7 +4,6 @@ import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisCluster;
 import redis.clients.jedis.JedisPool;
 import redis.clients.jedis.Pipeline;
-import redis.clients.jedis.exceptions.JedisConnectionException;
 import redis.clients.util.JedisClusterCRC16;
 
 import java.util.*;
@@ -21,18 +20,18 @@ public class ClusterInfoCache {
     private static final int MASTER_NODE_INDEX = 2;
     private static final int SLAVE_NODE_INDEX = 3;
 
-    public ClusterInfoCache(JedisCluster jedisCluster) {
+    ClusterInfoCache(JedisCluster jedisCluster) {
         initializeSlotsCache(jedisCluster);
     }
 
-    private void initializeSlotsCache(JedisCluster jedisCluster) {
-        nodeMap = jedisCluster.getClusterNodes();
+    public void initializeSlotsCache(JedisCluster jedisCluster) {
+        this.nodeMap = jedisCluster.getClusterNodes();
         for (Map.Entry<String, JedisPool> entry : nodeMap.entrySet()) {
             Jedis jedis = null;
             try {
                 jedis = entry.getValue().getResource();
-                InitialSlotNode(jedis);
-            } catch (JedisConnectionException e) {
+                initialSlotNode(jedis);
+            } catch (Exception e) {
                 // try next nodes
             } finally {
                 if (jedis != null) {
@@ -40,19 +39,25 @@ public class ClusterInfoCache {
                 }
             }
         }
+
     }
 
 
-    private void InitialSlotNode(Jedis jedis) {
+    private void initialSlotNode(Jedis jedis) {
+        slotPipelineMap.clear();
+        masterNode.clear();
+        slaveNode.clear();
+
         List<Object> slots = jedis.clusterSlots();
         for (Object slotInfoObj : slots) {
             List<Object> slotInfo = (List<Object>) slotInfoObj;
             List<Object> master = (List<Object>) slotInfo.get(MASTER_NODE_INDEX);
             String node = new String((byte[]) master.get(0)) + ":" + master.get(1);
             masterNode.add(node);
-            try (Jedis resource = nodeMap.get(node).getResource()) {
-                slotPipelineMap.put((Long) slotInfo.get(0), resource.pipelined());
-                slotPipelineMap.put((Long) slotInfo.get(1), resource.pipelined());
+            try (Jedis resource = this.nodeMap.get(node).getResource()) {
+                Pipeline pipeline = resource.pipelined();
+                slotPipelineMap.put((Long) slotInfo.get(0),pipeline);
+                slotPipelineMap.put((Long) slotInfo.get(1),pipeline);
             }
             List<Object> slave = (List<Object>) slotInfo.get(SLAVE_NODE_INDEX);
             String slaveNode = new String((byte[]) slave.get(0)) + ":" + slave.get(1);
@@ -62,7 +67,7 @@ public class ClusterInfoCache {
 
     Pipeline getPipelineByKey(String key) {
         //获取槽号
-        int slot = JedisClusterCRC16.getSlot(key);
+        int slot = JedisClusterCRC16.getSlot(key) + 1;
         return slotPipelineMap.lowerEntry((long) slot).getValue();
     }
 

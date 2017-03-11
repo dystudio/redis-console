@@ -61,6 +61,17 @@ public class RedisService {
         return true;
     }
 
+    boolean updateHashSerialize(Jedis jedis, int db, String key, String oldField, String newField, String val) {
+        jedis.select(db);
+        Boolean hExists = jedis.hexists(key, newField);
+        if (hExists) {
+            return false;
+        }
+        jedis.hdel(key, oldField);
+        jedis.hset(key.getBytes(), SerializeUtils.serialize(newField), SerializeUtils.serialize(val));
+        return true;
+    }
+
 
     //zSet
 
@@ -200,11 +211,11 @@ public class RedisService {
             Pipeline pipeline = jedis.pipelined();
             jedis.select(i);
 
-            Set<String> keys = new HashSet<>(jedis.dbSize().intValue());
 
+            //管道获得所有key
             Response<Set<String>> responseKeys = pipeline.keys(ServerConstant.DEFAULT_MATCH);
             pipeline.sync();
-            keys.addAll(responseKeys.get());
+            Set<String> keys = responseKeys.get();
 
             Map<String, Response<String>> responseString = new HashMap<>();
             Map<String, Response<List<String>>> responseList = new HashMap<>();
@@ -212,10 +223,12 @@ public class RedisService {
             Map<String, Response<Set<Tuple>>> responseTuple = new HashMap<>();
             Map<String, Response<Map<String, String>>> responseHash = new HashMap<>();
 
+            //获得key的类型
             Map<String, Response<String>> keyType = new HashMap<>(keys.size());
             keys.forEach(key -> keyType.put(key, pipeline.type(key)));
             pipeline.sync();
 
+            //获得所有数据
             keyType.forEach((key, type) -> {
                 if (ServerConstant.REDIS_STRING.equals(type.get())) {
                     responseString.put(key, pipeline.get(key));
@@ -230,6 +243,7 @@ public class RedisService {
                 }
             });
             pipeline.sync();
+
             Map<String, String> stringMap = new HashMap<>(responseString.size());
             Map<String, List<String>> listMap = new HashMap<>(responseList.size());
             Map<String, Set<String>> setMap = new HashMap<>(responseSet.size());
@@ -256,7 +270,15 @@ public class RedisService {
 
             responseTuple.forEach((key, val) -> tupleMap.put(key, val.get()));
             if (tupleMap.size() > 0) {
-                Map<String, Map<String, Double>> zSetMap = tupleMap.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().stream().collect(Collectors.toMap(Tuple::getElement, Tuple::getScore))));
+                Map<String, Map<String, Double>> zSetMap = tupleMap.entrySet()
+                        .stream()
+                        .collect(
+                                Collectors.toMap(Map.Entry::getKey,
+                                        entry -> entry.getValue()
+                                                .stream()
+                                                .collect(toMap(Tuple::getElement, Tuple::getScore))
+                                )
+                        );
                 map.put(ServerConstant.REDIS_ZSET, zSetMap);
             }
 
@@ -293,11 +315,18 @@ public class RedisService {
         if (cursor == null) {
             cursor = ServerConstant.DEFAULT_CURSOR;
         }
+
+        //全部匹配 只扫描一次
         if (StringUtils.isBlank(match) || match.equals(ServerConstant.DEFAULT_MATCH)) {
             match = ServerConstant.DEFAULT_MATCH;
             scanParams.match(match);
             return jedis.scan(cursor, scanParams);
         }
+         /*
+             对元素的模式匹配工作是在命令从数据集中取出元素之后,向客户端返回元素之前的这段时间内进行的,
+             所以如果被迭代的数据集中只有少量元素和模式相匹配,那么迭代命令或许会在多次执行中都不返回任何元素
+             可能存在大部分迭代都不返回任何元素,扫描到足够数量或迭代完
+         */
         match = "*" + match + "*";
         scanParams.match(match);
         ScanResult<String> scan;

@@ -50,11 +50,13 @@ public class SentinelController {
     @RequestMapping(value = {"/index"})
     public String index(Model model, @RequestParam(defaultValue = "0") String cursor, String match, HttpServletRequest request, HttpServletResponse response) {
         try {
-            String treeJson = treeJson(cursor, match, request, response);
-            Integer size = sentinelService.getDataBasesSize();
-            model.addAttribute("dataSize", size);
-            model.addAttribute("tree", treeJson);
-            model.addAttribute("match", match);
+            if (JedisFactory.getJedisSentinelPool() != null) {
+                String treeJson = treeJson(cursor, match, request, response);
+                Integer size = sentinelService.getDataBasesSize();
+                model.addAttribute("dataSize", size);
+                model.addAttribute("tree", treeJson);
+                model.addAttribute("match", match);
+            }
             model.addAttribute("server", "/sentinel");
         } catch (Exception e) {
             e.printStackTrace();
@@ -323,6 +325,18 @@ public class SentinelController {
         }
     }
 
+    @RequestMapping("/serialize/updateString")
+    @ResponseBody
+    public String updateStringSerialize(int db, String key, String val) {
+        try {
+            sentinelService.setSerialize(db, key, val);
+            return "1";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return e.getMessage();
+        }
+    }
+
     /**
      * list根据索引更新value
      *
@@ -340,6 +354,18 @@ public class SentinelController {
             return "1";
         } catch (Exception e) {
             log.error("SentinelController updateList error:" + e.getMessage(), e);
+            return e.getMessage();
+        }
+    }
+
+    @RequestMapping(value = {"/serialize/updateList"})
+    @ResponseBody
+    public String updateListSerialize(int db, int index, String key, String val) {
+        try {
+            sentinelService.lSetSerialize(db, index, key, val);
+            return "1";
+        } catch (Exception e) {
+            e.printStackTrace();
             return e.getMessage();
         }
     }
@@ -382,6 +408,18 @@ public class SentinelController {
         }
     }
 
+    @RequestMapping(value = {"/serialize/updateSet"})
+    @ResponseBody
+    public String updateSetSerialize(int db, String key, String oldVal, String newVal) {
+        try {
+            sentinelService.updateSetSerialize(db, key, oldVal, newVal);
+            return "1";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return e.getMessage();
+        }
+    }
+
     @RequestMapping(value = {"/delSet"})
     @ResponseBody
     public String delSet(int db, String key, String val) {
@@ -399,6 +437,18 @@ public class SentinelController {
     public String updateZSet(int db, String key, String oldVal, String newVal, double score) {
         try {
             sentinelService.updateZSet(db, key, oldVal, newVal, score);
+            return "1";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return e.getMessage();
+        }
+    }
+
+    @RequestMapping(value = {"/serialize/updateZSet"})
+    @ResponseBody
+    public String updateZSetSerialize(int db, String key, String oldVal, String newVal, double score) {
+        try {
+            sentinelService.updateZSetSerialize(db, key, oldVal, newVal, score);
             return "1";
         } catch (Exception e) {
             e.printStackTrace();
@@ -430,11 +480,34 @@ public class SentinelController {
         }
     }
 
+    @RequestMapping(value = {"/serialize/hSet"})
+    @ResponseBody
+    public String hSetSerialize(int db, String key, String field, String val) {
+        try {
+            sentinelService.hSetSerialize(db, key, field, val);
+            return "1";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return e.getMessage();
+        }
+    }
+
     @RequestMapping(value = {"/updateHash"})
     @ResponseBody
     public String updateHash(int db, String key, String oldField, String newField, String val) {
         try {
             return sentinelService.updateHash(db, key, oldField, newField, val) ? "1" : "2";
+        } catch (Exception e) {
+            e.printStackTrace();
+            return e.getMessage();
+        }
+    }
+
+    @RequestMapping(value = {"/serialize/updateHash"})
+    @ResponseBody
+    public String updateHashSerialize(int db, String key, String oldField, String newField, String val) {
+        try {
+            return sentinelService.updateHashSerialize(db, key, oldField, newField, val) ? "1" : "2";
         } catch (Exception e) {
             e.printStackTrace();
             return e.getMessage();

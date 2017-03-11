@@ -97,7 +97,7 @@ public class StandaloneController {
                 }
             }
         } catch (Exception e) {
-            log.error("RedisController save error:" + e.getMessage(), e);
+            log.error("StandaloneController save error:" + e.getMessage(), e);
             return e.getMessage();
         }
         return "0";
@@ -120,7 +120,7 @@ public class StandaloneController {
         try {
             return standAloneService.getStringSerialize(db, key);
         } catch (UnsupportedEncodingException e) {
-            log.error("RedisController getSerializeString error:" + e.getMessage(), e);
+            log.error("StandaloneController getSerializeString error:" + e.getMessage(), e);
         }
         return null;
     }
@@ -146,7 +146,7 @@ public class StandaloneController {
             page = standAloneService.findListPageByKeySerialize(db, key, pageNo);
             page.pageViewAjax(request.getContextPath() + "/serialize/getList", "");
         } catch (UnsupportedEncodingException e) {
-            log.error("RedisController getSerializeList error:" + e.getMessage(), e);
+            log.error("StandaloneController getSerializeList error:" + e.getMessage(), e);
         }
         return page;
     }
@@ -189,7 +189,7 @@ public class StandaloneController {
             page = standAloneService.findZSetPageByKeySerialize(db, key, pageNo);
             page.pageViewAjax(request.getContextPath() + "/serialize/getList", "");
         } catch (UnsupportedEncodingException e) {
-            log.error("RedisController getSerializeZSet error:" + e.getMessage(), e);
+            log.error("StandaloneController getSerializeZSet error:" + e.getMessage(), e);
         }
         return page;
     }
@@ -206,7 +206,7 @@ public class StandaloneController {
         try {
             return standAloneService.hGetAllSerialize(db, key);
         } catch (UnsupportedEncodingException e) {
-            log.error("RedisController hGetAllSerialize error:" + e.getMessage(), e);
+            log.error("StandaloneController hGetAllSerialize error:" + e.getMessage(), e);
         }
         return null;
     }
@@ -225,7 +225,7 @@ public class StandaloneController {
         try {
             return standAloneService.renameNx(db, oldKey, newKey) == 0 ? "2" : "1";
         } catch (Exception e) {
-            log.error("RedisController renameNx error:" + e.getMessage(), e);
+            log.error("StandaloneController renameNx error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -243,7 +243,7 @@ public class StandaloneController {
         try {
             return standAloneService.ttl(db, key);
         } catch (Exception e) {
-            log.error("RedisController ttl error:" + e.getMessage(), e);
+            log.error("StandaloneController ttl error:" + e.getMessage(), e);
             return -1;
         }
     }
@@ -264,7 +264,7 @@ public class StandaloneController {
             standAloneService.setExpire(db, key, seconds);
             return "1";
         } catch (Exception e) {
-            log.error("RedisController setExpire error:" + e.getMessage(), e);
+            log.error("StandaloneController setExpire error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -283,7 +283,7 @@ public class StandaloneController {
             standAloneService.persist(db, key);
             return "1";
         } catch (Exception e) {
-            log.error("RedisController persist error:" + e.getMessage(), e);
+            log.error("StandaloneController persist error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -302,7 +302,7 @@ public class StandaloneController {
             standAloneService.delKey(db, key);
             return "1";
         } catch (Exception e) {
-            log.error("RedisController delKey error:" + e.getMessage(), e);
+            log.error("StandaloneController delKey error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -322,7 +322,19 @@ public class StandaloneController {
             standAloneService.set(db, key, val);
             return "1";
         } catch (Exception e) {
-            log.error("RedisController updateString error:" + e.getMessage(), e);
+            log.error("StandaloneController updateString error:" + e.getMessage(), e);
+            return e.getMessage();
+        }
+    }
+
+    @RequestMapping("/serialize/updateString")
+    @ResponseBody
+    public String updateStringSerialize(int db, String key, String val) {
+        try {
+            standAloneService.setSerialize(db, key, val);
+            return "1";
+        } catch (Exception e) {
+            log.error("StandaloneController updateStringSerialize error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -343,7 +355,19 @@ public class StandaloneController {
             standAloneService.lSet(db, index, key, val);
             return "1";
         } catch (Exception e) {
-            log.error("RedisController updateList error:" + e.getMessage(), e);
+            log.error("StandaloneController updateList error:" + e.getMessage(), e);
+            return e.getMessage();
+        }
+    }
+
+    @RequestMapping(value = {"/serialize/updateList"})
+    @ResponseBody
+    public String updateListSerialize(int db, int index, String key, String val) {
+        try {
+            standAloneService.lSetSerialize(db, index, key, val);
+            return "1";
+        } catch (Exception e) {
+            log.error("StandaloneController ResponseBody error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -368,7 +392,7 @@ public class StandaloneController {
             standAloneService.lRem(db, index, key);
             return "1";
         } catch (Exception e) {
-            log.error("RedisController delList error:" + e.getMessage(), e);
+            log.error("StandaloneController delList error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -381,7 +405,19 @@ public class StandaloneController {
             standAloneService.updateSet(db, key, oldVal, newVal);
             return "1";
         } catch (Exception e) {
-            log.error("RedisController updateSet error:" + e.getMessage(), e);
+            log.error("StandaloneController updateSet error:" + e.getMessage(), e);
+            return e.getMessage();
+        }
+    }
+
+    @RequestMapping(value = {"/serialize/updateSet"})
+    @ResponseBody
+    public String updateSetSerialize(int db, String key, String oldVal, String newVal) {
+        try {
+            standAloneService.updateSetSerialize(db, key, oldVal, newVal);
+            return "1";
+        } catch (Exception e) {
+            log.error("StandaloneController updateSetSerialize error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -393,7 +429,7 @@ public class StandaloneController {
             standAloneService.delSet(db, key, val);
             return "1";
         } catch (Exception e) {
-            log.error("RedisController delSet error:" + e.getMessage(), e);
+            log.error("StandaloneController delSet error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -405,7 +441,19 @@ public class StandaloneController {
             standAloneService.updateZSet(db, key, oldVal, newVal, score);
             return "1";
         } catch (Exception e) {
-            log.error("RedisController updateZSet error:" + e.getMessage(), e);
+            log.error("StandaloneController updateZSet error:" + e.getMessage(), e);
+            return e.getMessage();
+        }
+    }
+
+    @RequestMapping(value = {"/serialize/updateZSet"})
+    @ResponseBody
+    public String updateZSetSerialize(int db, String key, String oldVal, String newVal, double score) {
+        try {
+            standAloneService.updateZSetSerialize(db, key, oldVal, newVal, score);
+            return "1";
+        } catch (Exception e) {
+            log.error("StandaloneController updateZSetSerialize error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -417,7 +465,7 @@ public class StandaloneController {
             standAloneService.delZSet(db, key, val);
             return "1";
         } catch (Exception e) {
-            log.error("RedisController delZSet error:" + e.getMessage(), e);
+            log.error("StandaloneController delZSet error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -429,7 +477,19 @@ public class StandaloneController {
             standAloneService.hSet(db, key, field, val);
             return "1";
         } catch (Exception e) {
-            log.error("RedisController hSet error:" + e.getMessage(), e);
+            log.error("StandaloneController hSet error:" + e.getMessage(), e);
+            return e.getMessage();
+        }
+    }
+
+    @RequestMapping(value = {"/serialize/hSet"})
+    @ResponseBody
+    public String hSetSerialize(int db, String key, String field, String val) {
+        try {
+            standAloneService.hSetSerialize(db, key, field, val);
+            return "1";
+        } catch (Exception e) {
+            log.error("StandaloneController hSetSerialize error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -440,7 +500,18 @@ public class StandaloneController {
         try {
             return standAloneService.updateHash(db, key, oldField, newField, val) ? "1" : "2";
         } catch (Exception e) {
-            log.error("RedisController updateHash error:" + e.getMessage(), e);
+            log.error("StandaloneController updateHash error:" + e.getMessage(), e);
+            return e.getMessage();
+        }
+    }
+
+    @RequestMapping(value = {"/serialize/updateHash"})
+    @ResponseBody
+    public String updateHashSerialize(int db, String key, String oldField, String newField, String val) {
+        try {
+            return standAloneService.updateHashSerialize(db, key, oldField, newField, val) ? "1" : "2";
+        } catch (Exception e) {
+            log.error("StandaloneController updateHashSerialize error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -452,7 +523,7 @@ public class StandaloneController {
             standAloneService.delHash(db, key, field);
             return "1";
         } catch (Exception e) {
-            log.error("RedisController delHash error:" + e.getMessage(), e);
+            log.error("StandaloneController delHash error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -467,7 +538,7 @@ public class StandaloneController {
     public void backup(HttpServletResponse response) throws IOException {
         String str = standAloneService.backup();
         LocalDate data = LocalDate.now();
-        log.info("RedisController backup info:" + data);
+        log.info("StandaloneController backup info:" + data);
         response.setContentType("text/plain; charset=utf-8");//设置MIME类型
         response.setHeader("Content-Disposition", "attachment; filename=" + data + "standalone.redis");
         response.getWriter().write(str);
@@ -521,7 +592,7 @@ public class StandaloneController {
             }
 
         } catch (Exception e) {
-            log.error("RedisController recover error:" + e.getMessage(), e);
+            log.error("StandaloneController recover error:" + e.getMessage(), e);
             return e.getMessage();
         }
         return "1";
@@ -573,7 +644,7 @@ public class StandaloneController {
                 }
             }
         } catch (Exception e) {
-            log.error("RedisController serializeRecover error:" + e.getMessage(), e);
+            log.error("StandaloneController serializeRecover error:" + e.getMessage(), e);
             return e.getMessage();
         }
         return "1";
@@ -591,7 +662,7 @@ public class StandaloneController {
             standAloneService.flushAll();
             return "1";
         } catch (Exception e) {
-            log.error("RedisController flushAll error:" + e.getMessage(), e);
+            log.error("StandaloneController flushAll error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -606,7 +677,8 @@ public class StandaloneController {
 
     @RequestMapping("/nextPage")
     @ResponseBody
-    public String nextPage(Integer db, String cursor, String match, HttpServletRequest request, HttpServletResponse response) {
+    public String nextPage(Integer db, String cursor, String match, HttpServletRequest request, HttpServletResponse
+            response) {
         Cookie[] cookies = request.getCookies();
         if (cookies != null && cookies.length > 0) {
             Optional<Cookie> cookie = Stream.of(cookies).filter(c -> c.getName().equals(ServerConstant.REDIS_CURSOR)).findAny();
@@ -619,7 +691,7 @@ public class StandaloneController {
                     c.setValue(URLEncoder.encode(JSON.toJSONString(map), ServerConstant.CHARSET));
                     response.addCookie(c);
                 } catch (UnsupportedEncodingException e) {
-                    log.error("RedisController nextPage error:" + e.getMessage(), e);
+                    log.error("StandaloneController nextPage error:" + e.getMessage(), e);
                 }
             });
         }
@@ -691,7 +763,7 @@ public class StandaloneController {
         try {
             encode = URLEncoder.encode(jsonString, ServerConstant.CHARSET);
         } catch (UnsupportedEncodingException e) {
-            log.error("RedisController treeJson error:" + e.getMessage(), e);
+            log.error("StandaloneController treeJson error:" + e.getMessage(), e);
             e.printStackTrace();
         }
         Cookie cookie = new Cookie(ServerConstant.REDIS_CURSOR, encode);

@@ -18,6 +18,8 @@ public class CentreController {
         JedisPool jedisPool = JedisFactory.getJedisPool();
         if (jedisPool != null) {
             return "forward:" + request.getContextPath() + "/standalone/index";
+        }else if (JedisFactory.getJedisSentinelPool() != null) {
+            return "forward:" + request.getContextPath() + "/sentinel/index";
         } else if (JedisFactory.getJedisCluster() != null) {
             return "forward:" + request.getContextPath() + "/cluster/index";
         }

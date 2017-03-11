@@ -21,6 +21,7 @@
                 }
             });
 
+            //双击
             $(this).on('dblclick', '.node-div', function () {
                 if ($(this).find(".expand-icon").hasClass("glyphicon-chevron-right")) {
                     $(this).find(".expand-icon").removeClass("glyphicon-chevron-right").addClass("glyphicon-chevron-down");
@@ -30,6 +31,7 @@
                     $(this).siblings().removeClass("show-node").addClass("hide-node");
                 }
             });
+
             $(".expand-icon").on('click', function () {
                 if ($(this).hasClass("glyphicon-chevron-right")) {
                     $(this).removeClass("glyphicon-chevron-right").addClass("glyphicon-chevron-down");
@@ -44,6 +46,7 @@
 
     };
 
+    //添加树
     function appendTree(data) {
         if (!(data == null || data.length == 0)) {
             for (var i = 0; i < data.length; i++) {

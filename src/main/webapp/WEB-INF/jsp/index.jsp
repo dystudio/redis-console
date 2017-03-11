@@ -125,13 +125,13 @@
             </div>
             <button type="button" id="addRedis" class="btn btn-success navbar-btn">添加</button>
             <button type="button" id="backup" class="btn btn-primary navbar-btn">备份</button>
-            <span class="btn btn-success btn-file"> 恢复
+            <span class="btn btn-success btn-file"> <span class="text">恢复</span>
                 <span class="glyphicon" aria-hidden="true"></span>
                 <form id="fileForm" method="post" enctype="multipart/form-data">
                     <input type="file" name="file" value="" id="recover"/>
                 </form>
             </span>
-            <span class="btn btn-success btn-file"> JDK序列化恢复
+            <span class="btn btn-success btn-file"> <span class="text">JDK序列化恢复</span>
                 <span class="glyphicon" aria-hidden="true"></span>
                 <form id="serializeFileForm" method="post" enctype="multipart/form-data">
                     <input type="file" name="file" value="" id="serializeRecover"/>
@@ -188,9 +188,11 @@
                             <label for="redis_data_size" style="float:left;padding:10px 15px 0 40px;">数据库</label>
                             <div class="col-sm-10">
                                 <select class="form-control" id="redis_data_size" name="redis_data_size">
+                                    <c:if test="${not empty dataSize}">
                                     <c:forEach begin="0" end="${dataSize-1}" varStatus="vs">
                                         <option value="${vs.index}">db-${vs.index}</option>
                                     </c:forEach>
+                                    </c:if>
                                 </select>
                             </div>
                         </div>
@@ -252,10 +254,14 @@
     var redisView = 0;
     var serialize = "";
     $("#tree").initTree(defaultData);
+    //添加
     $("#addRedis").on('click', function () {
-        if (key != null && key != string) {
+        if (key != null && redisType != string) {
             $("#redis_key").val(key);
+        }else{
+            $("#redis_key").val("");
         }
+
         if (redisType != null) {
             $("#redis_type").find("option[value='" + redisType + "']").prop("selected", true);
         }
@@ -264,6 +270,8 @@
         }
         $("#redis_add_dialog").modal("show");
     });
+
+    //添加数据类型切换
     $("#redis_type").on('change', function () {
         if (this.selectedIndex == 4) {
             $("#hash_field").css("display", "");
@@ -273,8 +281,9 @@
             $("#hash_field").css("display", "none");
             $("#zSet_score").css("display", "none");
         }
-    })
-    ;
+    });
+
+    //保存
     $("#redis_save").on('click', function () {
         var key = $("#redis_key").val().trim();
         var checkFlag = true;
@@ -318,6 +327,8 @@
         $("#redis_add_dialog").modal('hide');
         $("#add_redis_form").ajaxSubmit(options);
     });
+
+    //视图切换
     $("#redis_view").on('change', function () {
         redisView = $(this).find("option:selected").val();
         if (redisView == 3 || redisView == 2) {
