@@ -20,18 +20,17 @@
 }
 
 #tree {
-    width: 23%;
-    position: fixed;
-    height: 90%;
+    width: 310px;
+    position: absolute;
     overflow: auto;
 }
 
-.container {
-    position: absolute;
-    width: 75%;
-    left: 23%;
+.container-div {
     padding: 0;
+    margin-left: 310px;
     border: 1px solid #ddd;
+    width: calc(100% - 310px);
+    min-width: 750px;
 }
 
 .server {
@@ -43,12 +42,15 @@
     background: url("../img/db.png") no-repeat 0 0;
     width: 25px !important;
 }
-.string{
+
+.string {
     background: url("../img/string.png") no-repeat 0 0;
 }
-.set{
+
+.set {
     background: url("../img/set.png") no-repeat 0 0;
 }
+
 .treeView .list-group-item {
     cursor: pointer;
     color: #428bca;
@@ -96,28 +98,31 @@
     color: #428bca;
     margin-left: 15px;
     padding: 1px;
-    display:block;                     /*内联对象需加*/
-    width:31em;
-    word-break:keep-all;           /* 不换行 */
-    white-space:nowrap;          /* 不换行 */
-    overflow:hidden;               /* 内容超出宽度时隐藏超出部分的内容 */
-    text-overflow:ellipsis;         /* 当对象内文本溢出时显示省略标记(...) ；需与overflow:hidden;一起使用。*/
+    display: block; /*内联对象需加*/
+    min_width: 20em;
+    word-break: keep-all; /* 不换行 */
+    white-space: nowrap; /* 不换行 */
+    overflow: visible; /* 内容超出宽度时隐藏超出部分的内容 */
+    text-overflow: ellipsis; /* 当对象内文本溢出时显示省略标记(...) ；需与overflow:hidden;一起使用。*/
 }
 
 .disabled {
     pointer-events: none;
 }
 
-.form-control{
+.form-control {
     height: 39px;
 }
-#page{
+
+#page {
     margin-left: 18%;
 }
-#list-content{
+
+#list-content {
     border-bottom: 1px solid #ddd;
 }
-.detail-div{
+
+.detail-div {
     border-bottom: 1px solid #ddd;
     height: 40px;
 }
