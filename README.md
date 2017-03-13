@@ -1,4 +1,6 @@
 # redis-console
+Demo地址:http://www.wanghe.space/redis/
+
 redis web数据管理,使用jdk8开发,支持集群,哨兵,单机等模式<br/>
 有bug和意见邮件请联系 178070584@qq.com
 

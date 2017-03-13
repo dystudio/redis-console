@@ -17,11 +17,11 @@ public class CentreController {
     public String index(HttpServletRequest request) {
         JedisPool jedisPool = JedisFactory.getJedisPool();
         if (jedisPool != null) {
-            return "forward:" + request.getContextPath() + "/standalone/index";
-        }else if (JedisFactory.getJedisSentinelPool() != null) {
-            return "forward:" + request.getContextPath() + "/sentinel/index";
+            return "forward:/standalone/index";
+        } else if (JedisFactory.getJedisSentinelPool() != null) {
+            return "forward:/sentinel/index";
         } else if (JedisFactory.getJedisCluster() != null) {
-            return "forward:" + request.getContextPath() + "/cluster/index";
+            return "forward:/cluster/index";
         }
         return "index";
     }
