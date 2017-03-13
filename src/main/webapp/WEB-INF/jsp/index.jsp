@@ -13,9 +13,6 @@
     <meta charset="utf-8">
     <!--浏览器兼容，兼容IE-->
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <!--视口：响应式-->
-    <meta name="viewport"
-          content="width=device-width, initial-scale=2,minimum-scale=1.5,maximum-scale=3,user-scalable=yes"/>
     <!-- 上述3个meta标签*必须*放在最前面，任何其他内容都*必须*跟随其后！ -->
     <title>Redis控制台</title>
     <!-- 1.导入css -->
@@ -36,7 +33,7 @@
 </head>
 
 <body>
-<div class="navbar navbar-default navbar-fixed-top" role="navigation">
+<div class="navbar navbar-default" role="navigation">
     <div style="margin-left: 100px;">
         <div class="navbar-header">
             <a class="navbar-brand redisAll" href="javascript:void(0);">Redis控制台</a>
@@ -68,7 +65,6 @@
         </div>
     </div>
 </div>
-<div style="height: 60px"></div>
 <div id="tree"></div>
 <!--模态框-->
 <!--全部删除提示-->
@@ -108,7 +104,7 @@
 </div><!-- /.modal -->
 
 
-<div class="container theme-showcase">
+<div class="container-div theme-showcase">
     <!-- /.row -->
     <div class="panel panel-default">
         <div class="panel-body">

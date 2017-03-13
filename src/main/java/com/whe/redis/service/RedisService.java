@@ -166,7 +166,7 @@ public class RedisService {
         if (exists && !ServerConstant.REDIS_LIST.equals(jedis.type(key))) {
             return 2L;
         }
-        jedis.lpushx(key, value);
+        jedis.lpush(key, value);
         return 1L;
     }
 
