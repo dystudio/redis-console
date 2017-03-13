@@ -19,7 +19,7 @@ rebel-remote.xml
 *.iws
 out/
 target/
-
+redis.properties
 # temp ignore
 *.log
 *.cache
