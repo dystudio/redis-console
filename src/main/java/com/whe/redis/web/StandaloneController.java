@@ -60,7 +60,7 @@ public class StandaloneController {
             model.addAttribute("match", match);
             model.addAttribute("server", "/standalone");
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("StandaloneController index error:" + e.getMessage(), e);
         }
         return "index";
     }
@@ -111,7 +111,12 @@ public class StandaloneController {
     @RequestMapping(value = {"/getString"})
     @ResponseBody
     public String getString(Integer db, String key) {
-        return standAloneService.getString(db, key);
+        try {
+            return standAloneService.getString(db, key);
+        } catch (Exception e) {
+            log.error("StandaloneController getString error[db=" + db + ",key=" + key + "]" + e.getMessage(), e);
+        }
+        return null;
     }
 
     @RequestMapping(value = {"/serialize/getString"})
@@ -120,7 +125,7 @@ public class StandaloneController {
         try {
             return standAloneService.getStringSerialize(db, key);
         } catch (UnsupportedEncodingException e) {
-            log.error("StandaloneController getSerializeString error:" + e.getMessage(), e);
+            log.error("StandaloneController getSerializeString error[db=" + db + ",key=" + key + "]" + e.getMessage(), e);
         }
         return null;
     }
@@ -133,9 +138,14 @@ public class StandaloneController {
     @RequestMapping(value = {"/getList"})
     @ResponseBody
     public Page<List<String>> getList(int db, String key, int pageNo, HttpServletRequest request) {
-        Page<List<String>> page = standAloneService.findListPageByKey(db, key, pageNo);
-        page.pageViewAjax(request.getContextPath() + "/getList", "");
-        return page;
+        try {
+            Page<List<String>> page = standAloneService.findListPageByKey(db, key, pageNo);
+            page.pageViewAjax(request.getContextPath() + "/getList", "");
+            return page;
+        } catch (Exception e) {
+            log.error("StandaloneController getList error:" + e.getMessage(), e);
+        }
+        return null;
     }
 
     @RequestMapping(value = {"/serialize/getList"})
@@ -535,13 +545,17 @@ public class StandaloneController {
      * @throws IOException IOException
      */
     @RequestMapping("/backup")
-    public void backup(HttpServletResponse response) throws IOException {
-        String str = standAloneService.backup();
-        LocalDate data = LocalDate.now();
-        log.info("StandaloneController backup info:" + data);
-        response.setContentType("text/plain; charset=utf-8");//设置MIME类型
-        response.setHeader("Content-Disposition", "attachment; filename=" + data + "standalone.redis");
-        response.getWriter().write(str);
+    public void backup(HttpServletResponse response){
+        try {
+            String str = standAloneService.backup();
+            LocalDate data = LocalDate.now();
+            log.info("StandaloneController backup info:" + data);
+            response.setContentType("text/plain; charset=utf-8");//设置MIME类型
+            response.setHeader("Content-Disposition", "attachment; filename=" + data + "standalone.redis");
+            response.getWriter().write(str);
+        }catch (Exception e){
+            log.error("StandaloneController backup error:" + e.getMessage(), e);
+        }
     }
 
     /**
@@ -764,7 +778,6 @@ public class StandaloneController {
             encode = URLEncoder.encode(jsonString, ServerConstant.CHARSET);
         } catch (UnsupportedEncodingException e) {
             log.error("StandaloneController treeJson error:" + e.getMessage(), e);
-            e.printStackTrace();
         }
         Cookie cookie = new Cookie(ServerConstant.REDIS_CURSOR, encode);
         cookie.setPath("/");

@@ -25,6 +25,65 @@ var ttlStr = '<div class="panel " style="display: none;" id="ttl-content"> <tabl
     'onkeyup="checkNumber(this)"/></td><td><button type="button" class="btn btn-success btn-xs " style="margin-left: 5px;" onclick="setExpire(this)">保存</button>' +
     '</td></tr></tbody></table></div>';
 $(function () {
+    $(function () {
+        //key导航切换
+        $("#redisContent").on('click', ".nav-tabs li", function () {
+            $(this).siblings("li").removeClass("active");
+            $(this).addClass("active");
+            var text = $(this).find("a").html();
+            if (text == "生存时间") {
+                if (!$(this).hasClass("firstClick")) {
+                    $(this).addClass("firstClick");
+                    $.ajax({
+                        url: ctx + server + "/ttl",
+                        data: {db: redisDb, key: key},
+                        type: "post",
+                        dataType: "json",
+                        success: function (data) {
+                            $("#ttl-content").find("input").val(data);
+                        }
+                    });
+                }
+                $("#type-content").css("display", "none");
+                $("#ttl-content").css("display", "block");
+            } else {
+                $("#ttl-content").css("display", "none");
+                $("#type-content").css("display", "block");
+            }
+        });
+
+        //点击
+        $("#tree").on('click', '.node-div', function () {
+            var $result = $(this).find(".expand-icon");
+            if ($result.length > 0) {
+                return;
+            }
+            var db = $(this).parent().closest(".child_ul").siblings(".node-div").find(".text").html();
+            var indexOf = db.indexOf("db");
+            if (indexOf == -1 && db != "data") {
+                redisDb = $(this).find(".text").html().substr(2);
+                return;
+            }
+            redisDb = db.substring(indexOf + 2);
+            var text = $(this).find(".text");
+            key = text.html();
+            var type = text.attr("type");
+            nowNodeId = $(this).closest("li").attr("node-id");
+            redisType = type;
+            if (type == string) {
+                getString();
+            } else if (type == list) {
+                getList();
+            } else if (type == set) {
+                getSet();
+            } else if (type == zset) {
+                getZSet();
+            } else if (type == hash) {
+                getHash();
+            }
+
+        })
+    });
     //备份
     $("#backup").on("click", function () {
         open(ctx + server + "/backup");
@@ -96,6 +155,7 @@ $(function () {
         $("#prompt").modal("show");
     })
 });
+
 /**
  * 重命名key
  **/
@@ -404,66 +464,7 @@ function checkDouble(th) {
     }
 }
 
-$(function () {
-    //key导航切换
-    $("#redisContent").on('click', ".nav-tabs li", function () {
-        $(this).siblings("li").removeClass("active");
-        $(this).addClass("active");
-        var text = $(this).find("a").html();
-        if (text == "生存时间") {
-            if (!$(this).hasClass("firstClick")) {
-                $(this).addClass("firstClick");
-                $.ajax({
-                    url: ctx + server + "/ttl",
-                    data: {db: redisDb, key: key},
-                    type: "post",
-                    dataType: "json",
-                    success: function (data) {
-                        $("#ttl-content").find("input").val(data);
-                    }
-                });
-            }
-            $("#type-content").css("display", "none");
-            $("#ttl-content").css("display", "block");
-        } else {
-            $("#ttl-content").css("display", "none");
-            $("#type-content").css("display", "block");
-        }
-    });
 
-    //点击
-    $("#tree").on('click', '.node-div', function () {
-        var $result = $(this).find(".expand-icon");
-        if ($result.length > 0) {
-            return;
-        }
-        var db = $(this).parent().closest(".child_ul").siblings(".node-div").find(".text").html();
-        var indexOf = db.indexOf("db");
-        if (indexOf == -1 && db != "data") {
-            redisDb = $(this).find(".text").html().substr(2);
-            return;
-        }
-        redisDb = db.substring(indexOf + 2);
-        var text = $(this).find(".text");
-        key = text.html();
-        var type = text.attr("type");
-        nowNodeId = $(this).closest("li").attr("node-id");
-        redisType = type;
-        if (type == string) {
-            getString();
-        } else if (type == list) {
-            getList();
-        } else if (type == set) {
-            getSet();
-        } else if (type == zset) {
-            getZSet();
-        } else if (type == hash) {
-            getHash();
-        }
-
-    })
-
-});
 /* 格式化JSON源码(对象转换为JSON文本) */
 function format(txt, compress/*是否为压缩模式*/) {
     var indentChar = '    ';

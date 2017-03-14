@@ -5,8 +5,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import redis.clients.jedis.JedisPool;
 
-import javax.servlet.http.HttpServletRequest;
-
 /**
  * Created by wang hongen on 2017/2/24.
  * CentreController
@@ -14,7 +12,7 @@ import javax.servlet.http.HttpServletRequest;
 @Controller
 public class CentreController {
     @RequestMapping("/")
-    public String index(HttpServletRequest request) {
+    public String index() {
         JedisPool jedisPool = JedisFactory.getJedisPool();
         if (jedisPool != null) {
             return "forward:/standalone/index";

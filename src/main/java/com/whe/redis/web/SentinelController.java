@@ -59,7 +59,6 @@ public class SentinelController {
             }
             model.addAttribute("server", "/sentinel");
         } catch (Exception e) {
-            e.printStackTrace();
             log.error("SentinelController index error:" + e.getMessage(), e);
         }
         return "index";
@@ -97,7 +96,7 @@ public class SentinelController {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController save error:" + e.getMessage(), e);
             return e.getMessage();
         }
         return "0";
@@ -119,7 +118,7 @@ public class SentinelController {
     public String getSerializeString(Integer db, String key) {
         try {
             return sentinelService.getStringSerialize(db, key);
-        } catch (UnsupportedEncodingException e) {
+        } catch (Exception e) {
             log.error("SentinelController getSerializeString error:" + e.getMessage(), e);
         }
         return "";
@@ -188,7 +187,7 @@ public class SentinelController {
         try {
             page = sentinelService.findZSetPageByKeySerialize(db, key, pageNo);
             page.pageViewAjax(request.getContextPath() + "/serialize/getList", "");
-        } catch (UnsupportedEncodingException e) {
+        } catch (Exception e) {
             log.error("SentinelController getSerializeZSet error:" + e.getMessage(), e);
         }
         return page;
@@ -205,7 +204,7 @@ public class SentinelController {
     public Map<String, String> hGetAllSerialize(int db, String key) {
         try {
             return sentinelService.hGetAllSerialize(db, key);
-        } catch (UnsupportedEncodingException e) {
+        } catch (Exception e) {
             log.error("SentinelController hGetAllSerialize error:" + e.getMessage(), e);
         }
         return null;
@@ -333,7 +332,7 @@ public class SentinelController {
             sentinelService.setSerialize(db, key, val);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController updateStringSerialize error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -366,7 +365,7 @@ public class SentinelController {
             sentinelService.lSetSerialize(db, index, key, val);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController updateListSerialize error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -416,7 +415,7 @@ public class SentinelController {
             sentinelService.updateSetSerialize(db, key, oldVal, newVal);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController updateSetSerialize error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -428,7 +427,7 @@ public class SentinelController {
             sentinelService.delSet(db, key, val);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController delSet error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -440,7 +439,7 @@ public class SentinelController {
             sentinelService.updateZSet(db, key, oldVal, newVal, score);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController updateZSet error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -452,7 +451,7 @@ public class SentinelController {
             sentinelService.updateZSetSerialize(db, key, oldVal, newVal, score);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController updateZSetSerialize error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -464,7 +463,7 @@ public class SentinelController {
             sentinelService.delZSet(db, key, val);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController delZSet error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -476,7 +475,7 @@ public class SentinelController {
             sentinelService.hSet(db, key, field, val);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController hSet error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -488,7 +487,7 @@ public class SentinelController {
             sentinelService.hSetSerialize(db, key, field, val);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController hSetSerialize error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -499,7 +498,7 @@ public class SentinelController {
         try {
             return sentinelService.updateHash(db, key, oldField, newField, val) ? "1" : "2";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController updateHash error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -510,7 +509,7 @@ public class SentinelController {
         try {
             return sentinelService.updateHashSerialize(db, key, oldField, newField, val) ? "1" : "2";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController updateHashSerialize error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -522,7 +521,7 @@ public class SentinelController {
             sentinelService.delHash(db, key, field);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController delHash error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -534,12 +533,16 @@ public class SentinelController {
      * @throws IOException IOException
      */
     @RequestMapping("/backup")
-    public void backup(HttpServletResponse response) throws IOException {
-        String str = sentinelService.backup();
-        LocalDate data = LocalDate.now();
-        response.setContentType("text/plain; charset=utf-8");//设置MIME类型
-        response.setHeader("Content-Disposition", "attachment; filename=" + data + "standalone.redis");
-        response.getWriter().write(str);
+    public void backup(HttpServletResponse response){
+        try {
+            String str = sentinelService.backup();
+            LocalDate data = LocalDate.now();
+            response.setContentType("text/plain; charset=utf-8");//设置MIME类型
+            response.setHeader("Content-Disposition", "attachment; filename=" + data + "standalone.redis");
+            response.getWriter().write(str);
+        }catch (Exception e){
+            log.error("SentinelController backup error:" + e.getMessage(), e);
+        }
     }
 
     /**
@@ -590,7 +593,7 @@ public class SentinelController {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController recover error:" + e.getMessage(), e);
             return e.getMessage();
         }
         return "1";
@@ -642,7 +645,7 @@ public class SentinelController {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController serializeRecover error:" + e.getMessage(), e);
             return e.getMessage();
         }
         return "1";
@@ -660,7 +663,7 @@ public class SentinelController {
             sentinelService.flushAll();
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController flushAll error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }

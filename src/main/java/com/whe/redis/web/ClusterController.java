@@ -78,7 +78,6 @@ public class ClusterController {
             }
             model.addAttribute("server", "/cluster");
         } catch (Exception e) {
-            e.printStackTrace();
             log.error("ClusterController index error:" + e.getMessage(), e);
         }
         return "index";
@@ -116,7 +115,7 @@ public class ClusterController {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("ClusterController save error:" + e.getMessage(), e);
             return e.getMessage();
         }
         return "0";
@@ -166,7 +165,7 @@ public class ClusterController {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("ClusterController serializeRecover error:" + e.getMessage(), e);
             return e.getMessage();
         }
         return "1";
@@ -217,7 +216,7 @@ public class ClusterController {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("ClusterController recover error:" + e.getMessage(), e);
             return e.getMessage();
         }
         return "1";
@@ -230,11 +229,15 @@ public class ClusterController {
      * @throws IOException IOException
      */
     @RequestMapping("/backup")
-    public void backup(HttpServletResponse response) throws IOException {
-        LocalDate date = LocalDate.now();
-        response.setContentType("text/plain; charset=utf-8");//设置MIME类型
-        response.setHeader("Content-Disposition", "attachment; filename=" + date + "cluster.redis");
-        response.getWriter().write(clusterService.backup());
+    public void backup(HttpServletResponse response) {
+        try {
+            LocalDate date = LocalDate.now();
+            response.setContentType("text/plain; charset=utf-8");//设置MIME类型
+            response.setHeader("Content-Disposition", "attachment; filename=" + date + "cluster.redis");
+            response.getWriter().write(clusterService.backup());
+        } catch (Exception e) {
+            log.error("ClusterController backup error:" + e.getMessage(), e);
+        }
     }
 
     @RequestMapping(value = {"/hSet"})
@@ -244,7 +247,7 @@ public class ClusterController {
             clusterService.hSet(key, field, val);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("ClusterController hSet error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -256,7 +259,7 @@ public class ClusterController {
             clusterService.hSetSerialize(key, field, val);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("ClusterController hSetSerialize error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -267,7 +270,7 @@ public class ClusterController {
         try {
             return clusterService.updateHash(key, oldField, newField, val) ? "1" : "2";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("ClusterController updateHash error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -278,7 +281,7 @@ public class ClusterController {
         try {
             return clusterService.updateHashSerialize(key, oldField, newField, val) ? "1" : "2";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("ClusterController updateHashSerialize error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -290,7 +293,7 @@ public class ClusterController {
             clusterService.delHash(key, field);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("ClusterController delHash error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -300,8 +303,8 @@ public class ClusterController {
     public Map<String, String> hGetAllSerialize(String key) {
         try {
             return clusterService.hGetAll(key.getBytes(ServerConstant.CHARSET));
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            log.error("ClusterController hGetAllSerialize error:" + e.getMessage(), e);
         }
         return null;
     }
@@ -319,7 +322,7 @@ public class ClusterController {
             clusterService.updateZSet(key, oldVal, newVal, score);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("ClusterController updateZSet error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -331,7 +334,7 @@ public class ClusterController {
             clusterService.updateZSetSerialize(key, oldVal, newVal, score);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("ClusterController updateZSetSerialize error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -343,7 +346,7 @@ public class ClusterController {
             clusterService.delZSet(key, val);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("ClusterController delZSet error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -354,11 +357,10 @@ public class ClusterController {
         Page<Set<Tuple>> page = null;
         try {
             page = clusterService.findZSetPageByKey(key.getBytes(ServerConstant.CHARSET), pageNo);
+            page.pageViewAjax(request.getContextPath() + "/serialize/getList", "");
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            log.error("ClusterController getSerializeZSet error:" + e.getMessage(), e);
         }
-        assert page != null;
-        page.pageViewAjax(request.getContextPath() + "/serialize/getList", "");
         return page;
     }
 
@@ -382,7 +384,7 @@ public class ClusterController {
             clusterService.delSet(key, val);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("ClusterController delSet error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -394,7 +396,7 @@ public class ClusterController {
             clusterService.updateSet(key, oldVal, newVal);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("ClusterController updateSet error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -406,7 +408,7 @@ public class ClusterController {
             clusterService.updateSetSerialize(key, oldVal, newVal);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("ClusterController updateSetSerialize error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -416,8 +418,8 @@ public class ClusterController {
     public Set<String> getSerializeSet(String key) {
         try {
             return clusterService.getSet(key.getBytes(ServerConstant.CHARSET));
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+        } catch (Exception e) {
+            log.error("ClusterController getSerializeSet error:" + e.getMessage(), e);
         }
         return null;
     }
@@ -452,7 +454,7 @@ public class ClusterController {
             clusterService.lRem(index, key);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("ClusterController delList error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -472,7 +474,7 @@ public class ClusterController {
             clusterService.lSet(index, key, val);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("ClusterController updateList error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -484,7 +486,7 @@ public class ClusterController {
             clusterService.lSetSerialize(index, key, val);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("ClusterController updateListSerialize error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -495,11 +497,10 @@ public class ClusterController {
         Page<List<String>> page = null;
         try {
             page = clusterService.findListPageByKey(key.getBytes(ServerConstant.CHARSET), pageNo);
-        } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            page.pageViewAjax(request.getContextPath() + "/serialize/getList", "");
+        } catch (Exception e) {
+            log.error("ClusterController getSerializeList error:" + e.getMessage(), e);
         }
-        assert page != null;
-        page.pageViewAjax(request.getContextPath() + "/serialize/getList", "");
         return page;
     }
 
@@ -524,7 +525,7 @@ public class ClusterController {
             clusterService.set(key, val);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("ClusterController updateString error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -536,7 +537,7 @@ public class ClusterController {
             clusterService.setSerialize(key, val);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("ClusterController updateStringSerialize error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -547,7 +548,7 @@ public class ClusterController {
         try {
             return clusterService.get(key.getBytes(ServerConstant.CHARSET));
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
+            log.error("ClusterController getSerializeString error:" + e.getMessage(), e);
         }
         return "";
     }
@@ -562,9 +563,10 @@ public class ClusterController {
     @ResponseBody
     public String delKey(String key) {
         try {
-            return clusterService.del(key) == 1 ? "1" : "0";
+            clusterService.del(key);
+            return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("ClusterController delKey error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -575,7 +577,7 @@ public class ClusterController {
         try {
             return clusterService.renameNx(oldKey, newKey) == 0 ? "2" : "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("ClusterController renameNx error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -593,7 +595,7 @@ public class ClusterController {
             clusterService.expire(key, seconds);
             return "1";
         } catch (Exception e) {
-            e.getMessage();
+            log.error("ClusterController setExpire error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -605,7 +607,7 @@ public class ClusterController {
             clusterService.persist(key);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("ClusterController persist error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -622,7 +624,7 @@ public class ClusterController {
         try {
             return page(pageNo, match, request, response);
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("ClusterController nextPage error:" + e.getMessage(), e);
             return "";
         }
     }
@@ -639,8 +641,8 @@ public class ClusterController {
         try {
             clusterService.flushAll();
         } catch (Exception e) {
-            e.printStackTrace();
-            return "0";
+            log.error("ClusterController flushAll error:" + e.getMessage(), e);
+            return e.getMessage();
         }
         return "1";
     }
