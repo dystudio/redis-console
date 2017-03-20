@@ -5,12 +5,17 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import redis.clients.jedis.JedisPool;
 
+
 /**
  * Created by wang hongen on 2017/2/24.
- * CentreController
+ *
+ * @SpringBootApplication申明让spring boot自动给程序进行必要的配置，等价于以默认属性使用
+ * @Configuration，@EnableAutoConfiguration和@ComponentScan
+ * @RestController返回json字符串的数据，直接可以编写RESTFul的接口；
  */
 @Controller
-public class CentreController {
+public class CenterController {
+
     @RequestMapping("/")
     public String index() {
         JedisPool jedisPool = JedisFactory.getJedisPool();

@@ -1,6 +1,7 @@
 package com.whe.test;
 
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

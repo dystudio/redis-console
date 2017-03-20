@@ -12,6 +12,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import redis.clients.jedis.ScanResult;
 import redis.clients.jedis.Tuple;
@@ -53,9 +54,9 @@ public class ClusterController {
                 StringBuilder sb = new StringBuilder();
                 sb.append("[{");
                 sb.append("text:").append("'").append("redisCluster").append("',");
-                sb.append("icon:'").append(request.getContextPath()).append("/img/redis.png',").append("expanded:").append(true).append(",");
+                sb.append("icon:'").append(request.getContextPath()).append("/static/img/redis.png',").append("expanded:").append(true).append(",");
                 sb.append("nodes:").append("[");
-                sb.append("{text:").append("'").append("data").append("',").append("icon:'").append(contextPath).append("/img/db.png',").append("expanded:").append(true).append(",");
+                sb.append("{text:").append("'").append("data").append("',").append("icon:'").append(contextPath).append("/static/img/db.png',").append("expanded:").append(true).append(",");
                 sb.append("nodes:");
                 Map<Integer, Map<String, String>> map = new HashMap<>();
                 Map<String, String> nodeCursor = new HashMap<>();
@@ -686,7 +687,7 @@ public class ClusterController {
         sb.append("[");
         Map<String, String> nextNodeCursor = nodeScan.entrySet().stream().filter(entry -> {
             Map<String, String> typeMap = clusterService.getType(entry.getValue().getResult());
-            typeMap.forEach((key, type) -> sb.append("{text:").append("'").append(key).append("',icon:'").append(contextPath).append("/img/").append(type).append(".png").append("',type:'").append(type).append("'},"));
+            typeMap.forEach((key, type) -> sb.append("{text:").append("'").append(key).append("',icon:'").append(contextPath).append("/static/img/").append(type).append(".png").append("',type:'").append(type).append("'},"));
             return !ServerConstant.DEFAULT_CURSOR.equalsIgnoreCase(entry.getValue().getStringCursor());
         }).collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().getStringCursor()));
 
