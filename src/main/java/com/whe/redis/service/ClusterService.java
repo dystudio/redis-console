@@ -1,9 +1,11 @@
 package com.whe.redis.service;
 
 import com.alibaba.fastjson.JSON;
-import com.whe.redis.util.ClusterPipeline;
+import com.whe.redis.cluster.ClusterPipeline;
 import com.whe.redis.util.JedisFactory;
-import com.whe.redis.util.*;
+import com.whe.redis.util.Page;
+import com.whe.redis.util.SerializeUtils;
+import com.whe.redis.util.ServerConstant;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.*;
 import redis.clients.jedis.exceptions.JedisConnectionException;
@@ -26,7 +28,7 @@ public class ClusterService {
     {
         scanParams.match(ServerConstant.DEFAULT_MATCH);
         jedisCluster = JedisFactory.getJedisCluster();
-        clusterPipeline = new ClusterPipeline(JedisFactory.getClusterInfoCache());
+        clusterPipeline = new ClusterPipeline(jedisCluster, JedisFactory.getClusterInfoCache());
     }
 
     public Long hSetNxSerialize(String key, String field, String value) {

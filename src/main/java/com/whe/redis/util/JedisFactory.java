@@ -1,5 +1,6 @@
 package com.whe.redis.util;
 
+import com.whe.redis.cluster.ClusterInfoCache;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.slf4j.Logger;
