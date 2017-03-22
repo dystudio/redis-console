@@ -6,16 +6,16 @@ import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
  * Created by trustme on 2017/2/19.
  * redisPool配置
  */
-class RedisPoolConfig {
+public class RedisPoolConfig {
     private static GenericObjectPoolConfig poolConfig = null;
     /**
      * 最大尝试
      */
-    final static int MAX_ATTEMPTS=5;
+   public final static int MAX_ATTEMPTS=5;
     /**
      * 连接超时
      */
-    final static int TIMEOUT = 10000;
+    public final static int TIMEOUT = 10000;
 
     /**
      * 连接池中最大连接数。高版本：maxTotal，低版本：maxActive
@@ -53,7 +53,7 @@ class RedisPoolConfig {
     private RedisPoolConfig() {
     }
 
-    static GenericObjectPoolConfig getGenericObjectPoolConfig() {
+    public static GenericObjectPoolConfig getGenericObjectPoolConfig() {
         if (poolConfig == null) {
             synchronized (RedisPoolConfig.class) {
                 if (poolConfig == null) {

@@ -1,5 +1,7 @@
 package com.whe.redis.util;
 
+import com.whe.redis.cluster.ClusterInfoCache;
+import com.whe.redis.domain.RedisInfo;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.slf4j.Logger;
@@ -14,6 +16,7 @@ import java.io.InputStream;
 import java.util.Arrays;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -32,6 +35,7 @@ public class JedisFactory {
     private static ClusterInfoCache clusterInfoCache = null;
     private static String standAlone;
     private static String sentinel;
+    private static ConcurrentHashMap<String, JedisPool> standAloneNode = new ConcurrentHashMap<>();
 
     /**
      * 初始化数据
@@ -51,15 +55,17 @@ public class JedisFactory {
             try {
                 standAlone = loadPro.getProperty("stand.alone");
                 if (StringUtils.isNotBlank(standAlone)) {
-                    ServerConstant.REDIS_TYPE = ServerConstant.STAND_ALONE;
                     String[] split = standAlone.split(":");
+
                     if (split.length == 2) {
+
                         String pass = loadPro.getProperty("stand.pass");
                         if (StringUtils.isNotBlank(pass)) {
                             jedisPool = new JedisPool(poolConfig, split[0], Integer.parseInt(split[1]), RedisPoolConfig.TIMEOUT, pass);
                         } else {
                             jedisPool = new JedisPool(poolConfig, split[0], Integer.parseInt(split[1]));
                         }
+                        standAloneNode.put(standAlone, jedisPool);
                     }
                 }
             } catch (Exception e) {
@@ -118,6 +124,16 @@ public class JedisFactory {
                 }
             }
         }
+    }
+
+    public static JedisPool addStandAloneNode(RedisInfo redisInfo) {
+        JedisPool jedisPool = null;
+        if (redisInfo.getPassword() == null) {
+            jedisPool = new JedisPool(RedisPoolConfig.getGenericObjectPoolConfig(), redisInfo.getHost(), redisInfo.getPort(), RedisPoolConfig.TIMEOUT);
+        } else {
+            jedisPool = new JedisPool(RedisPoolConfig.getGenericObjectPoolConfig(), redisInfo.getHost(), redisInfo.getPort(), RedisPoolConfig.TIMEOUT, redisInfo.getPassword());
+        }
+        return standAloneNode.put(redisInfo.getName(), jedisPool);
     }
 
     /**

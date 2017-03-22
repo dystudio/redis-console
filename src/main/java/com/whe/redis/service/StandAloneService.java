@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
  * StandAloneService
  */
 @Service
-public class StandAloneService extends RedisService {
+public class StandAloneService extends BaseService {
     private JedisPool jedisPool = JedisFactory.getJedisPool();
     private JedisPoolTemplate jedisPoolTemplate = new JedisPoolTemplate(jedisPool);
 

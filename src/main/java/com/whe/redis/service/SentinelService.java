@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
  * SentinelService
  */
 @Service
-public class SentinelService extends RedisService {
+public class SentinelService extends BaseService {
 
     private JedisSentinelPool jedisSentinelPool = JedisFactory.getJedisSentinelPool();
     private JedisSentinelPoolTemplate sentinelPoolTemplate = new JedisSentinelPoolTemplate(jedisSentinelPool);
