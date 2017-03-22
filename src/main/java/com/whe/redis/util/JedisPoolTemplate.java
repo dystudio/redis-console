@@ -11,7 +11,7 @@ import redis.clients.jedis.JedisPool;
  * JedisPoolTemplate
  */
 public class JedisPoolTemplate {
-    private static final Logger log = LoggerFactory.getLogger(JedisFactory.class);
+    private static final Logger log = LoggerFactory.getLogger(JedisPoolTemplate.class);
 
     private JedisPool JedisPool;
 
@@ -24,7 +24,7 @@ public class JedisPoolTemplate {
             jedis.select(db);
             return action.doInRedis(jedis);
         } catch (Exception e) {
-            log.error("jedisHandler error", e);
+            log.error("JedisPoolTemplate error", e);
             return null;
         }
     }

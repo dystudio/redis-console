@@ -1,7 +1,7 @@
 package com.whe.test;
 
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import redis.clients.jedis.*;
 
 import java.util.HashSet;

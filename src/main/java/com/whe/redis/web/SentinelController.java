@@ -12,6 +12,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import redis.clients.jedis.ScanResult;
 import redis.clients.jedis.Tuple;
@@ -35,7 +36,7 @@ import java.util.stream.Stream;
 @Controller
 @RequestMapping("/sentinel")
 public class SentinelController {
-    private static final Logger log = LoggerFactory.getLogger(StandaloneController.class);
+    private static final Logger log = LoggerFactory.getLogger(SentinelController.class);
 
     @Resource
     private SentinelService sentinelService;
@@ -59,7 +60,6 @@ public class SentinelController {
             }
             model.addAttribute("server", "/sentinel");
         } catch (Exception e) {
-            e.printStackTrace();
             log.error("SentinelController index error:" + e.getMessage(), e);
         }
         return "index";
@@ -97,7 +97,7 @@ public class SentinelController {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController save error:" + e.getMessage(), e);
             return e.getMessage();
         }
         return "0";
@@ -119,7 +119,7 @@ public class SentinelController {
     public String getSerializeString(Integer db, String key) {
         try {
             return sentinelService.getStringSerialize(db, key);
-        } catch (UnsupportedEncodingException e) {
+        } catch (Exception e) {
             log.error("SentinelController getSerializeString error:" + e.getMessage(), e);
         }
         return "";
@@ -188,7 +188,7 @@ public class SentinelController {
         try {
             page = sentinelService.findZSetPageByKeySerialize(db, key, pageNo);
             page.pageViewAjax(request.getContextPath() + "/serialize/getList", "");
-        } catch (UnsupportedEncodingException e) {
+        } catch (Exception e) {
             log.error("SentinelController getSerializeZSet error:" + e.getMessage(), e);
         }
         return page;
@@ -205,7 +205,7 @@ public class SentinelController {
     public Map<String, String> hGetAllSerialize(int db, String key) {
         try {
             return sentinelService.hGetAllSerialize(db, key);
-        } catch (UnsupportedEncodingException e) {
+        } catch (Exception e) {
             log.error("SentinelController hGetAllSerialize error:" + e.getMessage(), e);
         }
         return null;
@@ -333,7 +333,7 @@ public class SentinelController {
             sentinelService.setSerialize(db, key, val);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController updateStringSerialize error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -366,7 +366,7 @@ public class SentinelController {
             sentinelService.lSetSerialize(db, index, key, val);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController updateListSerialize error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -416,7 +416,7 @@ public class SentinelController {
             sentinelService.updateSetSerialize(db, key, oldVal, newVal);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController updateSetSerialize error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -428,7 +428,7 @@ public class SentinelController {
             sentinelService.delSet(db, key, val);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController delSet error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -440,7 +440,7 @@ public class SentinelController {
             sentinelService.updateZSet(db, key, oldVal, newVal, score);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController updateZSet error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -452,7 +452,7 @@ public class SentinelController {
             sentinelService.updateZSetSerialize(db, key, oldVal, newVal, score);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController updateZSetSerialize error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -464,7 +464,7 @@ public class SentinelController {
             sentinelService.delZSet(db, key, val);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController delZSet error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -476,7 +476,7 @@ public class SentinelController {
             sentinelService.hSet(db, key, field, val);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController hSet error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -488,7 +488,7 @@ public class SentinelController {
             sentinelService.hSetSerialize(db, key, field, val);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController hSetSerialize error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -499,7 +499,7 @@ public class SentinelController {
         try {
             return sentinelService.updateHash(db, key, oldField, newField, val) ? "1" : "2";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController updateHash error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -510,7 +510,7 @@ public class SentinelController {
         try {
             return sentinelService.updateHashSerialize(db, key, oldField, newField, val) ? "1" : "2";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController updateHashSerialize error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -522,7 +522,7 @@ public class SentinelController {
             sentinelService.delHash(db, key, field);
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController delHash error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -534,12 +534,16 @@ public class SentinelController {
      * @throws IOException IOException
      */
     @RequestMapping("/backup")
-    public void backup(HttpServletResponse response) throws IOException {
-        String str = sentinelService.backup();
-        LocalDate data = LocalDate.now();
-        response.setContentType("text/plain; charset=utf-8");//设置MIME类型
-        response.setHeader("Content-Disposition", "attachment; filename=" + data + "standalone.redis");
-        response.getWriter().write(str);
+    public void backup(HttpServletResponse response){
+        try {
+            String str = sentinelService.backup();
+            LocalDate data = LocalDate.now();
+            response.setContentType("text/plain; charset=utf-8");//设置MIME类型
+            response.setHeader("Content-Disposition", "attachment; filename=" + data + "standalone.redis");
+            response.getWriter().write(str);
+        }catch (Exception e){
+            log.error("SentinelController backup error:" + e.getMessage(), e);
+        }
     }
 
     /**
@@ -590,7 +594,7 @@ public class SentinelController {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController recover error:" + e.getMessage(), e);
             return e.getMessage();
         }
         return "1";
@@ -642,7 +646,7 @@ public class SentinelController {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController serializeRecover error:" + e.getMessage(), e);
             return e.getMessage();
         }
         return "1";
@@ -660,7 +664,7 @@ public class SentinelController {
             sentinelService.flushAll();
             return "1";
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("SentinelController flushAll error:" + e.getMessage(), e);
             return e.getMessage();
         }
     }
@@ -728,18 +732,18 @@ public class SentinelController {
         StringBuilder sb = new StringBuilder();
         sb.append("[{");
         sb.append("text:").append("'").append(JedisFactory.getSentinel()).append("',");
-        sb.append("icon:'").append(request.getContextPath()).append("/img/redis.png',").append("expanded:").append(true).append(",");
+        sb.append("icon:'").append(request.getContextPath()).append("/static/img/redis.png',").append("expanded:").append(true).append(",");
         sb.append("nodes:").append("[");
         Map<Integer, List<String>> map = new HashMap<>();
         dataBases.entrySet().forEach(entry -> {
-            sb.append("{text:").append("'").append(ServerConstant.DB).append(entry.getKey()).append("',").append("icon:'").append(request.getContextPath()).append("/img/db.png',").append("tags:").append("['").append(entry.getValue()).append("']");
+            sb.append("{text:").append("'").append(ServerConstant.DB).append(entry.getKey()).append("',").append("icon:'").append(request.getContextPath()).append("/static/img/db.png',").append("tags:").append("['").append(entry.getValue()).append("']");
             Long dbSize = entry.getValue();
             if (dbSize > 0) {
                 ScanResult<String> scanResult = sentinelService.getKeysByDb(entry.getKey(), cursor, match);
                 sb.append(",").append("expanded:").append(true).append(",");
                 sb.append("nodes:").append("[");
                 Map<String, String> typeMap = sentinelService.getType(entry.getKey(), scanResult.getResult());
-                typeMap.forEach((key, type) -> sb.append("{text:").append("'").append(key).append("',icon:'").append(request.getContextPath()).append("/img/").append(type).append(".png").append("',type:'").append(type).append("'},"));
+                typeMap.forEach((key, type) -> sb.append("{text:").append("'").append(key).append("',icon:'").append(request.getContextPath()).append("/static/img/").append(type).append(".png").append("',type:'").append(type).append("'},"));
                 if (scanResult.getResult().size() >= ServerConstant.PAGE_NUM) {
                     List<String> list = new ArrayList<>();
                     list.add("0");
@@ -775,7 +779,7 @@ public class SentinelController {
         ScanResult<String> scanResult = sentinelService.getKeysByDb(db, cursor, match);
         sb.append("[");
         Map<String, String> typeMap = sentinelService.getType(db, scanResult.getResult());
-        typeMap.forEach((key, type) -> sb.append("{text:").append("'").append(key).append("',icon:'").append(request.getContextPath()).append("/img/").append(type).append(".png").append("',type:'").append(type).append("'},"));
+        typeMap.forEach((key, type) -> sb.append("{text:").append("'").append(key).append("',icon:'").append(request.getContextPath()).append("/static/img/").append(type).append(".png").append("',type:'").append(type).append("'},"));
         String stringCursor = scanResult.getStringCursor();
         sb.append("{page:").append("'<ul class=\"pagination\" style=\"margin:0px\"> <li ");
         if (cursor == null || "0".equals(cursor)) {

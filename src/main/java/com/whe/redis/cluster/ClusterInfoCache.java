@@ -1,4 +1,4 @@
-package com.whe.redis.util;
+package com.whe.redis.cluster;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisCluster;
@@ -20,7 +20,7 @@ public class ClusterInfoCache {
     private static final int MASTER_NODE_INDEX = 2;
     private static final int SLAVE_NODE_INDEX = 3;
 
-    ClusterInfoCache(JedisCluster jedisCluster) {
+    public ClusterInfoCache(JedisCluster jedisCluster) {
         initializeSlotsCache(jedisCluster);
     }
 

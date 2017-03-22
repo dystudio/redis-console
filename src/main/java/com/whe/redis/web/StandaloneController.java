@@ -51,7 +51,8 @@ public class StandaloneController {
      * @return index
      */
     @RequestMapping(value = {"/index"})
-    public String index(Model model, @RequestParam(defaultValue = "0") String cursor, String match, HttpServletRequest request, HttpServletResponse response) {
+    public String index(@RequestParam(defaultValue = "0") String cursor, String match,
+                        HttpServletRequest request, HttpServletResponse response, Model model) {
         try {
             String treeJson = treeJson(cursor, match, request, response);
             Integer size = standAloneService.getDataBasesSize();
@@ -60,7 +61,7 @@ public class StandaloneController {
             model.addAttribute("match", match);
             model.addAttribute("server", "/standalone");
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("StandaloneController index error:" + e.getMessage(), e);
         }
         return "index";
     }
@@ -111,7 +112,12 @@ public class StandaloneController {
     @RequestMapping(value = {"/getString"})
     @ResponseBody
     public String getString(Integer db, String key) {
-        return standAloneService.getString(db, key);
+        try {
+            return standAloneService.getString(db, key);
+        } catch (Exception e) {
+            log.error("StandaloneController getString error[db=" + db + ",key=" + key + "]" + e.getMessage(), e);
+        }
+        return null;
     }
 
     @RequestMapping(value = {"/serialize/getString"})
@@ -120,7 +126,7 @@ public class StandaloneController {
         try {
             return standAloneService.getStringSerialize(db, key);
         } catch (UnsupportedEncodingException e) {
-            log.error("StandaloneController getSerializeString error:" + e.getMessage(), e);
+            log.error("StandaloneController getSerializeString error[db=" + db + ",key=" + key + "]" + e.getMessage(), e);
         }
         return null;
     }
@@ -133,9 +139,14 @@ public class StandaloneController {
     @RequestMapping(value = {"/getList"})
     @ResponseBody
     public Page<List<String>> getList(int db, String key, int pageNo, HttpServletRequest request) {
-        Page<List<String>> page = standAloneService.findListPageByKey(db, key, pageNo);
-        page.pageViewAjax(request.getContextPath() + "/getList", "");
-        return page;
+        try {
+            Page<List<String>> page = standAloneService.findListPageByKey(db, key, pageNo);
+            page.pageViewAjax(request.getContextPath() + "/getList", "");
+            return page;
+        } catch (Exception e) {
+            log.error("StandaloneController getList error:" + e.getMessage(), e);
+        }
+        return null;
     }
 
     @RequestMapping(value = {"/serialize/getList"})
@@ -535,13 +546,17 @@ public class StandaloneController {
      * @throws IOException IOException
      */
     @RequestMapping("/backup")
-    public void backup(HttpServletResponse response) throws IOException {
-        String str = standAloneService.backup();
-        LocalDate data = LocalDate.now();
-        log.info("StandaloneController backup info:" + data);
-        response.setContentType("text/plain; charset=utf-8");//设置MIME类型
-        response.setHeader("Content-Disposition", "attachment; filename=" + data + "standalone.redis");
-        response.getWriter().write(str);
+    public void backup(HttpServletResponse response) {
+        try {
+            String str = standAloneService.backup();
+            LocalDate data = LocalDate.now();
+            log.info("StandaloneController backup info:" + data);
+            response.setContentType("text/plain; charset=utf-8");//设置MIME类型
+            response.setHeader("Content-Disposition", "attachment; filename=" + data + "standalone.redis");
+            response.getWriter().write(str);
+        } catch (Exception e) {
+            log.error("StandaloneController backup error:" + e.getMessage(), e);
+        }
     }
 
     /**
@@ -727,12 +742,12 @@ public class StandaloneController {
         StringBuilder sb = new StringBuilder();
         sb.append("[{");
         sb.append("text:").append("'").append(JedisFactory.getStandAlone()).append("',");
-        sb.append("icon:'").append(request.getContextPath()).append("/img/redis.png',").append("expanded:").append(true).append(",");
+        sb.append("icon:'").append(request.getContextPath()).append("/static/img/redis.png',").append("expanded:").append(true).append(",");
         sb.append("nodes:").append("[");
         Map<Integer, List<String>> map = new HashMap<>();
         dataBases.entrySet().forEach(entry -> {
             sb.append("{text:").append("'").append(ServerConstant.DB).append(entry.getKey()).append("',")
-                    .append("icon:'").append(request.getContextPath()).append("/img/db.png',")
+                    .append("icon:'").append(request.getContextPath()).append("/static/img/db.png',")
                     .append("tags:").append("['").append(entry.getValue()).append("']");
             Long dbSize = entry.getValue();
             if (dbSize > 0) {
@@ -740,7 +755,7 @@ public class StandaloneController {
                 sb.append(",").append("expanded:").append(true).append(",").append("nodes:").append("[");
                 Map<String, String> typeMap = standAloneService.getType(entry.getKey(), scanResult.getResult());
                 typeMap.forEach((key, type) -> sb.append("{text:").append("'").append(key).append("',icon:'").append(request.getContextPath())
-                        .append("/img/").append(type).append(".png").append("',type:'").append(type).append("'},"));
+                        .append("/static/img/").append(type).append(".png").append("',type:'").append(type).append("'},"));
                 if (scanResult.getResult().size() >= ServerConstant.PAGE_NUM) {
                     List<String> list = new ArrayList<>();
                     list.add("0");
@@ -764,7 +779,6 @@ public class StandaloneController {
             encode = URLEncoder.encode(jsonString, ServerConstant.CHARSET);
         } catch (UnsupportedEncodingException e) {
             log.error("StandaloneController treeJson error:" + e.getMessage(), e);
-            e.printStackTrace();
         }
         Cookie cookie = new Cookie(ServerConstant.REDIS_CURSOR, encode);
         cookie.setPath("/");
@@ -778,7 +792,7 @@ public class StandaloneController {
         ScanResult<String> scanResult = standAloneService.getKeysByDb(db, cursor, match);
         sb.append("[");
         Map<String, String> typeMap = standAloneService.getType(db, scanResult.getResult());
-        typeMap.forEach((key, type) -> sb.append("{text:").append("'").append(key).append("',icon:'").append(request.getContextPath()).append("/img/").append(type).append(".png").append("',type:'").append(type).append("'},"));
+        typeMap.forEach((key, type) -> sb.append("{text:").append("'").append(key).append("',icon:'").append(request.getContextPath()).append("/static/img/").append(type).append(".png").append("',type:'").append(type).append("'},"));
         String stringCursor = scanResult.getStringCursor();
         sb.append("{page:").append("'<ul class=\"pagination\" style=\"margin:0px\"> <li ");
         if (cursor == null || "0".equals(cursor)) {

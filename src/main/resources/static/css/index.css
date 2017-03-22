@@ -23,6 +23,7 @@
     width: 310px;
     position: absolute;
     overflow: auto;
+    height: 90%;
 }
 
 .container-div {

@@ -1,6 +1,6 @@
 package com.whe.test;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 import java.util.TreeMap;
@@ -15,7 +15,7 @@ public class TreeMapTest {
         TreeMap<Integer, String> map = new TreeMap<>();
         for (int i = 0; i < 50; i += 5) {
             map.put(i, "val" + i);
-            map.put(i+1, "val" + i);
+            map.put(i + 1, "val" + i);
         }
         Map.Entry<Integer, String> integerStringEntry = map.lowerEntry(1);
         System.out.println(map);

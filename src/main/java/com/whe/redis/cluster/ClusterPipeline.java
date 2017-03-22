@@ -1,8 +1,10 @@
-package com.whe.redis.util;
+package com.whe.redis.cluster;
 
+import redis.clients.jedis.JedisCluster;
 import redis.clients.jedis.Pipeline;
 import redis.clients.jedis.Response;
 import redis.clients.jedis.Tuple;
+import redis.clients.jedis.exceptions.JedisConnectionException;
 
 import java.util.List;
 import java.util.Map;
@@ -14,9 +16,11 @@ import java.util.TreeMap;
  * ClusterPipeline
  */
 public class ClusterPipeline {
+    private JedisCluster jedisCluster;
     private ClusterInfoCache cache;
 
-    public ClusterPipeline(ClusterInfoCache cache) {
+    public ClusterPipeline(JedisCluster jedisCluster, ClusterInfoCache cache) {
+        this.jedisCluster = jedisCluster;
         this.cache = cache;
     }
 
@@ -56,13 +60,15 @@ public class ClusterPipeline {
     public Response<Long> zAdd(byte[] key, double score, byte[] val) {
         return cache.getPipelineByKey(new String(key)).zadd(key, score, val);
     }
+
     public Response<Long> hSet(String key, String field, String val) {
         return cache.getPipelineByKey(key).hset(key, field, val);
     }
 
-    public Response<Long> hSet(byte[]  key, byte[]  field, byte[]  val) {
+    public Response<Long> hSet(byte[] key, byte[] field, byte[] val) {
         return cache.getPipelineByKey(new String(key)).hset(key, field, val);
     }
+
     public Response<String> get(String key) {
         return cache.getPipelineByKey(key).get(key);
     }
@@ -85,7 +91,11 @@ public class ClusterPipeline {
 
     public void sync() {
         TreeMap<Long, Pipeline> pipelineMap = cache.getSlotPipelineMap();
-        pipelineMap.values().stream().distinct().forEach(Pipeline::sync);
+        try {
+            pipelineMap.values().stream().distinct().forEach(Pipeline::sync);
+        } catch (JedisConnectionException jce) {
+            cache.initializeSlotsCache(jedisCluster);
+        }
     }
 
 }
