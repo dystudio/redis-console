@@ -8,6 +8,7 @@ public class RedisInfo {
     private Integer port;
     private String password;
     private String name;
+    private String serverType;
     private String masterName;
     public RedisInfo(){}
     public RedisInfo(String host, int port) {
@@ -60,7 +61,21 @@ public class RedisInfo {
         this.name = name;
     }
 
+    public String getServerType() {
+        return serverType;
+    }
 
+    public void setServerType(String serverType) {
+        this.serverType = serverType;
+    }
+
+    public String getMasterName() {
+        return masterName;
+    }
+
+    public void setMasterName(String masterName) {
+        this.masterName = masterName;
+    }
 
     @Override
     public String toString() {
@@ -69,6 +84,8 @@ public class RedisInfo {
                 ", port=" + port +
                 ", password='" + password + '\'' +
                 ", name='" + name + '\'' +
+                ", serverType='" + serverType + '\'' +
+                ", masterName='" + masterName + '\'' +
                 '}';
     }
 }

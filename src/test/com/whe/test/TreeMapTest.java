@@ -2,6 +2,9 @@ package com.whe.test;
 
 import org.junit.jupiter.api.Test;
 
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -10,6 +13,15 @@ import java.util.TreeMap;
  * TreeMapTest
  */
 public class TreeMapTest {
+
+    @Test
+    public void test3(){
+        Calendar oldDate = Calendar.getInstance();
+        oldDate.add(Calendar.DATE, -24);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        String date = sdf.format(oldDate.getTime());
+        System.out.println("定时删除文件开始,删除的时间:" + date);
+    }
     @Test
     public void test() {
         TreeMap<Integer, String> map = new TreeMap<>();
@@ -20,5 +32,18 @@ public class TreeMapTest {
         Map.Entry<Integer, String> integerStringEntry = map.lowerEntry(1);
         System.out.println(map);
         System.out.println(integerStringEntry);
+    }
+
+    @Test
+    public void test2(){
+        System.out.println(1123131311%(5<<1)>>1);
+        System.out.println(1123131311&(5-1<<1)>>1);
+        //11 <<2 1100   12   左移运算符
+        int a=-3;
+        System.out.println(a=a<<2);
+        //1100 >>1 110 6
+        System.out.println(a=a>>1);
+        a=-6;
+        System.out.println(a>>>1);
     }
 }

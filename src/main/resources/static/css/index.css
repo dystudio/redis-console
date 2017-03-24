@@ -20,15 +20,21 @@
 }
 
 #tree {
+}
+.left{
     width: 310px;
     position: absolute;
     overflow: auto;
     height: 90%;
+    padding: 5px;
 }
-
+.leftMenu{
+    width: auto;
+    margin-bottom: 20px;
+}
 .container-div {
     padding: 0;
-    margin-left: 310px;
+    margin-left: 315px;
     border: 1px solid #ddd;
     width: calc(100% - 310px);
     min-width: 750px;
@@ -97,14 +103,13 @@
 .node-tree {
     cursor: pointer;
     color: #428bca;
-    margin-left: 15px;
-    padding: 1px;
+    margin: 2px 2px 2px 15px;
     display: block; /*内联对象需加*/
     min_width: 20em;
     word-break: keep-all; /* 不换行 */
     white-space: nowrap; /* 不换行 */
-    overflow: visible; /* 内容超出宽度时隐藏超出部分的内容 */
-    text-overflow: ellipsis; /* 当对象内文本溢出时显示省略标记(...) ；需与overflow:hidden;一起使用。*/
+    overflow: visible;
+    text-overflow: ellipsis;
 }
 
 .disabled {

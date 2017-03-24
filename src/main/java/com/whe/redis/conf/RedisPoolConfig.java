@@ -1,4 +1,4 @@
-package com.whe.redis.util;
+package com.whe.redis.conf;
 
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 

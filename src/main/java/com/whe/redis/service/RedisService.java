@@ -1,41 +1,40 @@
 package com.whe.redis.service;
 
-import com.alibaba.fastjson.JSON;
+import com.whe.redis.conf.RedisConf;
 import com.whe.redis.domain.RedisInfo;
 import com.whe.redis.util.JedisFactory;
-import com.whe.redis.util.RedisConf;
-import com.whe.redis.util.RedisPoolConfig;
+import com.whe.redis.util.ServerConstant;
 import org.springframework.stereotype.Service;
-import redis.clients.jedis.JedisCluster;
-import redis.clients.jedis.JedisPool;
 
-import java.io.*;
-import java.util.Map;
+import javax.annotation.Resource;
 
 
 @Service
 public class RedisService {
-    public void add(RedisInfo redisInfo) throws IOException {
-        File file = new File(RedisConf.confPath, RedisConf.confName);
-        if (file.exists()) {
-            try (BufferedReader br = new BufferedReader(new FileReader(file))) {
-                StringBuilder jsonBuff = new StringBuilder();
-                String line;
-                while ((line = br.readLine()) != null) {
-                    jsonBuff.append(line);
-                }
-                System.out.println(jsonBuff.toString());
-                Object parse = JSON.parse(jsonBuff.toString());
-                System.out.println(parse instanceof Map);
-                JedisFactory.addStandAloneNode(redisInfo);
-            }
-        } else {
-            file.getParentFile().mkdirs();
-            try (BufferedWriter bw = new BufferedWriter(new FileWriter(file))) {
-                String jsonString = JSON.toJSONString(redisInfo);
-                bw.write(jsonString);
-            }
+    @Resource
+    private RedisConf redisConf;
+
+    /**
+     * 添加服务
+     *
+     * @param redisInfo redisInfo
+     * @throws Exception Exception
+     */
+    public boolean add(RedisInfo redisInfo) throws Exception {
+        boolean addSuccess = false;
+        if (ServerConstant.STANDALONE.equalsIgnoreCase(redisInfo.getServerType())) {
+            addSuccess = JedisFactory.addStandAlone(redisInfo);
+        } else if (ServerConstant.STANDALONE.equalsIgnoreCase(redisInfo.getServerType())) {
+            addSuccess = JedisFactory.addSentinel(redisInfo);
+        } else if (ServerConstant.REDIS_CLUSTER.equalsIgnoreCase(redisInfo.getServerType())) {
+            addSuccess = JedisFactory.addCluster(redisInfo);
         }
+        //添加失败
+        if (!addSuccess) return false;
+        //保存配置文件
+        redisConf.addConf(redisInfo);
+        return true;
+
     }
 
 }

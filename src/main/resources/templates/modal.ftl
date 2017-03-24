@@ -47,33 +47,33 @@
                 <h4 class="modal-title" id="myModalLabel">添加数据</h4>
             </div>
             <div class="modal-body">
-                <form class="form-horizontal" id="addServerForm" action="">
+                <form class="form-horizontal" id="serverForm" action="">
                     <div class="form-group">
-                        <label for="redis_type" style="float:left;padding:10px 15px 0 27px;">服务类型</label>
+                        <label for="redis_type" style="float:left;padding:10px 15px 0 17px;">Redis类型</label>
                         <div class="col-sm-10">
-                            <select class="form-control"  name="redis_type">
-                                <option value="string" selected>Standalone</option>
-                                <option value="list">Sentinel</option>
-                                <option value="set">Cluster</option>
+                            <select class="form-control"  name="serverType">
+                                <option value="standalone" selected>Standalone</option>
+                                <option value="sentinel">Sentinel</option>
+                                <option value="cluster">Cluster</option>
                             </select>
                         </div>
                     </div>
                     <div class="form-group">
                         <label for="name" class="col-sm-2 control-label">Name</label>
                         <div class="col-sm-10">
-                            <input type="text" class="form-control" name="name">
+                            <input type="text" class="form-control" name="name" id="serverName">
                         </div>
                     </div>
                     <div class="form-group"  >
                         <label for="redis_field" class="col-sm-2 control-label">Host</label>
                         <div class="col-sm-10">
-                            <input type="text" name="host" class="form-control">
+                            <input type="text" name="host" class="form-control" id="serverHost">
                         </div>
                     </div>
                     <div class="form-group"  >
                         <label for="redis_field" class="col-sm-2 control-label">Port</label>
                         <div class="col-sm-10">
-                            <input type="number" name="port" class="form-control">
+                            <input type="number" name="port" class="form-control" value="6379" id="serverPort">
                         </div>
                     </div>
                     <div class="form-group"  >

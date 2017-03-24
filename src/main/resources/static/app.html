@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        div{
+            position: fixed;
+            top:30%;
+            left:40%;
+            font-size: 20px;
+        }
+    </style>
+    <script src="/static/js/jquery.min.js"></script>
+</head>
+<body>
+   <div ><a href="javascript:void(0);" id="openApp">打开生利宝</a><br/><a href="myApp://">测试</a> </div>
+</body>
+<script>
+    $("#openApp").click(function () {
+        $('body').append("<iframe id='ifr' style='display:none'></iframe>");
+        $('#ifr').attr("src", "myApp://");//ios端 app跳转地址mqq://
+      //  window.location.href="myuu://";
+       setTimeout(function () {
+            window.location.href="itms-apps://itunes.apple.com/cn/app/yin-hua-sheng-li-bao/id672547743?mt=8";
+        },20)
+    })
+</script>
+</html>

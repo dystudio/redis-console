@@ -53,26 +53,28 @@
         </div>
     </div>
 </div>
-<div class="heading">
-    <!--添加按钮-->
-    <button type="button" class="btn btn-success" data-toggle="modal" data-target="#addServerModal">
-        <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>添加
-    </button>
-    <!--修改按钮-->
-    <button id="btnEdit" type="button" class="btn btn-warning">
-        <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>修改
-    </button>
-    <!--删除按钮---无弹出框-->
-    <button id="btnDel" type="button" class="btn btn-danger" data-toggle="modal" data-target="#DeleteForm" onclick="">
-        <span class="glyphicon glyphicon-minus" aria-hidden="true"></span>删除
-    </button>
+<div class="left" style="">
+    <div class="leftMenu">
+        <!--添加按钮-->
+        <button type="button" class="btn btn-success" data-toggle="modal" data-target="#addServerModal">
+            <span class="glyphicon glyphicon-plus" aria-hidden="true"></span>添加
+        </button>
+        <!--修改按钮-->
+        <button id="btnEdit" type="button" class="btn btn-warning">
+            <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>修改
+        </button>
+        <!--删除按钮---无弹出框-->
+        <button id="btnDel" type="button" class="btn btn-danger" data-toggle="modal" data-target="#DeleteForm"
+                onclick="">
+            <span class="glyphicon glyphicon-minus" aria-hidden="true"></span>删除
+        </button>
+    </div>
+
+    <div id="tree"></div>
 </div>
-
-<div id="tree"></div>
-
 <div class="container-div theme-showcase">
     <!-- /.row -->
-    <div class="panel panel-default">
+    <div class="panel">
         <div class="panel-body">
             <div class="form-group" style="margin: 0px">
                 <label class="col-sm-2 control-label" style="float:left;padding:16px 14px 0 0px;width: 43px">视图</label>
@@ -133,18 +135,39 @@
     var serialize = "";
     $("#tree").initTree(defaultData);
     function add() {
+        var serverForm = $("#serverForm");
+        var checkFlag = true;
+        if ($("#serverName").val().trim() == "") {
+            $("#serverName").closest(".form-group").addClass("has-error");
+            checkFlag = false;
+        } else {
+            $("#serverName").closest(".form-group").removeClass("has-error");
+        }
+        if ($("#serverHost").val().trim() == "") {
+            $("#serverHost").closest(".form-group").addClass("has-error");
+            checkFlag = false;
+        } else {
+            $("#serverHost").closest(".form-group").removeClass("has-error");
+        }
+        if ($("#serverPort").val().trim() == "") {
+            $("#serverPort").closest(".form-group").addClass("has-error");
+            checkFlag = false;
+        } else {
+            $("#serverPort").closest(".form-group").removeClass("has-error");
+        }
+        if (!checkFlag) {
+            return;
+        }
         var options = {
             url: ctx + "/add",
             type: "post",
             dataType: "text",
             success: function (data) {
-                if (data == "1") {
-                    document.location.reload();//当前页面
-                }
                 showModel(data);
             }
         };
-        $("#addServerForm").ajaxSubmit(options);
+        $("#addServerModal").modal('hide');
+        $("#serverForm").ajaxSubmit(options);
     }
     //添加
     $("#addRedis").on('click', function () {
