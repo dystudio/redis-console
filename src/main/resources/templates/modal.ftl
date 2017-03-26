@@ -44,7 +44,7 @@
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
-                <h4 class="modal-title" id="myModalLabel">添加数据</h4>
+                <h4 class="modal-title" id="myModalLabel">添加服务</h4>
             </div>
             <div class="modal-body">
                 <form class="form-horizontal" id="serverForm" action="">

@@ -12,7 +12,6 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import redis.clients.jedis.ScanResult;
 import redis.clients.jedis.Tuple;
@@ -534,14 +533,14 @@ public class SentinelController {
      * @throws IOException IOException
      */
     @RequestMapping("/backup")
-    public void backup(HttpServletResponse response){
+    public void backup(HttpServletResponse response) {
         try {
             String str = sentinelService.backup();
             LocalDate data = LocalDate.now();
             response.setContentType("text/plain; charset=utf-8");//设置MIME类型
             response.setHeader("Content-Disposition", "attachment; filename=" + data + "standalone.redis");
             response.getWriter().write(str);
-        }catch (Exception e){
+        } catch (Exception e) {
             log.error("SentinelController backup error:" + e.getMessage(), e);
         }
     }
@@ -731,19 +730,26 @@ public class SentinelController {
         Map<Integer, Long> dataBases = sentinelService.getDataBases();
         StringBuilder sb = new StringBuilder();
         sb.append("[{");
-        sb.append("text:").append("'").append(JedisFactory.getSentinel()).append("',");
+        sb.append("text:").append("'").append("sentinel").append("',");
         sb.append("icon:'").append(request.getContextPath()).append("/static/img/redis.png',").append("expanded:").append(true).append(",");
         sb.append("nodes:").append("[");
         Map<Integer, List<String>> map = new HashMap<>();
+        boolean[] expanded = {true};
         dataBases.entrySet().forEach(entry -> {
-            sb.append("{text:").append("'").append(ServerConstant.DB).append(entry.getKey()).append("',").append("icon:'").append(request.getContextPath()).append("/static/img/db.png',").append("tags:").append("['").append(entry.getValue()).append("']");
+            sb.append("{text:").append("'").append(ServerConstant.DB).append(entry.getKey()).append("',")
+                    .append("icon:'").append(request.getContextPath()).append("/static/img/db.png',")
+                    .append("tags:").append("['").append(entry.getValue()).append("']");
             Long dbSize = entry.getValue();
             if (dbSize > 0) {
                 ScanResult<String> scanResult = sentinelService.getKeysByDb(entry.getKey(), cursor, match);
-                sb.append(",").append("expanded:").append(true).append(",");
-                sb.append("nodes:").append("[");
+                if (expanded[0]) {
+                    sb.append(",").append("expanded:").append(true);
+                    expanded[0] = false;
+                }
+                sb.append(",").append("nodes:").append("[");
                 Map<String, String> typeMap = sentinelService.getType(entry.getKey(), scanResult.getResult());
-                typeMap.forEach((key, type) -> sb.append("{text:").append("'").append(key).append("',icon:'").append(request.getContextPath()).append("/static/img/").append(type).append(".png").append("',type:'").append(type).append("'},"));
+                typeMap.forEach((key, type) -> sb.append("{text:").append("'").append(key).append("',icon:'")
+                        .append(request.getContextPath()).append("/static/img/").append(type).append(".png").append("',type:'").append(type).append("'},"));
                 if (scanResult.getResult().size() >= ServerConstant.PAGE_NUM) {
                     List<String> list = new ArrayList<>();
                     list.add("0");

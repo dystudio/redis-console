@@ -10,24 +10,6 @@ public class RedisInfo {
     private String name;
     private String serverType;
     private String masterName;
-    public RedisInfo(){}
-    public RedisInfo(String host, int port) {
-        this.host = host;
-        this.port = port;
-    }
-
-    public RedisInfo(String host, int port, String password) {
-        this.host = host;
-        this.port = port;
-        this.password = password;
-    }
-
-    public RedisInfo(String host, Integer port, String password, String name) {
-        this.host = host;
-        this.port = port;
-        this.password = password;
-        this.name = name;
-    }
 
     public String getHost() {
         return host;

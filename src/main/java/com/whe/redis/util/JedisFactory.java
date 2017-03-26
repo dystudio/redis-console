@@ -1,6 +1,7 @@
 package com.whe.redis.util;
 
 import com.whe.redis.cluster.ClusterInfoCache;
+import com.whe.redis.conf.RedisConf;
 import com.whe.redis.conf.RedisPoolConfig;
 import com.whe.redis.domain.RedisInfo;
 import org.apache.commons.lang3.StringUtils;
@@ -11,12 +12,12 @@ import redis.clients.jedis.*;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static com.whe.redis.util.ServerConstant.*;
 
 /**
  * Created by wang hongen on 2017/1/12.
@@ -26,103 +27,58 @@ import java.util.stream.Stream;
  */
 public class JedisFactory {
     private static final Logger log = LoggerFactory.getLogger(JedisFactory.class);
-
-    private static JedisPool jedisPool;
-    private static JedisSentinelPool jedisSentinelPool;
-    private static JedisCluster jedisCluster;
-    private static ClusterInfoCache clusterInfoCache = null;
-    private static String standAlone;
-    private static String sentinel;
-    private static ConcurrentHashMap<String, JedisPool> standAloneMap = new ConcurrentHashMap<>();
-    private static ConcurrentHashMap<String, JedisSentinelPool> jedisSentinelMap = new ConcurrentHashMap<>();
-    private static ConcurrentHashMap<String, JedisCluster> jedisClusterMap = new ConcurrentHashMap<>();
+    private static final RedisConf redisConf = RedisConf.getInstance();
     private final static GenericObjectPoolConfig poolConfig = RedisPoolConfig.getGenericObjectPoolConfig();
+
+    private static Map<String, JedisPool> standaloneMap = Collections.synchronizedMap(new LinkedHashMap<String, JedisPool>());
+    private static Map<String, JedisSentinelPool> sentinelMap = Collections.synchronizedMap(new LinkedHashMap<String, JedisSentinelPool>());
+    private static Map<String, JedisCluster> clusterMap = Collections.synchronizedMap(new LinkedHashMap<String, JedisCluster>());
+    private static ConcurrentHashMap<String, ClusterInfoCache> clusterInfoCacheMap = new ConcurrentHashMap<>();
 
     /**
      * 初始化数据
      */
     public static void init() {
+        Map<Object, Object> objectObjectMap = Collections.synchronizedMap(new LinkedHashMap<>());
         log.info("初始化数据");
-        /*
-         * 信息载入
-         */
-        Properties loadPro = new Properties();
-        InputStream in = JedisFactory.class.getResourceAsStream("/redis.properties");
         try {
-            loadPro.load(in);
-
-            //单机
-            try {
-                standAlone = loadPro.getProperty("stand.alone");
-                if (StringUtils.isNotBlank(standAlone)) {
-                    String[] split = standAlone.split(":");
-
-                    if (split.length == 2) {
-
-                        String pass = loadPro.getProperty("stand.pass");
-                        if (StringUtils.isNotBlank(pass)) {
-                            jedisPool = new JedisPool(poolConfig, split[0], Integer.parseInt(split[1]), RedisPoolConfig.TIMEOUT, pass);
-                        } else {
-                            jedisPool = new JedisPool(poolConfig, split[0], Integer.parseInt(split[1]));
-                        }
-                        standAloneMap.put(standAlone, jedisPool);
+            Optional<Map<String, List<RedisInfo>>> mapOptional = redisConf.readConf();
+            mapOptional.ifPresent(infoMap -> {
+                List<RedisInfo> redisInfoList = null;
+                try {
+                    //单机
+                    redisInfoList = infoMap.get(STANDALONE);
+                    if (redisInfoList != null && redisInfoList.size() > 0) {
+                        redisInfoList.forEach(JedisFactory::addStandAlone);
                     }
+                } catch (Exception e) {
+                    log.error(redisInfoList + ":standAlone初始化错误->" + e.getMessage(), e);
                 }
-            } catch (Exception e) {
-                log.error(standAlone + ":standAlone初始化错误->" + e.getMessage(), e);
-            }
-
-            //哨兵
-            try {
-                sentinel = loadPro.getProperty("sentinel");
-                if (StringUtils.isNoneBlank(sentinel)) {
-                    String masterName = loadPro.getProperty("master.name");
-                    if (masterName == null) {
-                        log.error("sentinel:masterName为空->");
+                try {
+                    //哨兵
+                    redisInfoList = infoMap.get(SENTINEL);
+                    if (redisInfoList != null && redisInfoList.size() > 0) {
+                        redisInfoList.forEach(JedisFactory::addSentinel);
                     }
-                    Set<String> set = Stream.of(sentinel).map(str -> str.split(";")).flatMap(Arrays::stream).collect(Collectors.toSet());
-                    String pass = loadPro.getProperty("sentinel.pass");
-                    if (StringUtils.isNoneBlank(pass)) {
-                        jedisSentinelPool = new JedisSentinelPool(masterName, set, poolConfig, pass);
-                    } else {
-                        jedisSentinelPool = new JedisSentinelPool(masterName, set, poolConfig);
-                    }
+                } catch (Exception e) {
+                    log.error(redisInfoList + ":sentinel初始化错误->" + e.getMessage(), e);
                 }
-            } catch (Exception e) {
-                log.error(sentinel + ":sentinel初始化错误->" + e.getMessage(), e);
-            }
+                try {
 
-            //集群
-            String redisCluster = loadPro.getProperty("cluster");
-            try {
-                if (StringUtils.isNotBlank(redisCluster)) {
-                    ServerConstant.REDIS_TYPE = ServerConstant.REDIS_CLUSTER;
-
-                    Set<HostAndPort> set = Stream.of(redisCluster).map(str -> str.split(";")).flatMap(Arrays::stream).map(str -> str.split(":")).map(str -> new HostAndPort(str[0], Integer.parseInt(str[1]))).collect(Collectors.toSet());
-                    String pass = loadPro.getProperty("cluster.pass");
-                    if (StringUtils.isNotBlank(pass)) {
-                        jedisCluster = new JedisCluster(set, RedisPoolConfig.TIMEOUT, RedisPoolConfig.TIMEOUT, RedisPoolConfig.MAX_ATTEMPTS, pass, poolConfig);
-                    } else {
-                        jedisCluster = new JedisCluster(set, poolConfig);
+                    //集群
+                    redisInfoList = infoMap.get(CLUSTER);
+                    if (redisInfoList != null && redisInfoList.size() > 0) {
+                        redisInfoList.forEach(JedisFactory::addCluster);
                     }
-
-                    //保存集群节点信息
-                    clusterInfoCache = new ClusterInfoCache(jedisCluster);
+                } catch (Exception e) {
+                    log.error(redisInfoList + ":cluster初始化错误->" + e.getMessage(), e);
                 }
-            } catch (Exception e) {
-                log.error(redisCluster + ":cluster初始化错误->" + e.getMessage(), e);
-            }
+            });
+            //保存集群节点信息
+            // clusterInfoCache = new ClusterInfoCache(jedisCluster);
         } catch (Exception e) {
             e.printStackTrace();
             log.error("初始化错误:" + e.getMessage(), e);
-        } finally {
-            if (in != null) {
-                try {
-                    in.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
         }
     }
 
@@ -134,7 +90,7 @@ public class JedisFactory {
      */
     public static boolean addStandAlone(RedisInfo redisInfo) {
         JedisPool jedisPool;
-        if (redisInfo.getPassword() == null) {
+        if (StringUtils.isBlank(redisInfo.getPassword())) {
             jedisPool = new JedisPool(poolConfig, redisInfo.getHost(), redisInfo.getPort(), RedisPoolConfig.TIMEOUT);
         } else {
             jedisPool = new JedisPool(poolConfig, redisInfo.getHost(), redisInfo.getPort(), RedisPoolConfig.TIMEOUT, redisInfo.getPassword());
@@ -142,37 +98,40 @@ public class JedisFactory {
         try (Jedis resource = jedisPool.getResource()) {
             String pong = "PONG";
             boolean ping = pong.equalsIgnoreCase(resource.ping());
-            standAloneMap.put(redisInfo.getName(), jedisPool);
+            standaloneMap.put(redisInfo.getName(), jedisPool);
             return ping;
         }
     }
 
     public static boolean addSentinel(RedisInfo redisInfo) {
         JedisSentinelPool jedisSentinelPool;
-        Set<String> set = Stream.of(redisInfo.getHost()).map(str -> str.split(";")).flatMap(Arrays::stream).collect(Collectors.toSet());
-        if (redisInfo.getPassword() == null) {
-            jedisSentinelPool = new JedisSentinelPool(redisInfo.getMasterName(), set, poolConfig);
+        Set<String> set = new HashSet<>();
+        set.add(redisInfo.getHost() + ":" + redisInfo.getPort());
+        if (StringUtils.isBlank(redisInfo.getPassword())) {
+            jedisSentinelPool = new JedisSentinelPool(redisInfo.getName(), set, poolConfig);
         } else {
-            jedisSentinelPool = new JedisSentinelPool(redisInfo.getMasterName(), set, poolConfig);
+            jedisSentinelPool = new JedisSentinelPool(redisInfo.getName(), set, poolConfig,redisInfo.getPassword());
         }
         try (Jedis jedis = jedisSentinelPool.getResource()) {
             String pong = "PONG";
             boolean ping = pong.equalsIgnoreCase(jedis.ping());
-            jedisSentinelMap.put(redisInfo.getName(), jedisSentinelPool);
+            sentinelMap.put(redisInfo.getName(), jedisSentinelPool);
             return ping;
         }
     }
 
     public static boolean addCluster(RedisInfo redisInfo) {
         JedisCluster jedisCluster;
-        Set<HostAndPort> set = Stream.of(redisInfo.getHost()).map(str -> str.split(";")).flatMap(Arrays::stream).map(str -> str.split(":")).map(str -> new HostAndPort(str[0], Integer.parseInt(str[1]))).collect(Collectors.toSet());
-        if (redisInfo.getPassword() == null) {
+        Set<HostAndPort> set = new HashSet<>();
+        set.add(new HostAndPort(redisInfo.getHost(), redisInfo.getPort()));
+        if (StringUtils.isBlank(redisInfo.getPassword())) {
             jedisCluster = new JedisCluster(set, poolConfig);
         } else {
             jedisCluster = new JedisCluster(set, RedisPoolConfig.TIMEOUT, RedisPoolConfig.TIMEOUT, RedisPoolConfig.MAX_ATTEMPTS, redisInfo.getPassword(), poolConfig);
         }
         jedisCluster.exists("key");
-        jedisClusterMap.put(redisInfo.getName(), jedisCluster);
+        clusterMap.put(redisInfo.getName(), jedisCluster);
+        clusterInfoCacheMap.put(redisInfo.getName(), new ClusterInfoCache(jedisCluster));
         return true;
     }
 
@@ -180,17 +139,16 @@ public class JedisFactory {
      * 关闭连接
      */
     public static void close() {
-        if (jedisPool != null) jedisPool.close();
+        if (standaloneMap != null) standaloneMap.forEach((name, pool) -> pool.close());
+        if (sentinelMap != null) sentinelMap.forEach((name, pool) -> pool.close());
+        if (clusterMap != null) clusterMap.forEach((name, cluster) -> {
+            try {
+                cluster.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
 
-        if (jedisCluster != null) try {
-            jedisCluster.close();
-        } catch (Exception e) {
-            System.out.println("redisCluster关闭失败");
-            e.printStackTrace();
-        }
-        if (jedisSentinelPool != null) {
-            jedisSentinelPool.close();
-        }
     }
 
     /**
@@ -199,7 +157,11 @@ public class JedisFactory {
      * @return JedisCluster
      */
     public static JedisCluster getJedisCluster() {
-        return jedisCluster;
+        Collection<JedisCluster> values = clusterMap.values();
+        for (JedisCluster jedisCluster : values) {
+            return jedisCluster;
+        }
+        return null;
     }
 
     /**
@@ -207,24 +169,34 @@ public class JedisFactory {
      *
      * @return JedisPool
      */
-    public static JedisPool getJedisPool() {
-        return jedisPool;
-    }
-
-    public static ClusterInfoCache getClusterInfoCache() {
-        return clusterInfoCache;
-    }
-
-    public static String getSentinel() {
-        return sentinel;
-    }
-
-    public static String getStandAlone() {
-        return standAlone;
+    public static JedisPool getJedisPool(String name) {
+        return standaloneMap.get(name);
     }
 
     public static JedisSentinelPool getJedisSentinelPool() {
-        return jedisSentinelPool;
+        for (JedisSentinelPool jedisSentinelPool : sentinelMap.values()) {
+            return jedisSentinelPool;
+        }
+        return null;
+    }
+
+    public static ClusterInfoCache getClusterInfoCache() {
+        for (ClusterInfoCache clusterInfoCache : clusterInfoCacheMap.values()) {
+            return clusterInfoCache;
+        }
+        return null;
+    }
+
+    public static Map<String, JedisPool> getStandaloneMap() {
+        return standaloneMap;
+    }
+
+    public static Map<String, JedisSentinelPool> getSentinelMap() {
+        return sentinelMap;
+    }
+
+    public static Map<String, JedisCluster> getClusterMap() {
+        return clusterMap;
     }
 }
 

@@ -3,7 +3,7 @@ package com.whe.redis.conf;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 
 /**
- * Created by trustme on 2017/2/19.
+ * Created by wanghongen on 2017/2/19.
  * redisPool配置
  */
 public class RedisPoolConfig {
@@ -15,7 +15,7 @@ public class RedisPoolConfig {
     /**
      * 连接超时
      */
-    public final static int TIMEOUT = 10000;
+    public final static int TIMEOUT = 3000;
 
     /**
      * 连接池中最大连接数。高版本：maxTotal，低版本：maxActive

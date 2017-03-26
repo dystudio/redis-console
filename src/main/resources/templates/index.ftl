@@ -128,11 +128,12 @@
 <script src="${ctx!}/static/js/redis/index.js"></script>
 <script src="${ctx!}/static/js/redis/whe-tree.js"></script>
 <script type="text/javascript">
-    var defaultData = ${tree!};
+    var defaultData = ${tree!"[]"};
     var server = '${server!}';
     var match = '${match!}';
     var redisView = 0;
     var serialize = "";
+    var name = "";
     $("#tree").initTree(defaultData);
     function add() {
         var serverForm = $("#serverForm");
@@ -163,6 +164,18 @@
             type: "post",
             dataType: "text",
             success: function (data) {
+                if (data == "1") {
+                    window.location.reload();
+                   /* $.ajax({
+                        url: ctx + server + "/addServer",
+                        data: {name: $("#serverName").val()},
+                        type: "post",
+                        dataType: "text",
+                        success: function (data) {
+                            $(this).addNode(data);
+                        }
+                    });*/
+                }
                 showModel(data);
             }
         };
@@ -230,6 +243,7 @@
         }
         var options = {
             url: ctx + server + "/save",
+            data: {name: name},
             type: "post",
             dataType: "text",
             success: function (data) {

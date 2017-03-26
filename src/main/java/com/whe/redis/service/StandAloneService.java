@@ -15,56 +15,65 @@ import java.util.stream.Collectors;
  */
 @Service
 public class StandAloneService extends BaseService {
-    private JedisPool jedisPool = JedisFactory.getJedisPool();
-    private JedisPoolTemplate jedisPoolTemplate = new JedisPoolTemplate(jedisPool);
-
 
     //Hash
 
-    public Long hSetNxSerialize(int db, String key, String field, String value) {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public Long hSetNxSerialize(String name, int db, String key, String field, String value) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             return super.hSetNxSerialize(jedis, db, key, field, value);
         }
     }
 
-    public Long hSetNx(int db, String key, String field, String value) {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public Long hSetNx(String name, int db, String key, String field, String value) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             return super.hSetNx(jedis, db, key, field, value);
         }
     }
 
-    public Map<String, String> hGetAll(int db, String key) {
-        return jedisPoolTemplate.execute(db, jedis -> jedis.hgetAll(key));
+    public Map<String, String> hGetAll(String name, int db, String key) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
+            jedis.select(db);
+            return jedis.hgetAll(key);
+        }
     }
 
-    public Map<String, String> hGetAllSerialize(int db, String key) throws UnsupportedEncodingException {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public Map<String, String> hGetAllSerialize(String name, int db, String key) throws UnsupportedEncodingException {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             return super.hGetAllSerialize(jedis, db, key);
         }
     }
 
-    public void hSet(int db, String key, String field, String val) {
-        jedisPoolTemplate.execute(db, jedis -> jedis.hset(key, field, val));
+    public void hSet(String name, int db, String key, String field, String val) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
+            jedis.select(db);
+            jedis.hset(key, field, val);
+        }
     }
 
-    public void hSetSerialize(int db, String key, String field, String val) {
-        jedisPoolTemplate.execute(db, jedis -> jedis.hset(key.getBytes(), SerializeUtils.serialize(field), SerializeUtils.serialize(val)));
+    public void hSetSerialize(String name, int db, String key, String field, String val) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
+            jedis.select(db);
+            jedis.hset(key.getBytes(), SerializeUtils.serialize(field), SerializeUtils.serialize(val));
+        }
     }
 
-    public boolean updateHash(int db, String key, String oldField, String newField, String val) {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public boolean updateHash(String name, int db, String key, String oldField, String newField, String val) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             return super.updateHash(jedis, db, key, oldField, newField, val);
         }
     }
 
-    public Boolean updateHashSerialize(int db, String key, String oldField, String newField, String val) {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public Boolean updateHashSerialize(String name, int db, String key, String oldField, String newField, String val) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             return super.updateHashSerialize(jedis, db, key, oldField, newField, val);
         }
     }
 
-    public void delHash(int db, String key, String field) {
-        jedisPoolTemplate.execute(db, jedis -> jedis.hdel(key, field));
+    public void delHash(String name, int db, String key, String field) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
+            jedis.select(db);
+            jedis.hdel(key, field);
+        }
     }
 
     /**
@@ -72,8 +81,8 @@ public class StandAloneService extends BaseService {
      *
      * @param hashMap map
      */
-    public void saveAllHashSerialize(int db, Map<String, Map<String, String>> hashMap) {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public void saveAllHashSerialize(String name, int db, Map<String, Map<String, String>> hashMap) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             jedis.select(db);
             Pipeline pipeline = jedis.pipelined();
             hashMap.forEach((key, map) -> map.forEach((field, val) -> pipeline.hset(key.getBytes(), SerializeUtils.serialize(field), SerializeUtils.serialize(val))));
@@ -87,8 +96,8 @@ public class StandAloneService extends BaseService {
      *
      * @param hashMap map
      */
-    public void saveAllHash(int db, Map<String, Map<String, String>> hashMap) {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public void saveAllHash(String name, int db, Map<String, Map<String, String>> hashMap) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             jedis.select(db);
             Pipeline pipeline = jedis.pipelined();
             hashMap.forEach((key, map) -> map.forEach((field, val) -> pipeline.hset(key, field, val)));
@@ -99,14 +108,14 @@ public class StandAloneService extends BaseService {
 
     //zSet
 
-    public Long zAdd(int db, String key, double score, String value) {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public Long zAdd(String name, int db, String key, double score, String value) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             return super.zAdd(jedis, db, key, score, value);
         }
     }
 
-    public Long zAddSerialize(int db, String key, double score, String value) {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public Long zAddSerialize(String name, int db, String key, double score, String value) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             return super.zAddSerialize(jedis, db, key, score, value);
         }
     }
@@ -116,35 +125,40 @@ public class StandAloneService extends BaseService {
      *
      * @return Page<Set<Tuple>>
      */
-    public Page<Set<Tuple>> findZSetPageByKey(int db, int pageNo, String key) {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public Page<Set<Tuple>> findZSetPageByKey(String name, int db, int pageNo, String key) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             return super.findZSetPageByKey(jedis, db, pageNo, key);
         }
     }
 
-    public Page<Set<Tuple>> findZSetPageByKeySerialize(int db, String key, int pageNo) throws UnsupportedEncodingException {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public Page<Set<Tuple>> findZSetPageByKeySerialize(String name, int db, String key, int pageNo) throws UnsupportedEncodingException {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             return super.findZSetPageByKeySerialize(jedis, db, key, pageNo);
         }
     }
 
 
-    public void updateZSet(int db, String key, String oldVal, String newVal, double score) {
-        jedisPoolTemplate.execute(db, jedis -> {
+    public void updateZSet(String name, int db, String key, String oldVal, String newVal, double score) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
+            jedis.select(db);
             jedis.zrem(key, oldVal);
-            return jedis.zadd(key, score, newVal);
-        });
+            jedis.zadd(key, score, newVal);
+        }
     }
 
-    public void updateZSetSerialize(int db, String key, String oldVal, String newVal, double score) {
-        jedisPoolTemplate.execute(db, jedis -> {
+    public void updateZSetSerialize(String name, int db, String key, String oldVal, String newVal, double score) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
+            jedis.select(db);
             jedis.zrem(key, oldVal);
-            return jedis.zadd(key.getBytes(), score, SerializeUtils.serialize(newVal));
-        });
+            jedis.zadd(key.getBytes(), score, SerializeUtils.serialize(newVal));
+        }
     }
 
-    public void delZSet(int db, String key, String val) {
-        jedisPoolTemplate.execute(db, jedis -> jedis.zrem(key, val));
+    public void delZSet(String name, int db, String key, String val) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
+            jedis.select(db);
+            jedis.zrem(key, val);
+        }
     }
 
 
@@ -153,8 +167,8 @@ public class StandAloneService extends BaseService {
      *
      * @param zSetMap map
      */
-    public void saveAllZSet(int db, Map<String, Map<String, Double>> zSetMap) {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public void saveAllZSet(String name, int db, Map<String, Map<String, Double>> zSetMap) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             jedis.select(db);
             Pipeline pipeline = jedis.pipelined();
             zSetMap.forEach((key, map) -> map.forEach((elem, score) -> pipeline.zadd(key, score.doubleValue(), elem)));
@@ -167,8 +181,8 @@ public class StandAloneService extends BaseService {
      *
      * @param zSetMap map
      */
-    public void saveAllZSetSerialize(int db, Map<String, Map<String, Number>> zSetMap) {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public void saveAllZSetSerialize(String name, int db, Map<String, Map<String, Number>> zSetMap) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             jedis.select(db);
             Pipeline pipeline = jedis.pipelined();
             zSetMap.forEach((key, map) -> map.forEach((elem, score) -> pipeline.zadd(key.getBytes(), score.doubleValue(), SerializeUtils.serialize(elem))));
@@ -176,14 +190,14 @@ public class StandAloneService extends BaseService {
         }
     }
 
-    public Long sAddSerialize(int db, String key, String value) {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public Long sAddSerialize(String name, int db, String key, String value) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             return super.sAddSerialize(jedis, db, key, value);
         }
     }
 
-    public Long sAdd(int db, String key, String value) {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public Long sAdd(String name, int db, String key, String value) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             return super.sAdd(jedis, db, key, value);
         }
     }
@@ -193,34 +207,45 @@ public class StandAloneService extends BaseService {
      *
      * @return Set<String>
      */
-    public Set<String> getSet(int db, String key) {
-        return jedisPoolTemplate.execute(db, jedis -> jedis.smembers(key));
+    public Set<String> getSet(String name, int db, String key) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
+            jedis.select(db);
+            return jedis.smembers(key);
+        }
     }
 
-    public Set<String> getSetSerialize(int db, String key) {
-        return jedisPoolTemplate.execute(db, jedis ->
-                jedis.smembers(key.getBytes(ServerConstant.CHARSET))
-                        .stream()
-                        .map(bytes -> SerializeUtils.unSerialize(bytes).toString())
-                        .collect(Collectors.toSet()));
+    public Set<String> getSetSerialize(String name, int db, String key) throws UnsupportedEncodingException {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
+            jedis.select(db);
+            return jedis.smembers(key.getBytes(ServerConstant.CHARSET))
+                    .stream()
+                    .map(bytes -> SerializeUtils.unSerialize(bytes).toString())
+                    .collect(Collectors.toSet());
+        }
     }
 
-    public void updateSet(int db, String key, String oldVal, String newVal) {
-        jedisPoolTemplate.execute(db, jedis -> {
+    public void updateSet(String name, int db, String key, String oldVal, String newVal) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
+            jedis.select(db);
             jedis.srem(key, oldVal);
-            return jedis.sadd(key, newVal);
-        });
+            jedis.sadd(key, newVal);
+        }
+
     }
 
-    public void updateSetSerialize(int db, String key, String oldVal, String newVal) {
-        jedisPoolTemplate.execute(db, jedis -> {
+    public void updateSetSerialize(String name, int db, String key, String oldVal, String newVal) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
+            jedis.select(db);
             jedis.srem(key, oldVal);
-            return jedis.sadd(key.getBytes(), SerializeUtils.serialize(newVal));
-        });
+            jedis.sadd(key.getBytes(), SerializeUtils.serialize(newVal));
+        }
     }
 
-    public void delSet(int db, String key, String val) {
-        jedisPoolTemplate.execute(db, jeids -> jeids.srem(key, val));
+    public void delSet(String name, int db, String key, String val) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
+            jedis.select(db);
+            jedis.srem(key, val);
+        }
     }
 
     /**
@@ -228,8 +253,8 @@ public class StandAloneService extends BaseService {
      *
      * @param setMap map
      */
-    public void saveAllSet(int db, Map<String, List<String>> setMap) {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public void saveAllSet(String name, int db, Map<String, List<String>> setMap) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             jedis.select(db);
             Pipeline pipeline = jedis.pipelined();
             setMap.forEach((key, list) -> new HashSet<>(list).forEach(val -> pipeline.sadd(key, val)));
@@ -242,8 +267,8 @@ public class StandAloneService extends BaseService {
      *
      * @param setMap map
      */
-    public void saveAllSetSerialize(int db, Map<String, List<String>> setMap) {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public void saveAllSetSerialize(String name, int db, Map<String, List<String>> setMap) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             jedis.select(db);
             Pipeline pipeline = jedis.pipelined();
             setMap.forEach((key, list) -> new HashSet<>(list).forEach(val -> pipeline.sadd(key.getBytes(), SerializeUtils.serialize(val))));
@@ -251,14 +276,14 @@ public class StandAloneService extends BaseService {
         }
     }
 
-    public Long lPushSerialize(int db, String key, String value) {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public Long lPushSerialize(String name, int db, String key, String value) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             return super.lPushSerialize(jedis, db, key, value);
         }
     }
 
-    public Long lPush(int db, String key, String value) {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public Long lPush(String name, int db, String key, String value) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             return super.lPush(jedis, db, key, value);
         }
     }
@@ -268,14 +293,14 @@ public class StandAloneService extends BaseService {
      *
      * @return Page<List<String>>
      */
-    public Page<List<String>> findListPageByKey(int db, String key, int pageNo) {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public Page<List<String>> findListPageByKey(String name, int db, String key, int pageNo) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             return super.findListPageByKey(jedis, db, key, pageNo);
         }
     }
 
-    public Page<List<String>> findListPageByKeySerialize(int db, String key, int pageNo) throws UnsupportedEncodingException {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public Page<List<String>> findListPageByKeySerialize(String name, int db, String key, int pageNo) throws UnsupportedEncodingException {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             return super.findListPageByKeySerialize(jedis, db, key, pageNo);
         }
     }
@@ -288,24 +313,34 @@ public class StandAloneService extends BaseService {
      * @param key   key
      * @param value value
      */
-    public void lSet(int db, int index, String key, String value) {
-        jedisPoolTemplate.execute(db, jedis -> jedis.lset(key, index, value));
+    public void lSet(String name, int db, int index, String key, String value) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
+            jedis.select(db);
+            jedis.lset(key, index, value);
+        }
     }
 
-    public void lSetSerialize(int db, int index, String key, String value) {
-        jedisPoolTemplate.execute(db, jedis -> jedis.lset(key.getBytes(), index, SerializeUtils.serialize(value)));
+    public void lSetSerialize(String name, int db, int index, String key, String value) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
+            jedis.select(db);
+            jedis.lset(key.getBytes(), index, SerializeUtils.serialize(value));
+        }
     }
 
-    public long lLen(int db, String key) {
-        return jedisPoolTemplate.execute(db, jedis -> jedis.llen(key));
+    public long lLen(String name, int db, String key) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
+            jedis.select(db);
+            return jedis.llen(key);
+        }
     }
 
-    public void lRem(int db, int index, String key) {
-        jedisPoolTemplate.execute(db, jedis -> {
+    public void lRem(String name, int db, int index, String key) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
+            jedis.select(db);
             String uuid = UUID.randomUUID().toString();
             jedis.lset(key, index, uuid);
-            return jedis.lrem(key, 0, uuid);
-        });
+            jedis.lrem(key, 0, uuid);
+        }
     }
 
     /**
@@ -313,8 +348,8 @@ public class StandAloneService extends BaseService {
      *
      * @param listMap map
      */
-    public void saveAllList(int db, Map<String, List<String>> listMap) {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public void saveAllList(String name, int db, Map<String, List<String>> listMap) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             jedis.select(db);
             Pipeline pipeline = jedis.pipelined();
             listMap.forEach((key, list) -> list.forEach(val -> pipeline.lpush(key, val)));
@@ -328,8 +363,8 @@ public class StandAloneService extends BaseService {
      *
      * @param listMap map
      */
-    public void saveAllListSerialize(int db, Map<String, List<String>> listMap) {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public void saveAllListSerialize(String name, int db, Map<String, List<String>> listMap) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             jedis.select(db);
             Pipeline pipeline = jedis.pipelined();
             listMap.forEach((key, list) -> list.forEach(val -> pipeline.lpush(key.getBytes(), SerializeUtils.serialize(val))));
@@ -337,12 +372,18 @@ public class StandAloneService extends BaseService {
         }
     }
 
-    public Long setNxSerialize(int db, String key, String value) {
-        return jedisPoolTemplate.execute(db, (jedis) -> jedis.setnx(key.getBytes(), SerializeUtils.serialize(value)));
+    public Long setNxSerialize(String name, int db, String key, String value) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
+            jedis.select(db);
+            return jedis.setnx(key.getBytes(), SerializeUtils.serialize(value));
+        }
     }
 
-    public Long setNx(int db, String key, String value) {
-        return jedisPoolTemplate.execute(db, (jedis) -> jedis.setnx(key, value));
+    public Long setNx(String name, int db, String key, String value) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
+            jedis.select(db);
+            return jedis.setnx(key, value);
+        }
     }
 
     /**
@@ -352,14 +393,19 @@ public class StandAloneService extends BaseService {
      * @param key key
      * @return String
      */
-    public String getString(int db, String key) {
-        return jedisPoolTemplate.execute(db, (jedis) -> jedis.get(key));
+    public String getString(String name, int db, String key) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
+            jedis.select(db);
+            return jedis.get(key);
+        }
     }
 
-    public String getStringSerialize(int db, String key) throws UnsupportedEncodingException {
-        return SerializeUtils.unSerialize(jedisPoolTemplate.execute(db, (jedis) ->
-                jedis.get(key.getBytes(ServerConstant.CHARSET)
-                ))).toString();
+    public String getStringSerialize(String name, int db, String key) throws UnsupportedEncodingException {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
+            jedis.select(db);
+            return SerializeUtils.unSerialize(jedis.get(key.getBytes(ServerConstant.CHARSET)
+            )).toString();
+        }
     }
 
     /**
@@ -369,12 +415,18 @@ public class StandAloneService extends BaseService {
      * @param key key
      * @param val newValue
      */
-    public void set(int db, String key, String val) {
-        jedisPoolTemplate.execute(db, jedis -> jedis.set(key, val));
+    public void set(String name, int db, String key, String val) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
+            jedis.select(db);
+            jedis.set(key, val);
+        }
     }
 
-    public void setSerialize(int db, String key, String val) {
-        jedisPoolTemplate.execute(db, jedis -> jedis.set(key.getBytes(), SerializeUtils.serialize(val)));
+    public void setSerialize(String name, int db, String key, String val) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
+            jedis.select(db);
+            jedis.set(key.getBytes(), SerializeUtils.serialize(val));
+        }
     }
 
     /**
@@ -382,8 +434,8 @@ public class StandAloneService extends BaseService {
      *
      * @param stringMap map
      */
-    public void saveAllString(int db, Map<String, String> stringMap) {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public void saveAllString(String name, int db, Map<String, String> stringMap) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             jedis.select(db);
             Pipeline pipeline = jedis.pipelined();
             stringMap.forEach(pipeline::set);
@@ -396,8 +448,8 @@ public class StandAloneService extends BaseService {
      *
      * @param stringMap map
      */
-    public void saveAllStringSerialize(int db, Map<String, String> stringMap) {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public void saveAllStringSerialize(String name, int db, Map<String, String> stringMap) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             jedis.select(db);
             Pipeline pipeline = jedis.pipelined();
             stringMap.forEach((key, val) -> pipeline.set(key.getBytes(), SerializeUtils.serialize(val)));
@@ -406,24 +458,27 @@ public class StandAloneService extends BaseService {
     }
 
 
-    public String backup() {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public String backup(String name) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             return super.backup(jedis);
         }
     }
 
-    public void persist(int db, String key) {
-        jedisPoolTemplate.execute(db, jedis -> jedis.persist(key));
+    public void persist(String name, int db, String key) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
+            jedis.select(db);
+            jedis.persist(key);
+        }
     }
 
-    public Integer getDataBasesSize() {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public Integer getDataBasesSize(String name) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             return super.getDataBasesSize(jedis);
         }
     }
 
-    public ScanResult<String> getKeysByDb(int db, String cursor, String match) {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public ScanResult<String> getKeysByDb(String name, int db, String cursor, String match) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             return super.getKeysByDb(jedis, db, cursor, match);
         }
     }
@@ -435,8 +490,11 @@ public class StandAloneService extends BaseService {
      * @param oldKey 旧key
      * @param newKey 新key
      */
-    public long renameNx(int db, String oldKey, String newKey) {
-        return jedisPoolTemplate.execute(db, jedis -> jedis.renamenx(oldKey, newKey));
+    public long renameNx(String name, int db, String oldKey, String newKey) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
+            jedis.select(db);
+            return jedis.renamenx(oldKey, newKey);
+        }
     }
 
     /**
@@ -444,8 +502,11 @@ public class StandAloneService extends BaseService {
      * @param key key
      * @return long
      */
-    public long ttl(int db, String key) {
-        return jedisPoolTemplate.execute(db, jedis -> jedis.ttl(key));
+    public long ttl(String name, int db, String key) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
+            jedis.select(db);
+            return jedis.ttl(key);
+        }
     }
 
     /**
@@ -455,8 +516,11 @@ public class StandAloneService extends BaseService {
      * @param key     key
      * @param seconds 秒
      */
-    public void setExpire(int db, String key, int seconds) {
-        jedisPoolTemplate.execute(db, jedis -> jedis.expire(key, seconds));
+    public void setExpire(String name, int db, String key, int seconds) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
+            jedis.select(db);
+            jedis.expire(key, seconds);
+        }
     }
 
     /**
@@ -465,18 +529,21 @@ public class StandAloneService extends BaseService {
      * @param db  db
      * @param key key
      */
-    public void delKey(int db, String key) {
-        jedisPoolTemplate.execute(db, jedis -> jedis.del(key));
+    public void delKey(String name, int db, String key) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
+            jedis.select(db);
+            jedis.del(key);
+        }
     }
 
-    public Map<String, String> getType(int db, List<String> keys) {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public Map<String, String> getType(String name, int db, List<String> keys) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             return super.getType(jedis, db, keys);
         }
     }
 
-    public Map<Integer, Long> getDataBases() {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public Map<Integer, Long> getDataBases(String name) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             return super.getDataBases(jedis);
         }
     }
@@ -484,8 +551,8 @@ public class StandAloneService extends BaseService {
     /**
      * 删除所有数据
      */
-    public void flushAll() {
-        try (Jedis jedis = jedisPool.getResource()) {
+    public void flushAll(String name) {
+        try (Jedis jedis = JedisFactory.getJedisPool(name).getResource()) {
             jedis.flushAll();
         }
     }

@@ -3,10 +3,7 @@ package com.whe.test;
 import org.junit.jupiter.api.Test;
 
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  * Created by trustme on 2017/3/11.
@@ -16,11 +13,14 @@ public class TreeMapTest {
 
     @Test
     public void test3(){
-        Calendar oldDate = Calendar.getInstance();
-        oldDate.add(Calendar.DATE, -24);
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
-        String date = sdf.format(oldDate.getTime());
-        System.out.println("定时删除文件开始,删除的时间:" + date);
+        Map map =Collections.synchronizedMap(new LinkedHashMap());
+        map.put("s","w");
+        map.put("飒爽的","说说");
+        map.put("飒爽的","说说");
+        map.put("飒爽的1","说说");
+        map.put("飒爽的2","说说");
+        map.put("飒爽的23","说说");
+        System.out.println(map);
     }
     @Test
     public void test() {

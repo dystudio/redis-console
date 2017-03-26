@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import redis.clients.jedis.*;
 import redis.clients.jedis.exceptions.JedisConnectionException;
 
+import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -25,7 +26,8 @@ public class ClusterService {
     private JedisCluster jedisCluster;
     private ClusterPipeline clusterPipeline;
 
-    {
+    @PostConstruct
+    public void init() {
         scanParams.match(ServerConstant.DEFAULT_MATCH);
         jedisCluster = JedisFactory.getJedisCluster();
         clusterPipeline = new ClusterPipeline(jedisCluster, JedisFactory.getClusterInfoCache());

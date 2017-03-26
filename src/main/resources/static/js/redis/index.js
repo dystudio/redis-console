@@ -36,7 +36,7 @@ $(function () {
                     $(this).addClass("firstClick");
                     $.ajax({
                         url: ctx + server + "/ttl",
-                        data: {db: redisDb, key: key},
+                        data: {name:name,db: redisDb, key: key},
                         type: "post",
                         dataType: "json",
                         success: function (data) {
@@ -60,6 +60,7 @@ $(function () {
             }
             var db = $(this).parent().closest(".child_ul").siblings(".node-div").find(".text").html();
             var indexOf = db.indexOf("db");
+            name = $(this).closest(".parent_li").find(".text").html();
             if (indexOf == -1 && db != "data") {
                 redisDb = $(this).find(".text").html().substr(2);
                 return;
@@ -166,7 +167,7 @@ function rename(th) {
     }
     $.ajax({
         url: ctx + server + "/renameNx",
-        data: {db: redisDb, oldKey: key, newKey: newKey},
+        data: {name:name,db: redisDb, oldKey: key, newKey: newKey},
         type: "post",
         dataType: "text",
         success: function (data) {
@@ -189,7 +190,7 @@ function setExpire(th) {
         if (seconds == '' || seconds < 0) {
             $.ajax({
                 url: ctx + server + "/persist",
-                data: {db: redisDb, key: key},
+                data: {name:name,db: redisDb, key: key},
                 type: "post",
                 dataType: "text",
                 success: function (data) {
@@ -200,7 +201,7 @@ function setExpire(th) {
         }
         $.ajax({
             url: ctx + server + "/setExpire",
-            data: {db: redisDb, key: key, seconds: seconds},
+            data: {name:name,db: redisDb, key: key, seconds: seconds},
             type: "post",
             dataType: "text",
             success: function (data) {
@@ -213,7 +214,7 @@ function setExpire(th) {
 function delKey(th) {
     $.ajax({
         url: ctx + server + "/delKey",
-        data: {db: redisDb, key: key},
+        data: {name:name,db: redisDb, key: key},
         type: "post",
         dataType: "text",
         success: function (data) {
@@ -236,7 +237,7 @@ function updateString(th) {
     }
     $.ajax({
         url: ctx + server + serialize + "/updateString",
-        data: {db: redisDb, key: key, val: val},
+        data: {name:name,db: redisDb, key: key, val: val},
         type: "post",
         dataType: "text",
         success: function (data) {
@@ -253,7 +254,7 @@ function updateList(th) {
     --index;
     $.ajax({
         url: ctx + server + serialize + "/updateList",
-        data: {db: redisDb, index: index, key: key, val: val},
+        data: {name:name,db: redisDb, index: index, key: key, val: val},
         type: "post",
         dataType: "text",
         success: function (data) {
@@ -275,7 +276,7 @@ function delList(th) {
     }
     $.ajax({
         url: ctx + server + "/delList",
-        data: {db: redisDb, index: index, listSize: listSize, key: key},
+        data: {name:name,db: redisDb, index: index, listSize: listSize, key: key},
         type: "post",
         dataType: "text",
         success: function (data) {
@@ -300,7 +301,7 @@ function updateSet(th) {
     var oldVal = setArr[i];
     $.ajax({
         url: ctx + server + serialize + "/updateSet",
-        data: {db: redisDb, key: key, oldVal: oldVal, newVal: val},
+        data: {name:name,db: redisDb, key: key, oldVal: oldVal, newVal: val},
         type: "post",
         dataType: "text",
         success: function (data) {
@@ -316,7 +317,7 @@ function delSet(th) {
     var val = setArr[i];
     $.ajax({
         url: ctx + server + "/delSet",
-        data: {db: redisDb, key: key, val: val},
+        data: {name:name,db: redisDb, key: key, val: val},
         type: "post",
         dataType: "text",
         success: function (data) {
@@ -339,7 +340,7 @@ function updateZSet(th) {
     var score = $(th).closest("tr").find("input").val();
     $.ajax({
         url: ctx + server + serialize + "/updateZSet",
-        data: {db: redisDb, key: key, oldVal: oldVal, newVal: newVal, score: score},
+        data: {name:name,db: redisDb, key: key, oldVal: oldVal, newVal: newVal, score: score},
         type: "post",
         dataType: "text",
         success: function (data) {
@@ -356,7 +357,7 @@ function delZSet(th) {
     var oldVal = zSetArr[i];
     $.ajax({
         url: ctx + server + "/delZSet",
-        data: {db: redisDb, key: key, val: oldVal},
+        data: {name:name,db: redisDb, key: key, val: oldVal},
         type: "post",
         dataType: "text",
         success: function (data) {
@@ -383,7 +384,7 @@ function updateHash(th) {
     if (oldField == newField) {
         $.ajax({
             url: ctx + server + serialize + "/hSet",
-            data: {db: redisDb, key: key, field: oldField, val: val},
+            data: {name:name,db: redisDb, key: key, field: oldField, val: val},
             type: "post",
             dataType: "text",
             success: function (data) {
@@ -393,7 +394,7 @@ function updateHash(th) {
     } else {
         $.ajax({
             url: ctx + server + serialize + "/updateHash",
-            data: {db: redisDb, key: key, oldField: oldField, newField: newField, val: val},
+            data: {name:name,db: redisDb, key: key, oldField: oldField, newField: newField, val: val},
             type: "post",
             dataType: "text",
             success: function (data) {
@@ -410,7 +411,7 @@ function delHash(th) {
     var field = hashArr[i];
     $.ajax({
         url: ctx + server + "/delHash",
-        data: {db: redisDb, key: key, field: field},
+        data: {name:name,db: redisDb, key: key, field: field},
         type: "post",
         dataType: "text",
         success: function (data) {
@@ -516,7 +517,7 @@ function pageViewAjax(url, th) {
     if (redisType == list) {
         $.ajax({
             url: ctx + server + url,
-            data: {db: redisDb, key: key},
+            data: {name:name,db: redisDb, key: key},
             type: "post",
             dataType: "json",
             success: function (data) {
@@ -538,7 +539,7 @@ function pageViewAjax(url, th) {
     } else if (redisType == zset) {
         $.ajax({
             url: ctx + server + url,
-            data: {db: redisDb, key: key},
+            data: {name:name,db: redisDb, key: key},
             type: "post",
             dataType: "json",
             success: function (data) {
@@ -564,7 +565,7 @@ function pageViewAjax(url, th) {
 function getHash() {
     $.ajax({
         url: ctx + server + serialize + "/hGetAll",
-        data: {db: redisDb, key: key},
+        data: {name:name,db: redisDb, key: key},
         type: "post",
         dataType: "json",
         success: function (data) {
@@ -592,7 +593,7 @@ function getHash() {
 function getZSet() {
     $.ajax({
         url: ctx + server + serialize + "/getZSet",
-        data: {db: redisDb, pageNo: 1, key: key},
+        data: {name:name,db: redisDb, pageNo: 1, key: key},
         type: "post",
         dataType: "json",
         success: function (data) {
@@ -623,7 +624,7 @@ function getZSet() {
 function getSet() {
     $.ajax({
         url: ctx + server + serialize + "/getSet",
-        data: {db: redisDb, key: key},
+        data: {name:name,db: redisDb, key: key},
         type: "post",
         dataType: "json",
         success: function (data) {
@@ -649,7 +650,7 @@ function getSet() {
 function getList() {
     $.ajax({
         url: ctx + server + serialize + "/getList",
-        data: {db: redisDb, key: key, pageNo: 1},
+        data: {name:name,db: redisDb, key: key, pageNo: 1},
         type: "post",
         dataType: "json",
         success: function (data) {
@@ -680,7 +681,7 @@ function getList() {
 function getString() {
     $.ajax({
         url: ctx + server + serialize + "/getString",
-        data: {db: redisDb, key: key},
+        data: {name:name,db: redisDb, key: key},
         type: "post",
         dataType: "text",
         success: function (data) {
@@ -730,9 +731,10 @@ function clusterNextPage(pageNo, event) {
 function nextPage(db, cursor, event) {
     event = event || window.event;
     var obj = event.srcElement ? event.srcElement : event.target;
+    name = $(obj).closest(".parent_li").find(".text").html();
     $.ajax({
         url: ctx + server + serialize + "/nextPage",
-        data: {db: db, cursor: cursor, match: match},
+        data: {name:name,db: db, cursor: cursor, match: match},
         type: "post",
         dataType: "text",
         success: function (data) {
@@ -745,9 +747,10 @@ function nextPage(db, cursor, event) {
 function upPage(db, cursor, event) {
     event = event || window.event;
     var obj = event.srcElement ? event.srcElement : event.target;
+    name = $(obj).closest(".parent_li").find(".text").html();
     $.ajax({
         url: ctx + server + "/upPage",
-        data: {db: db, cursor: cursor, match: match},
+        data: {name:name,db: db, cursor: cursor, match: match},
         type: "post",
         dataType: "text",
         success: function (data) {

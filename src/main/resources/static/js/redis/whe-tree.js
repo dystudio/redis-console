@@ -45,6 +45,12 @@
         }
 
     };
+    $.fn.addNode = function (data) {
+        tree = '';
+        alert(data.length)
+        appendTree(data);
+        $(".list-group").append(tree);
+    };
 
     //添加树
     function appendTree(data) {
@@ -55,7 +61,11 @@
                     tree += '<li >' + obj.page + '</li>';
                     continue;
                 }
-                tree += '<li class="node-tree" node-id="' + (nodeId++) + '" ><div class="node-div">';
+                tree += '<li class="node-tree ';
+                if(obj.class!=null){
+                    tree+=obj.class;
+                }
+                tree += ' " node-id="' + (nodeId++) + '" ><div class="node-div">';
                 if (obj.nodes != null && obj.nodes.length > 0) {
                     tree += '<span class="icon expand-icon glyphicon  ';
                     if (obj.expanded != null && obj.expanded) {
@@ -93,12 +103,8 @@
                 }
             }
         } else {
-            return null;
+            return ;
         }
-        $.fn.addNode = function (data) {
-            tree = '';
-            appendTree(data);
-            $(this).closest(".child_ul").html(tree);
-        }
+
     }
 })(jQuery, window, document);

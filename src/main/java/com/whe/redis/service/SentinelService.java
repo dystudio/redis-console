@@ -5,6 +5,7 @@ import com.whe.redis.util.*;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.*;
 
+import javax.annotation.PostConstruct;
 import java.io.UnsupportedEncodingException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -16,8 +17,14 @@ import java.util.stream.Collectors;
 @Service
 public class SentinelService extends BaseService {
 
-    private JedisSentinelPool jedisSentinelPool = JedisFactory.getJedisSentinelPool();
-    private JedisSentinelPoolTemplate sentinelPoolTemplate = new JedisSentinelPoolTemplate(jedisSentinelPool);
+    private JedisSentinelPool jedisSentinelPool;
+    private JedisSentinelPoolTemplate sentinelPoolTemplate;
+
+    @PostConstruct
+    public void init() {
+        jedisSentinelPool = JedisFactory.getJedisSentinelPool();
+        sentinelPoolTemplate = new JedisSentinelPoolTemplate(jedisSentinelPool);
+    }
 
     //Hash
 

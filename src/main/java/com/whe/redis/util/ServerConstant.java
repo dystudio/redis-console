@@ -5,9 +5,10 @@ package com.whe.redis.util;
  * 常量
  */
 public class ServerConstant {
-    public static String REDIS_TYPE;
-    public final static String REDIS_CLUSTER = "redisCluster";
     public final static String STANDALONE = "standalone";
+    public final static String SENTINEL = "sentinel";
+    public final static String CLUSTER = "cluster";
+
     public final static Integer PAGE_NUM = 500;
     public final static String REDIS_CURSOR = "redisCursor";
     public final static String CLUSTER_PAGE = "clusterPage";
