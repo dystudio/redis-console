@@ -125,9 +125,6 @@
             $("#redis_key").val("");
         }
 
-        if (redisType != null) {
-            $("#redis_type").find("option[value='" + redisType + "']").prop("selected", true);
-        }
         if (redisDb != null) {
             $("#redis_data_size").find("option[value='" + redisDb + "']").prop("selected", true);
         }

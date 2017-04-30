@@ -32,24 +32,16 @@ public class ClusterService {
     }
 
     public Long hSetNxSerialize(String key, String field, String value) {
-        Boolean exists = jedisCluster.exists(key);
-        if (exists) {
-            return 2L;
-        }
         return jedisCluster.hsetnx(key.getBytes(), SerializeUtils.serialize(field), SerializeUtils.serialize(value));
     }
 
     public Long hSetNx(String key, String field, String value) {
-        Boolean exists = jedisCluster.exists(key);
-        if (exists) {
-            return 2L;
-        }
         return jedisCluster.hsetnx(key, field, value);
     }
 
     public Long zAddSerialize(String key, Double score, String member) {
         Boolean exists = jedisCluster.exists(key);
-        if (exists) {
+        if (exists && !jedisCluster.type(key).equals(ServerConstant.REDIS_ZSET)) {
             return 2L;
         }
         jedisCluster.zadd(key.getBytes(), score, SerializeUtils.serialize(member));
@@ -67,7 +59,7 @@ public class ClusterService {
 
     public Long sAddSerialize(String key, String value) {
         Boolean exists = jedisCluster.exists(key);
-        if (exists) {
+        if (exists && !jedisCluster.type(key).equals(ServerConstant.REDIS_SET)) {
             return 2L;
         }
         jedisCluster.sadd(key.getBytes(), SerializeUtils.serialize(value));
@@ -84,10 +76,6 @@ public class ClusterService {
     }
 
     public Long lPushSerialize(String key, String value) {
-        Boolean exists = jedisCluster.exists(key);
-        if (exists) {
-            return 2L;
-        }
         jedisCluster.lpush(key.getBytes(), SerializeUtils.serialize(value));
         return 1L;
     }

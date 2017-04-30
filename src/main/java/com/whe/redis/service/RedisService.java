@@ -25,19 +25,11 @@ public class RedisService {
 
     Long hSetNxSerialize(Jedis jedis, int db, String key, String field, String value) {
         jedis.select(db);
-        Boolean exists = jedis.exists(key);
-        if (exists && !ServerConstant.REDIS_HASH.equals(jedis.type(key))) {
-            return 2L;
-        }
         return jedis.hsetnx(key.getBytes(), SerializeUtils.serialize(field), SerializeUtils.serialize(value));
     }
 
     Long hSetNx(Jedis jedis, int db, String key, String field, String value) {
         jedis.select(db);
-        Boolean exists = jedis.exists(key);
-        if (exists && !ServerConstant.REDIS_HASH.equals(jedis.type(key))) {
-            return 2L;
-        }
         return jedis.hsetnx(key, field, value);
     }
 
